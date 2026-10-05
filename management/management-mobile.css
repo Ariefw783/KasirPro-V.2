@@ -1,176 +1,271 @@
-/* KasirPro Management — responsive mobile only */
+/* KasirPro Management — responsive mobile & touch device rules */
 
-@media (max-width:820px) {
-  *,*::before,*::after { box-sizing:border-box; }
-
-  html,body {
-    width:100%;
-    max-width:100%;
-    overflow-x:hidden;
+@media (max-width: 820px) {
+  *, *::before, *::after {
+    box-sizing: border-box !important;
   }
 
-  .app-shell,.main-area,.main-content,.view-section,.import-page,.ops-page,.reports-page,.sales-management-page {
-    width:100%;
-    max-width:100%;
-    min-width:0;
+  html, body {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    position: relative !important;
   }
 
-  .main-area { margin-left:0; }
-  .main-content { min-width:0; overflow-x:visible; padding:14px 12px; }
+  .app-shell,
+  .main-area,
+  .main-content,
+  .view-section,
+  .import-page,
+  .ops-page,
+  .reports-page,
+  .sales-management-page,
+  .stock-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
 
-  .view-section>*,.module-header>*,.topbar-left,.topbar-right,.page-heading,.admin-profile,
-  .panel,.card,.ops-card,.report-card,.report-filter-card,.report-kpi,.welcome-card,
-  .content-placeholder,.stage-placeholder {
-    min-width:0;
-    max-width:100%;
+  .main-area {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .main-content {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+    padding: 12px 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Isolasi Container Modul & Kartu agar anak tabel tidak pernah merusak lebar parent */
+  .view-section > *,
+  .import-panel,
+  .panel,
+  .card,
+  .ops-card,
+  .report-card,
+  .report-filter-card,
+  .report-kpi,
+  .welcome-card,
+  .content-placeholder,
+  .stage-placeholder,
+  .manual-invoice-card {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: clip !important;
   }
 
   .topbar {
-    width:100% !important;
-    max-width:100vw !important;
-    min-width:0 !important;
-    box-sizing:border-box !important;
-    gap:6px !important;
-    padding-inline:10px !important;
-    overflow:hidden !important;
-  }
-
-  .topbar-left { flex:1 1 auto; min-width:0; overflow:hidden; }
-  .topbar-right { flex:0 0 auto; gap:6px; display:flex; align-items:center; }
-  .page-heading h1,.page-heading p { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
-  .connection-status { display:none !important; }
-  .admin-info { display:none !important; }
-  .admin-profile { padding: 4px !important; }
-  .topbar-pos-link {
-    white-space:nowrap !important;
-    padding: 6px 9px !important;
-    font-size: 0.65rem !important;
-    min-height: 32px !important;
-  }
-
-  .module-header,.module-header-actions,.preview-toolbar,.panel-actions,
-  .settings-bottom-actions,.sales-pagination,.sales-detail-actions {
-    min-width:0;
-    max-width:100%;
-    flex-wrap:wrap;
-  }
-
-  .module-header { flex-direction:column; align-items:stretch; gap:10px; }
-  .module-header-actions { display:flex; width:100%; }
-  .module-header-actions>*,.panel-actions>* { flex:1 1 150px; min-width:0; }
-
-  .dashboard-grid,.workbook-summary,.import-steps,.settings-grid,.settings-switch-grid,
-  .ops-grid.cols-3,.ops-grid.cols-6,.report-filter-grid,.report-summary-grid,
-  .report-panel-grid,.sales-summary-grid,.sales-filter-grid,.sales-detail-summary,
-  .product-detail-grid {
-    grid-template-columns:1fr !important;
-    min-width:0;
-    max-width:100%;
-  }
-
-  .ops-field.wide,.ops-grid.cols-6 .wide,.settings-field-wide,
-  .report-search-field,.sales-search-field {
-    grid-column:1 / -1 !important;
-  }
-
-  input,select,textarea,button,.button,.preview-search,.preview-search input {
-    min-width:0;
-    max-width:100%;
-  }
-
-  .preview-toolbar {
-    align-items: stretch !important;
-    flex-direction: column !important;
-    gap: 8px !important;
     width: 100% !important;
     max-width: 100% !important;
-    overflow: hidden !important;
+    min-width: 0 !important;
+    gap: 8px !important;
+    padding-inline: 10px !important;
+  }
+
+  .topbar-left { flex: 1 1 auto; overflow: hidden; }
+  .topbar-right { flex: 0 1 auto; gap: 8px; }
+  .page-heading h1, .page-heading p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .connection-status, .admin-info { display: none !important; }
+  .topbar-pos-link { white-space: nowrap; }
+
+  /* Header Halaman & Aksi Tombol Atas */
+  .module-header {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .module-header-actions,
+  .panel-actions,
+  .settings-bottom-actions,
+  .sales-pagination,
+  .sales-detail-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 8px !important;
+  }
+
+  .module-header-actions > *,
+  .panel-actions > * {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Grid Layouts Stacked Full Width */
+  .dashboard-grid,
+  .workbook-summary,
+  .import-steps,
+  .settings-grid,
+  .settings-switch-grid,
+  .ops-grid.cols-3,
+  .ops-grid.cols-6,
+  .report-filter-grid,
+  .report-summary-grid,
+  .report-panel-grid,
+  .sales-summary-grid,
+  .sales-filter-grid,
+  .sales-detail-summary,
+  .product-detail-grid {
+    grid-template-columns: 1fr !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .ops-field.wide,
+  .ops-grid.cols-6 .wide,
+  .settings-field-wide,
+  .report-search-field,
+  .sales-search-field {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* TOOLBAR PENCARIAN & FILTER (PRODUK, STOK, FAKTUR, DLL) */
+  .preview-toolbar,
+  .stock-filter-toolbar {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+    box-sizing: border-box !important;
   }
 
   .preview-search {
     width: 100% !important;
     max-width: 100% !important;
+    min-width: 0 !important;
     flex: 1 1 100% !important;
   }
 
   .preview-search input {
     width: 100% !important;
     max-width: 100% !important;
+    min-width: 0 !important;
     box-sizing: border-box !important;
   }
 
-  /* Filter dropdowns (Kategori, Supplier, Status) rapi bertumpuk/responsif */
-  .preview-filters,
-  .preview-toolbar select,
-  .preview-toolbar .button-secondary {
+  .preview-toolbar .module-header-actions,
+  .preview-toolbar .preview-filter-actions,
+  .preview-toolbar > div[style*="display:flex"] {
     display: flex !important;
     flex-direction: column !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    gap: 6px !important;
-  }
-
-  .preview-filters select {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-height: 38px !important;
-    box-sizing: border-box !important;
-  }
-
-  /* Tables in mobile/PWA: Horizontal Touch-Scrolling with clean formatting */
-  .table-wrapper {
+    align-items: stretch !important;
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
-    max-height: 70vh !important;
+    gap: 8px !important;
+  }
+
+  /* Semua Dropdown Filter & Tombol di Toolbar */
+  .preview-toolbar select,
+  .preview-toolbar .button,
+  .preview-toolbar button,
+  .preview-toolbar .module-header-actions select,
+  .preview-toolbar .module-header-actions button,
+  .preview-toolbar .preview-filter-actions select,
+  .preview-toolbar .preview-filter-actions button,
+  .stock-filter-toolbar select,
+  .stock-filter-toolbar button,
+  #product-category-filter,
+  #product-supplier-filter,
+  #product-status-filter,
+  #stock-category-filter,
+  #stock-supplier-filter,
+  #stock-status-filter,
+  #stock-reset-filter,
+  #movement-type-filter,
+  #invoice-status-filter {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  /* Form inputs & controls */
+  input, select, textarea, button, .button {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* =========================================================
+     TABEL DI MOBILE / PWA: MANDATORY HORIZONTAL TOUCH SCROLL
+     Table wrapper mengunci lebar 100% container dan menampung scroll
+     horizontal mandiri tanpa mendorong layout luar.
+  ========================================================= */
+  .table-wrapper {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    max-height: 72vh !important;
     overflow-x: auto !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
-    border-radius: 14px !important;
+    overscroll-behavior-x: contain !important;
+    box-sizing: border-box !important;
+    margin: 0 0 10px 0 !important;
+    border-radius: 12px !important;
     background: #ffffff !important;
-    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04) !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
+    position: relative !important;
   }
 
-  .panel-actions.split { align-items:stretch !important; gap:12px; }
-  .panel-actions.split>.pagination,
-  .panel-actions.split>div:has(> [id$="-prev-page"]) {
-    display:grid !important;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    width:100%;
-    gap:8px !important;
-  }
-  .panel-actions.split>.pagination .button,
-  .panel-actions.split>div:has(> [id$="-prev-page"]) .button {
-    width:100%;
-    min-height:42px;
-    padding:8px 6px;
-    white-space:nowrap;
-  }
-  .panel-actions.split>.preview-meta { width:100%; text-align:center; }
-
-  .table-wrapper>.data-table,
-  .table-wrapper>table {
+  .table-wrapper > .data-table,
+  .table-wrapper > table {
     width: max-content !important;
     min-width: 780px !important;
     table-layout: auto !important;
+    margin: 0 !important;
+    border-collapse: collapse !important;
   }
 
   .data-table th,
   .data-table td {
-    min-width: fit-content !important;
     padding: 10px 12px !important;
     white-space: nowrap !important;
     overflow-wrap: normal !important;
     word-break: normal !important;
-    font-size: 0.70rem !important;
+    font-size: 0.72rem !important;
     line-height: 1.4 !important;
     vertical-align: middle !important;
   }
 
   .data-table th {
-    font-size: 0.66rem !important;
+    font-size: 0.68rem !important;
     font-weight: 850 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 2 !important;
+    background: #f8fafc !important;
   }
 
   .sales-table th,
@@ -178,73 +273,88 @@
     white-space: nowrap !important;
   }
 
-  .report-tabs,.sheet-tabs {
-    min-width:0;
-    max-width:100%;
-    overflow:hidden;
-    flex-wrap:wrap;
+  /* Paginasi */
+  .panel-actions.split {
+    align-items: stretch !important;
+    gap: 12px;
   }
 
-  .report-tab,.sheet-tab {
-    flex:1 1 100px;
-    min-width:0;
-    white-space:normal;
+  .panel-actions.split > .pagination,
+  .panel-actions.split > div:has(> [id$="-prev-page"]) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px !important;
   }
 
-  .product-detail-overlay { padding:10px; }
-
-  .product-detail-panel,.sales-detail-panel {
-    width:100%;
-    max-width:100%;
-    min-width:0;
-    margin:0;
+  .panel-actions.split > .pagination .button,
+  .panel-actions.split > div:has(> [id$="-prev-page"]) .button {
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 6px;
+    white-space: nowrap;
   }
 
-  .product-detail-body,.sales-detail-body,.product-detail-header,.product-detail-footer {
-    min-width:0;
-    max-width:100%;
+  .panel-actions.split > .preview-meta {
+    width: 100%;
+    text-align: center;
   }
 
-  .welcome-card { align-items:flex-start; flex-direction:column; }
-  .welcome-card>i { align-self:flex-end; font-size:3rem; }
+  .report-tabs, .sheet-tabs {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    flex-wrap: wrap;
+  }
 
-  .sales-detail-actions { display:grid; grid-template-columns:1fr 1fr; }
-  .sales-detail-actions .sales-void-button { grid-column:1 / -1; }
+  .report-tab, .sheet-tab {
+    flex: 1 1 100px;
+    min-width: 0;
+    white-space: normal;
+  }
+
+  .product-detail-overlay { padding: 10px; }
+
+  .product-detail-panel, .sales-detail-panel {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .product-detail-body, .sales-detail-body, .product-detail-header, .product-detail-footer {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .welcome-card { align-items: flex-start; flex-direction: column; }
+  .welcome-card > i { align-self: flex-end; font-size: 3rem; }
+
+  .sales-detail-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .sales-detail-actions .sales-void-button { grid-column: 1 / -1; }
 }
 
-@media (max-width:480px) {
-  .main-content { padding-inline:8px; }
-  .topbar { padding-inline:8px; }
-  .topbar-pos-link { padding-inline:7px; font-size:.58rem; }
+@media (max-width: 480px) {
+  .main-content { padding: 10px 8px !important; }
+  .topbar { padding-inline: 8px !important; }
+  .topbar-pos-link { padding-inline: 7px; font-size: .58rem; }
 
-  .module-header,.ops-card,.report-card,.report-filter-card { padding:12px; }
-  .module-header-actions>*,.panel-actions>* { width:100%; flex-basis:100%; }
-
-  /* Pastikan teks tabel di layar 480px tetap terbaca proporsional dan tidak diperas */
-  .table-wrapper {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+  .module-header, .ops-card, .report-card, .report-filter-card, .import-panel {
+    padding: 12px 10px !important;
   }
 
-  .table-wrapper>.data-table,
-  .table-wrapper>table {
-    width: max-content !important;
+  .table-wrapper > .data-table,
+  .table-wrapper > table {
     min-width: 820px !important;
-    table-layout: auto !important;
   }
 
   .data-table th,
   .data-table td {
     padding: 8px 10px !important;
-    font-size: 0.65rem !important;
-    white-space: nowrap !important;
-    overflow-wrap: normal !important;
-    word-break: normal !important;
-    line-height: 1.4 !important;
+    font-size: 0.67rem !important;
   }
 
   .data-table th {
-    font-size: 0.62rem !important;
+    font-size: 0.64rem !important;
   }
 }
-

@@ -1,5 +1,12 @@
 @import url("./management-base.css");
 
+.preview-filter-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
 .stock-filter-toolbar {
     justify-content: flex-start;
     flex-wrap: wrap;

@@ -1,6 +1,6 @@
 {
-  "version": "2.2.0",
-  "build": "20261005.2",
+  "version": "2.2.1",
+  "build": "20261005.3",
   "releaseDate": "05 Oktober 2026",
   "title": "Pembaruan Arsitektur Sistem KasirPro V2",
   "description": "Rilis pemeliharaan berkala untuk sinkronisasi model data akuntansi, stabilitas offline caching, dan optimalisasi tata letak antarmuka multi-perangkat.",
@@ -10,6 +10,6 @@
     "Otomasi Lifecycle Status Master Data",
     "Auto-Registration Relasional",
     "Dual-Tier Data Deletion Protection",
-    "Responsive Grid Engine"
+    "Isolasi Kontainer & Viewport Fit Ponsel/PWA"
   ]
 }
