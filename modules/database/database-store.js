@@ -500,13 +500,17 @@ export async function writeStore(key, value, onProgress) {
       await indexedDBStore.put(STORES.CONFIGURATIONS, { key: "storeSettings", ...value.pengaturan_toko[0] });
     }
   } else if (key === STORE_KEYS.invoices) {
-    await indexedDBStore.putMany(STORES.INVOICES, Array.isArray(value) ? value : []);
+    await indexedDBStore.clearStore(STORES.INVOICES);
+    if (Array.isArray(value) && value.length) await indexedDBStore.putMany(STORES.INVOICES, value);
   } else if (key === STORE_KEYS.sales) {
-    await indexedDBStore.putMany(STORES.SALES, Array.isArray(value) ? value : []);
+    await indexedDBStore.clearStore(STORES.SALES);
+    if (Array.isArray(value) && value.length) await indexedDBStore.putMany(STORES.SALES, value);
   } else if (key === STORE_KEYS.movements) {
-    await indexedDBStore.putMany(STORES.MOVEMENTS, Array.isArray(value) ? value : []);
+    await indexedDBStore.clearStore(STORES.MOVEMENTS);
+    if (Array.isArray(value) && value.length) await indexedDBStore.putMany(STORES.MOVEMENTS, value);
   } else if (key === STORE_KEYS.opnames) {
-    await indexedDBStore.putMany(STORES.OPNAMES, Array.isArray(value) ? value : []);
+    await indexedDBStore.clearStore(STORES.OPNAMES);
+    if (Array.isArray(value) && value.length) await indexedDBStore.putMany(STORES.OPNAMES, value);
   }
 
   // Tulis ke Firestore menggunakan batch terbagi (maksimal 400 op per commit)
@@ -784,6 +788,212 @@ export async function deleteMasterProduct(codeOrId) {
   }
 
   return true;
+}
+
+/**
+ * Hapus Faktur Pembelian secara tuntas (In-Memory, IndexedDB, dan Firestore Cloud)
+ * Termasuk rollback stok produk delta dan penghapusan riwayat mutasi terkait.
+ *
+ * @param {string} invoiceIdOrNumber
+ * @returns {Promise<boolean>}
+ */
+export async function deletePurchaseInvoice(invoiceIdOrNumber) {
+  requireOnline();
+  const searchKey = norm(invoiceIdOrNumber);
+  if (!searchKey) throw new Error("ID atau Nomor Faktur tidak valid.");
+
+  // 1. Ambil data faktur dari memori
+  const invoices = inMemory.get(STORE_KEYS.invoices) || [];
+  const targetInv = invoices.find(i => norm(i.id) === searchKey || norm(i.invoiceNumber) === searchKey);
+  if (!targetInv) return false;
+
+  const invId = String(targetInv.id || targetInv.invoiceNumber).replace(/[\/\\]/g, "_").trim();
+  const invNumber = String(targetInv.invoiceNumber || "").trim();
+
+  // 2. Ambil movements terkait faktur ini untuk rollback stok
+  const movements = inMemory.get(STORE_KEYS.movements) || [];
+  const relatedMovements = movements.filter(m => 
+    norm(m.reference) === norm(invNumber) || norm(m.reference) === norm(invId) ||
+    (m.source === "Faktur Pembelian" && norm(m.reference) === norm(invNumber))
+  );
+
+  // 3. Rollback stok produk di master
+  const master = inMemory.get(STORE_KEYS.master) || { produk: [] };
+  const products = Array.isArray(master.produk) ? master.produk : [];
+  const touchedProducts = [];
+
+  const isConfirmed = norm(targetInv.status) === "terkonfirmasi" || norm(targetInv.status) === "confirmed";
+  if (isConfirmed && Array.isArray(targetInv.items)) {
+    for (const item of targetInv.items) {
+      const code = item.matchedProductCode || item.code || item.productCode;
+      const baseQty = (num(item.qty) || 1) * (num(item.conversionRatio) || 1);
+      const prod = products.find(p => norm(p["Kode Produk"]) === norm(code) || norm(p["Nama Produk"]) === norm(item.name));
+      if (prod) {
+        const curStock = readCurrentStock(prod["Kode Produk"]);
+        const nextStock = Math.max(0, curStock - baseQty);
+        activeStockIndex.set(norm(prod["Kode Produk"]), nextStock);
+        prod["Stok Awal"] = nextStock;
+        touchedProducts.push(prod);
+      }
+    }
+  }
+
+  // 4. Hapus dari Firestore Cloud menggunakan Batch
+  const batch = writeBatch(firebaseDb);
+  
+  // Hapus dokumen faktur di Firestore
+  const invRef = doc(firebaseDb, ...documentSegments("purchaseInvoices", invId));
+  batch.delete(invRef);
+  if (invNumber && invNumber !== invId) {
+    try {
+      const cleanNum = invNumber.replace(/[\/\\]/g, "_").trim();
+      const altRef = doc(firebaseDb, ...documentSegments("purchaseInvoices", cleanNum));
+      batch.delete(altRef);
+    } catch (_) {}
+  }
+
+  // Hapus dokumen movements terkait dari Firestore
+  for (const m of relatedMovements) {
+    if (m.id) {
+      try {
+        const cleanMId = String(m.id).replace(/[\/\\]/g, "_").trim();
+        const mRef = doc(firebaseDb, ...documentSegments("stockMovements", cleanMId));
+        batch.delete(mRef);
+      } catch (_) {}
+    }
+  }
+
+  // Update stok produk di Firestore jika ada yang terdampak
+  for (const p of touchedProducts) {
+    const pId = String(p.id || p["Kode Produk"]).replace(/[\/\\]/g, "_").trim();
+    const pRef = doc(firebaseDb, ...documentSegments("products", pId));
+    batch.set(pRef, { "Stok Awal": p["Stok Awal"], updatedAt: new Date().toISOString() }, { merge: true });
+  }
+
+  await batch.commit();
+
+  // 5. Bersihkan dari In-Memory
+  const nextInvoices = invoices.filter(i => norm(i.id) !== searchKey && norm(i.invoiceNumber) !== searchKey);
+  inMemory.set(STORE_KEYS.invoices, nextInvoices);
+
+  const nextMovements = movements.filter(m => !relatedMovements.includes(m));
+  inMemory.set(STORE_KEYS.movements, nextMovements);
+
+  // 6. Bersihkan dari IndexedDB
+  await Promise.all([
+    indexedDBStore.clearStore(STORES.INVOICES),
+    indexedDBStore.clearStore(STORES.MOVEMENTS)
+  ]);
+  if (nextInvoices.length) await indexedDBStore.putMany(STORES.INVOICES, nextInvoices);
+  if (nextMovements.length) await indexedDBStore.putMany(STORES.MOVEMENTS, nextMovements);
+  if (touchedProducts.length) {
+    await indexedDBStore.putMany(STORES.PRODUCTS, products);
+  }
+
+  return true;
+}
+
+/**
+ * Pembersihan Menyeluruh Data Uji Coba (Testing Mode Purge)
+ * Menghapus faktur uji coba, riwayat mutasi stok, dan penjualan dari In-Memory, IndexedDB, dan Firestore Cloud.
+ *
+ * @param {Object} options
+ * @returns {Promise<{deletedInvoices: number, deletedMovements: number, deletedSales: number}>}
+ */
+export async function purgeTestingTransactions(options = {}) {
+  requireOnline();
+  const {
+    clearInvoices = true,
+    clearMovements = true,
+    clearSales = true,
+    resetProductStock = true
+  } = options;
+
+  const invoices = inMemory.get(STORE_KEYS.invoices) || [];
+  const movements = inMemory.get(STORE_KEYS.movements) || [];
+  const sales = inMemory.get(STORE_KEYS.sales) || [];
+  const master = inMemory.get(STORE_KEYS.master) || { produk: [] };
+  const products = Array.isArray(master.produk) ? master.produk : [];
+
+  const delCount = {
+    deletedInvoices: clearInvoices ? invoices.length : 0,
+    deletedMovements: clearMovements ? movements.length : 0,
+    deletedSales: clearSales ? sales.length : 0
+  };
+
+  // 1. Eksekusi Batch Deletion di Firestore Cloud (maks 400 per commit)
+  const ops = [];
+  if (clearInvoices) {
+    for (const inv of invoices) {
+      const id = String(inv.id || inv.invoiceNumber).replace(/[\/\\]/g, "_").trim();
+      ops.push({ coll: "purchaseInvoices", id });
+      if (inv.invoiceNumber && inv.invoiceNumber !== id) {
+        ops.push({ coll: "purchaseInvoices", id: String(inv.invoiceNumber).replace(/[\/\\]/g, "_").trim() });
+      }
+    }
+  }
+  if (clearMovements) {
+    for (const m of movements) {
+      if (m.id) ops.push({ coll: "stockMovements", id: String(m.id).replace(/[\/\\]/g, "_").trim() });
+    }
+  }
+  if (clearSales) {
+    for (const s of sales) {
+      const id = String(s.id || s.transactionNumber).replace(/[\/\\]/g, "_").trim();
+      ops.push({ coll: "sales", id });
+    }
+  }
+
+  // Reset stok produk di Firestore jika diminta
+  if (resetProductStock) {
+    for (const p of products) {
+      p["Stok Awal"] = 0;
+      activeStockIndex.set(norm(p["Kode Produk"]), 0);
+      const pId = String(p.id || p["Kode Produk"]).replace(/[\/\\]/g, "_").trim();
+      ops.push({ coll: "products", id: pId, updateData: { "Stok Awal": 0, updatedAt: new Date().toISOString() } });
+    }
+  }
+
+  // Commit deletion in chunks
+  const chunkSize = 350;
+  for (let i = 0; i < ops.length; i += chunkSize) {
+    const chunk = ops.slice(i, i + chunkSize);
+    const batch = writeBatch(firebaseDb);
+    for (const item of chunk) {
+      try {
+        const ref = doc(firebaseDb, ...documentSegments(item.coll, item.id));
+        if (item.updateData) {
+          batch.set(ref, item.updateData, { merge: true });
+        } else {
+          batch.delete(ref);
+        }
+      } catch (_) {}
+    }
+    await batch.commit();
+  }
+
+  // 2. Bersihkan In-Memory
+  if (clearInvoices) inMemory.set(STORE_KEYS.invoices, []);
+  if (clearMovements) inMemory.set(STORE_KEYS.movements, []);
+  if (clearSales) inMemory.set(STORE_KEYS.sales, []);
+  if (resetProductStock) inMemory.set(STORE_KEYS.master, master);
+
+  // 3. Bersihkan IndexedDB
+  const clearPromises = [];
+  if (clearInvoices) clearPromises.push(indexedDBStore.clearStore(STORES.INVOICES));
+  if (clearMovements) clearPromises.push(indexedDBStore.clearStore(STORES.MOVEMENTS));
+  if (clearSales) clearPromises.push(indexedDBStore.clearStore(STORES.SALES));
+  if (resetProductStock) {
+    clearPromises.push(indexedDBStore.clearStore(STORES.PRODUCTS));
+    clearPromises.push(indexedDBStore.clearStore(STORES.STOCK_SUMMARIES));
+  }
+  await Promise.all(clearPromises);
+
+  if (resetProductStock && products.length) {
+    await indexedDBStore.putMany(STORES.PRODUCTS, products);
+  }
+
+  return delCount;
 }
 
 /**

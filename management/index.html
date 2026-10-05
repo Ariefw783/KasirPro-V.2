@@ -14,8 +14,8 @@
     <link rel="icon" type="image/png" sizes="192x192" href="../assets/icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="../assets/apple-touch-icon-180.png">
 
-    <link rel="stylesheet" href="management.css?v=20261006-v51">
-    <link rel="stylesheet" href="management-mobile.css?v=20261006-v51">
+    <link rel="stylesheet" href="management.css?v=20261006-v52">
+    <link rel="stylesheet" href="management-mobile.css?v=20261006-v52">
     <link rel="stylesheet" href="../ui-modal.css">
 
     <link
@@ -2429,6 +2429,26 @@
                             </div>
                         </section>
                     </form>
+
+                    <!-- PANEL PEMBERSIHAN DATA UJI COBA (TESTING DATA CLEANER) -->
+                    <section class="import-panel settings-section" style="max-width:760px;margin:24px auto 0;padding:24px;border-left:4px solid #ef4444;">
+                        <div class="panel-header" style="margin-bottom:16px;">
+                            <div>
+                                <h3 style="margin:0 0 6px;font-size:16px;color:#991b1b;"><i class="fa-solid fa-triangle-exclamation"></i> Pembersihan Data Uji Coba (Testing Purge)</h3>
+                                <p style="margin:0;font-size:13px;color:#64748b;">Hapus menyeluruh data transaksi hasil uji coba (faktur pembelian dummy, riwayat mutasi stok, dan penjualan uji coba) langsung hingga ke akar database Firestore Cloud dan IndexedDB.</p>
+                            </div>
+                        </div>
+
+                        <div style="background:#fef2f2;border:1px solid #fecaca;padding:14px;border-radius:10px;margin-bottom:16px;font-size:12.5px;color:#991b1b;line-height:1.5;">
+                            <strong>Perhatian:</strong> Tindakan ini akan menghapus permanen seluruh riwayat faktur pembelian dummy, mutasi kartu stok, dan riwayat penjualan uji coba, serta mereset saldo stok produk ke angka 0. Master katalog produk dan supplier Anda tetap utuh.
+                        </div>
+
+                        <div style="display:flex;justify-content:flex-end;">
+                            <button type="button" id="btn-purge-testing-data" class="button button-danger" style="background:#dc2626;color:#fff;padding:10px 20px;font-weight:700;">
+                                <i class="fa-solid fa-trash-can"></i> Bersihkan Semua Data Uji Coba
+                            </button>
+                        </div>
+                    </section>
                 </div>
             </section>
 

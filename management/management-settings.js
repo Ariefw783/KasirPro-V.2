@@ -9,7 +9,7 @@
  */
 
 import { $, text } from "../modules/core/utils.js";
-import { STORE_KEYS, readStore, writeStore, writeMasterDelta } from "../modules/database/database-store.js";
+import { STORE_KEYS, readStore, writeStore, writeMasterDelta, purgeTestingTransactions } from "../modules/database/database-store.js";
 
 export function initSettingsModule() {
   bindEvents();
@@ -23,6 +23,7 @@ function bindEvents() {
   });
 
   $("store-settings-form")?.addEventListener("submit", handleSaveSettings);
+  $("btn-purge-testing-data")?.addEventListener("click", handlePurgeTestingData);
 }
 
 export function renderSettings() {
@@ -99,5 +100,52 @@ async function handleSaveSettings(e) {
   } catch (err) {
     console.error("[Settings] Gagal menyimpan pengaturan toko:", err);
     window.KasirProDialog?.error("Gagal Menyimpan", err.message || "Terjadi kesalahan saat menyimpan pengaturan ke database.");
+  }
+}
+
+async function handlePurgeTestingData() {
+  const confirm1 = await window.KasirProDialog?.confirm(
+    "Pembersihan Data Uji Coba",
+    "PERINGATAN TINGKAT TINGGI:\n\nApakah Anda yakin ingin menghapus seluruh data transaksi uji coba?\n\nHal ini akan menghapus:\n1. Seluruh Faktur Pembelian yang pernah diinput\n2. Seluruh Riwayat Mutasi Kartu Stok\n3. Seluruh Riwayat Penjualan Kasir POS\n4. Mereset saldo stok seluruh produk ke 0\n\nMaster data produk dan supplier TIDAK AKAN terhapus."
+  );
+  if (!confirm1) return;
+
+  const confirm2 = await window.KasirProDialog?.confirm(
+    "Konfirmasi Akhir Pembersihan",
+    "Data akan dihapus secara permanen dari Cloud Firestore dan IndexedDB perangkat. Tindakan ini TIDAK DAPAT DIBATALKAN.\n\nKetik 'YA' pada pikiran Anda dan lanjutkan pembersihan sekarang?"
+  );
+  if (!confirm2) return;
+
+  const btn = $("btn-purge-testing-data");
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sedang Membersihkan Database...';
+  }
+
+  try {
+    const res = await purgeTestingTransactions({
+      clearInvoices: true,
+      clearMovements: true,
+      clearSales: true,
+      resetProductStock: true
+    });
+
+    window.KasirProDialog?.success(
+      "Pembersihan Berhasil",
+      `Database berhasil dibersihkan hingga ke akar Firestore!\n\n• ${res.deletedInvoices} Faktur dihapus\n• ${res.deletedMovements} Mutasi stok dibersihkan\n• ${res.deletedSales} Transaksi penjualan dihapus\n• Saldo stok produk telah direset ke 0.`
+    );
+
+    // Refresh halaman agar seluruh cache dan tampilan bersih seketika
+    setTimeout(() => {
+      window.location.reload();
+    }, 1200);
+  } catch (err) {
+    console.error("[Settings] Gagal membersihkan data uji coba:", err);
+    window.KasirProDialog?.error("Gagal Membersihkan", err.message || "Terjadi kesalahan saat membersihkan data.");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Bersihkan Semua Data Uji Coba';
+    }
   }
 }

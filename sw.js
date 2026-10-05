@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v51-instant-update-flow";
+const CACHE_VERSION = "kasirpro-pwa-v52-invoice-tiered-pricing-fix";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

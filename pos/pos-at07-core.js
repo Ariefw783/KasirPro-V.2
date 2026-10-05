@@ -266,6 +266,12 @@ function getAvailableUnitsForProduct(p) {
         });
     }
 
+    // Filter unit jika ada pembatasan opsi satuan jual yang dikonfigurasi apotek
+    if (Array.isArray(p["Satuan Dijual"]) && p["Satuan Dijual"].length > 0) {
+        const filtered = units.filter(u => p["Satuan Dijual"].includes(u.level));
+        if (filtered.length > 0) return filtered;
+    }
+
     return units;
 }
 

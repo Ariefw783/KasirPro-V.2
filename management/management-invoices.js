@@ -17,7 +17,7 @@
  */
 
 import { $, num, parseMoney, text, norm, rupiah, formatNumber, escapeHtml, nowIso, uid, INVOICE_TOLERANCE_RP } from "../modules/core/utils.js";
-import { STORE_KEYS, readStore, writeStore, writeMasterDelta, readCurrentStock, writeStockTransaction, databaseStore } from "../modules/database/database-store.js";
+import { STORE_KEYS, readStore, writeStore, writeMasterDelta, readCurrentStock, writeStockTransaction, databaseStore, deletePurchaseInvoice } from "../modules/database/database-store.js";
 import { generatePurchaseInvoicePdf } from "../modules/core/pdf.js";
 
 let currentInvoices = [];
@@ -357,26 +357,27 @@ export async function executeConfirmInvoice(inv) {
       supplier: touchedSuppliers
     });
 
-    pendingImportSession = null;
-    window.KasirProDialog?.success(
-      "Faktur Berhasil Dikonfirmasi",
-      `Faktur #${inv.invoiceNumber} berhasil dikonfirmasi sebagai Barang Masuk.\nStok telah diperbarui secara otomatis.`
-    );
-
     // Hapus draft manual jika ada
     try { localStorage.removeItem(MANUAL_DRAFT_KEY); } catch (e) {}
 
     // Tutup modal manual jika sedang terbuka
-    closeManualInvoiceModal();
+    try { closeManualInvoiceModal(); } catch (e) {}
 
     // Kembali ke daftar faktur
-    if (window.switchView) {
-      window.switchView("purchase-invoices");
-    } else {
-      const invNav = document.querySelector('[data-view="purchase-invoices"]');
-      if (invNav) invNav.click();
-    }
-    renderInvoices();
+    try {
+      if (window.switchView) {
+        window.switchView("purchase-invoices");
+      } else {
+        const invNav = document.querySelector('[data-view="purchase-invoices"]');
+        if (invNav) invNav.click();
+      }
+      renderInvoices();
+    } catch (e) {}
+
+    window.KasirProDialog?.success(
+      "Faktur Berhasil Dikonfirmasi",
+      `Faktur #${inv.invoiceNumber} berhasil dikonfirmasi sebagai Barang Masuk.\nStok telah diperbarui secara otomatis.`
+    );
     return true;
   } catch (err) {
     console.error("[Invoices] Error confirming invoice:", err);
@@ -391,10 +392,15 @@ export async function executeConfirmInvoice(inv) {
 
 let manualInvoiceItems = [];
 const MANUAL_DRAFT_KEY = "kasirpro_manual_invoice_draft_v2";
+let cachedMasterProducts = null;
+let prodSearchDebounceTimer = null;
 
 export function openManualInvoiceModal() {
   const modal = $("modal-manual-invoice");
   if (!modal) return;
+
+  // Cache data produk untuk performa instan saat pencarian di modal faktur
+  cachedMasterProducts = readStore(STORE_KEYS.master, {})?.produk || [];
 
   populateManualInvoiceSupplierDropdown();
 
@@ -708,11 +714,14 @@ function bindManualItemRowEvents() {
     });
   });
 
-  // Search autocomplete
+  // Search autocomplete dengan debounce 100ms agar pengetikan super ringan
   tbody.querySelectorAll(".row-prod-search").forEach(input => {
     input.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.index, 10);
-      showProductSuggestions(e.target, idx, e.target.value);
+      clearTimeout(prodSearchDebounceTimer);
+      prodSearchDebounceTimer = setTimeout(() => {
+        showProductSuggestions(e.target, idx, e.target.value);
+      }, 100);
     });
     input.addEventListener("focus", (e) => {
       const idx = parseInt(e.target.dataset.index, 10);
@@ -807,7 +816,7 @@ function bindManualItemRowEvents() {
       const row = tbody.querySelector(`tr[data-index="${idx}"]`);
       if (row) {
         const rpInput = row.querySelector(".row-disc-rp");
-        if (rpInput) rpInput.value = manualInvoiceItems[idx].discountRp;
+        if (rpInput) rpInput.value = manualInvoiceItems[idx].discountRp ? formatNumber(manualInvoiceItems[idx].discountRp) : "";
       }
       recalculateRow(idx, false);
     });
@@ -816,12 +825,15 @@ function bindManualItemRowEvents() {
   tbody.querySelectorAll(".row-disc-rp").forEach(el => {
     el.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.index, 10);
-      manualInvoiceItems[idx].discountRp = num(e.target.value) || 0;
+      const digits = e.target.value.replace(/[^0-9]/g, "");
+      const valNum = parseInt(digits, 10) || 0;
+      e.target.value = valNum ? formatNumber(valNum) : "";
+      manualInvoiceItems[idx].discountRp = valNum;
       manualInvoiceItems[idx].discountPercent = 0;
       const row = tbody.querySelector(`tr[data-index="${idx}"]`);
       if (row) {
         const pctInput = row.querySelector(".row-disc-pct");
-        if (pctInput) pctInput.value = 0;
+        if (pctInput) pctInput.value = "";
       }
       recalculateRow(idx, false);
     });
@@ -849,8 +861,7 @@ function showProductSuggestions(inputEl, idx, query) {
   }
 
   const q = (query || "").trim().toLowerCase();
-  const master = readStore(STORE_KEYS.master, {});
-  const prods = Array.isArray(master.produk) ? master.produk : [];
+  const prods = cachedMasterProducts || (readStore(STORE_KEYS.master, {})?.produk || []);
 
   const supMatches = [];
   const otherMatches = [];
@@ -1399,55 +1410,15 @@ async function handleDeleteInvoice() {
   if (!ok) return;
 
   try {
-    // 1. Jika terkonfirmasi, balik stok delta produk
-    if (isConfirmed && Array.isArray(inv.items) && inv.items.length > 0) {
-      const movements = [];
-      const now = nowIso();
-      for (const item of inv.items) {
-        const code = item.matchedProductCode || item.code || item.productCode;
-        const baseQty = (num(item.qty) || 1) * (num(item.conversionRatio) || 1);
-        movements.push({
-          id: uid("mov-del"),
-          productCode: code || item.name,
-          productName: item.name,
-          type: "Penghapusan Faktur",
-          delta: -baseQty,
-          quantity: -baseQty,
-          source: "Penghapusan Faktur",
-          reference: inv.invoiceNumber || invId,
-          user: "Admin",
-          createdAt: now
-        });
-      }
-      if (movements.length) {
-        await writeStockTransaction([
-          { key: STORE_KEYS.movements, records: movements }
-        ]);
-      }
-    }
-
-    // 2. Hapus dari list currentInvoices
-    currentInvoices = currentInvoices.filter(i => (i.id || i.invoiceNumber) !== invId && i.invoiceNumber !== inv.invoiceNumber);
-
-    // 3. Simpan state baru ke database lokal
-    await writeStore(STORE_KEYS.invoices, currentInvoices);
-
-    // 4. Hapus dari Firestore jika online
-    try {
-      if (databaseStore && typeof databaseStore.deleteItem === "function") {
-        await databaseStore.deleteItem("purchaseInvoices", invId).catch(() => {});
-        if (inv.invoiceNumber && inv.invoiceNumber !== invId) {
-          await databaseStore.deleteItem("purchaseInvoices", inv.invoiceNumber).catch(() => {});
-        }
-      }
-    } catch (_) {}
+    await deletePurchaseInvoice(inv.id || inv.invoiceNumber);
+    currentInvoices = readStore(STORE_KEYS.invoices, []);
 
     closeInvoiceDetailModal();
     renderInvoices();
-    window.KasirProDialog?.success("Faktur Dihapus", `Faktur #${inv.invoiceNumber || invId} berhasil dihapus permanen dari sistem.`);
+    window.KasirProDialog?.success("Faktur Dihapus", `Faktur #${inv.invoiceNumber || invId} berhasil dihapus permanen dari sistem beserta mutasi stok terkait.`);
   } catch (err) {
     console.error("[Invoices] Error deleting invoice:", err);
-    window.KasirProDialog?.error("Gagal Menghapus Faktur", err.message || "Terjadi kesalahan.");
+    window.KasirProDialog?.error("Gagal Menghapus Faktur", err.message || "Terjadi kesalahan saat menghapus faktur.");
   }
 }
 

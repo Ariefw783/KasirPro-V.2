@@ -1,15 +1,15 @@
 {
-  "version": "2.2.3",
-  "build": "20261006.1",
+  "version": "2.2.4",
+  "build": "20261006.2",
   "releaseDate": "06 Oktober 2026",
   "title": "Pembaruan Arsitektur Sistem KasirPro V2",
-  "description": "Rilis pemeliharaan berkala untuk sinkronisasi model data akuntansi, stabilitas offline caching, dan optimalisasi tata letak antarmuka multi-perangkat.",
+  "description": "Rilis perbaikan transaksi faktur manual, pembersihan data uji coba hingga akar cloud database, dan fleksibilitas harga jual bertingkat multi-satuan.",
   "changelog": [
-    "Live Auto-Separator Ribuan Input Harga Faktur",
-    "Fleksibilitas Multi-Tingkat Satuan (1, 2, atau 3 Satuan)",
-    "Penyederhanaan Smart Action Pembatalan & Hapus Faktur",
-    "Dual-Method Pembayaran Faktur (Tunai & Tempo)",
-    "Filter Pintar Produk: Aktif (Perlu Harga Jual)",
-    "Isolasi Kontainer & Viewport Fit Ponsel/PWA"
+    "Perbaikan Transaksi Konfirmasi Faktur Manual",
+    "Pembersihan Data Uji Coba Hingga Akar Firestore",
+    "Opsi Fleksibel Harga Jual Bertingkat (1, 2, 3 Satuan)",
+    "Penempatan Titik Nominal Otomatis Terintegrasi",
+    "Optimasi Performa Input Faktur Grid Mode",
+    "Sinkronisasi Unit Penjualan Kasir POS"
   ]
 }
