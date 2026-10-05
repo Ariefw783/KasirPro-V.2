@@ -26,9 +26,27 @@ init();
 function init() {
   disableLegacyLoader();
   updateLoginStoreName();
+  loadVersionInfo();
   checkActiveSession();
   bindEvents();
   selectRole("admin");
+}
+
+async function loadVersionInfo() {
+  const versionEl = document.getElementById("login-app-version");
+  const dateEl = document.getElementById("login-app-updated");
+  if (!versionEl && !dateEl) return;
+
+  try {
+    const res = await fetch(`version.json?t=${Date.now()}`, { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (versionEl && data.version) versionEl.textContent = `v${data.version}`;
+      if (dateEl && data.releaseDate) dateEl.textContent = `Diperbarui ${data.releaseDate}`;
+    }
+  } catch (err) {
+    console.debug("Info versi menggunakan fallback bawaan:", err);
+  }
 }
 
 async function updateLoginStoreName() {

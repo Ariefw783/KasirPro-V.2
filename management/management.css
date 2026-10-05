@@ -836,5 +836,70 @@
     transform: translateX(2px) !important;
 }
 
+/* ==============================================================================
+   RESPONSIVITAS MOBILE & PWA GUARDS (TABLET, PONSEL & PWA)
+   Memastikan KPI Cards 2-kolom rapi & Data Table scrollable alami di HP/PWA
+   ============================================================================== */
+@media (max-width: 820px) {
+    .dashboard-grid-financial {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 10px !important;
+    }
+
+    .dashboard-grid-operational {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 10px !important;
+    }
+
+    .dashboard-card {
+        padding: 13px 12px !important;
+        border-radius: 14px !important;
+        gap: 10px !important;
+    }
+
+    .dashboard-card-icon {
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 10px !important;
+        font-size: 0.95rem !important;
+    }
+
+    .dashboard-card span {
+        font-size: 0.65rem !important;
+    }
+
+    .dashboard-card strong {
+        font-size: 1.05rem !important;
+    }
+
+    /* Kembalikan overflow tabel di HP agar tabel lebar (11 kolom) bisa digeser nyaman */
+    .table-wrapper {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        border-radius: 12px !important;
+        max-width: 100% !important;
+    }
+
+    .table-wrapper>.data-table,
+    .table-wrapper>table {
+        min-width: 720px !important; /* Mencegah kolom teks terjepit hancur */
+        table-layout: auto !important;
+    }
+
+    .data-table th,
+    .data-table td {
+        white-space: nowrap !important;
+        padding: 9px 10px !important;
+        font-size: 0.66rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-grid-financial {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+
 
 
