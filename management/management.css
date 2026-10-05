@@ -505,3 +505,172 @@
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04) !important;
 }
 
+/* ==============================================================================
+   RENOVASI VISUAL PREMIUM — DATA TABLES & PILL BADGES KASIRPRO V2
+   Modern Table Grids with Spotlight Hover, Glass Sticky Headers & Pill Badges
+   ============================================================================== */
+
+/* 1. TABLE WRAPPER DENGAN SUDUT HALUS & SOFT ELEVATION */
+.table-wrapper {
+    border: 1px solid rgba(226, 232, 240, 0.95) !important;
+    border-radius: 16px !important;
+    background: #ffffff !important;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.035) !important;
+    overflow: auto !important;
+    transition: all 0.2s ease !important;
+}
+
+/* 2. HEADER TABEL STICKY DENGAN SENTUHAN FROSTED GLASS */
+.data-table th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    background: rgba(248, 250, 252, 0.94) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    padding: 12px 14px !important;
+    font-size: 0.67rem !important;
+    font-weight: 850 !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+    color: #475569 !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    white-space: nowrap !important;
+}
+
+/* 3. BARIS TABEL & SPOTLIGHT ROW HOVER */
+.data-table td {
+    padding: 11px 14px !important;
+    font-size: 0.72rem !important;
+    color: #334155 !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    vertical-align: middle !important;
+    transition: background-color 0.15s ease !important;
+}
+
+.data-table tbody tr {
+    transition: all 0.16s ease !important;
+}
+
+/* Efek Spotlight Row: Lembut, menyala tanpa silau */
+.data-table tbody tr:hover {
+    background-color: #f0f7ff !important;
+    box-shadow: inset 3px 0 0 #2563eb !important;
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+/* 4. PILL BADGE STATUS BERKELAS MEDIS MODERN */
+.badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 4px 10px !important;
+    border-radius: 999px !important;
+    font-size: 0.66rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.01em !important;
+    white-space: nowrap !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+    transition: all 0.2s ease !important;
+}
+
+.badge i {
+    font-size: 0.64rem !important;
+}
+
+/* Status: Aktif (Stok Tersedia) */
+.badge-success {
+    background: #ecfdf5 !important;
+    color: #059669 !important;
+    border: 1px solid #a7f3d0 !important;
+}
+
+/* Status: Belum Aktif (Belum Ada Stok) */
+.badge-info {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+/* Status: Siap Konfirmasi / Primary */
+.badge-primary {
+    background: #eff6ff !important;
+    color: #2563eb !important;
+    border: 1px solid #bfdbfe !important;
+}
+
+/* Status: Perlu Review / Perlu Harga */
+.badge-warning {
+    background: #fffbeb !important;
+    color: #d97706 !important;
+    border: 1px solid #fde68a !important;
+}
+
+/* Status: Dibatalkan / Bahaya */
+.badge-danger {
+    background: #fef2f2 !important;
+    color: #dc2626 !important;
+    border: 1px solid #fecaca !important;
+}
+
+/* 5. TOMBOL AKSI DALAM BARIS TABEL (EDIT & HAPUS) */
+.data-table .button-small {
+    min-height: 28px !important;
+    padding: 3px 9px !important;
+    border-radius: 8px !important;
+    font-size: 0.68rem !important;
+    font-weight: 750 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.data-table .button-small:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.1) !important;
+}
+
+.btn-edit-price {
+    background: #ffffff !important;
+    color: #2563eb !important;
+    border: 1px solid #bfdbfe !important;
+}
+
+.btn-edit-price:hover {
+    background: #eff6ff !important;
+    border-color: #2563eb !important;
+}
+
+.btn-delete-product {
+    background: #ffffff !important;
+    color: #dc2626 !important;
+    border: 1px solid #fecaca !important;
+}
+
+.btn-delete-product:hover {
+    background: #fef2f2 !important;
+    border-color: #dc2626 !important;
+}
+
+/* 6. SEARCH INPUT & TOOLBAR TABEL */
+.preview-search input {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 10px !important;
+    padding: 8px 12px 8px 34px !important;
+    font-size: 0.72rem !important;
+    font-weight: 550 !important;
+    transition: all 0.2s ease !important;
+}
+
+.preview-search input:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+
