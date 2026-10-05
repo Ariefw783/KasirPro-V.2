@@ -2,127 +2,356 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <script>
-      // SAKLAR CEPAT PEMELIHARAAN SISTEM
-      if (window.location.hostname.includes("pages.dev")) {
-        fetch("system-status.json?t=" + Date.now(), { cache: "no-store" })
-          .then(r => r.ok ? r.json() : null)
-          .then(s => { if (s && s.maintenance === true) window.location.replace("maintenance.html"); })
-          .catch(() => {});
-      }
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f2a43">
+    <meta name="description" content="KasirPro V2 sedang dalam tahap pengembangan dan pemeliharaan sistem.">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <title>Sistem Sedang Dikembangkan | KasirPro V2</title>
 
-    <meta
-        name="description"
-        content="Gateway aplikasi KasirPro untuk Administrator dan Petugas Kasir."
-    >
-
-    <meta
-        name="theme-color"
-        content="#0f2a43"
-    >
-
-    <title>KasirPro | Login</title>
-
-    <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="assets/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon-180.png">
 
     <!-- Font Awesome -->
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
-    >
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
-    <!-- CSS -->
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
-    <link rel="stylesheet" href="login-theme.css?v=20260829-background-4">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --navy: #0f2a43;
+            --navy-dark: #091a2b;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --warning-bg: #fff7ed;
+            --warning-text: #c2410c;
+            --warning-border: #ffedd5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(145deg, #091a2b 0%, #0f2a43 50%, #173859 100%);
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        .maintenance-shell {
+            width: min(580px, 100%);
+            background: var(--surface);
+            border-radius: 24px;
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            overflow: hidden;
+            animation: fadeIn .4s ease-out;
+            text-align: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .brand-strip {
+            background: #0b2238;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .brand-logo {
+            width: 32px;
+            height: 32px;
+        }
+
+        .brand-text {
+            color: #ffffff;
+            font-size: 17px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .brand-text span {
+            color: #38bdf8;
+        }
+
+        .brand-store {
+            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 500;
+            margin-left: 6px;
+            padding-left: 10px;
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .maintenance-content {
+            padding: 36px 28px 30px;
+        }
+
+        .icon-stage {
+            position: relative;
+            width: 88px;
+            height: 88px;
+            margin: 0 auto 20px;
+            border-radius: 26px;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            display: grid;
+            place-items: center;
+            color: var(--primary);
+            font-size: 38px;
+            box-shadow: 0 12px 30px rgba(37, 99, 235, 0.2);
+        }
+
+        .icon-gear-spin {
+            animation: spin 8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .badge-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 14px;
+            background: var(--warning-bg);
+            color: var(--warning-text);
+            border: 1px solid var(--warning-border);
+            border-radius: 999px;
+            font-size: 12.5px;
+            font-weight: 750;
+            margin-bottom: 14px;
+        }
+
+        .badge-pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ea580c;
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.3); }
+        }
+
+        h1 {
+            font-size: 23px;
+            font-weight: 850;
+            color: #0f172a;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+
+        p.lead {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .info-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px 18px;
+            text-align: left;
+            margin-bottom: 26px;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 0;
+            font-size: 13px;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .info-row span {
+            color: #64748b;
+        }
+
+        .info-row strong {
+            color: #1e293b;
+            font-weight: 700;
+        }
+
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-refresh {
+            width: 100%;
+            min-height: 48px;
+            background: var(--navy);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 14.5px;
+            font-weight: 750;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all .2s;
+            box-shadow: 0 8px 24px rgba(15, 42, 67, 0.25);
+        }
+
+        .btn-refresh:hover {
+            background: #173859;
+            transform: translateY(-1px);
+        }
+
+        .btn-refresh:active {
+            transform: translateY(0);
+        }
+
+        .cache-notice {
+            margin-top: 18px;
+            font-size: 11.5px;
+            color: #94a3b8;
+            line-height: 1.45;
+        }
+
+        .cache-notice i {
+            color: #10b981;
+        }
+
+        @media (max-width: 480px) {
+            .maintenance-content {
+                padding: 28px 20px 24px;
+            }
+            h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
 </head>
-
 <body>
-  <main class="login-page">
-    <section class="login-container" aria-labelledby="login-title">
-      <aside class="brand-stage">
-        <header class="login-header">
-          <img src="assets/kasirpro-symbol.svg" alt="" class="login-logo" aria-hidden="true">
-          <div class="login-brand">
-            <h1 id="login-title" aria-label="KasirPro V.2">
-              <span class="brand-kasir">KASIR</span><span class="brand-pro">PRO</span><span class="brand-version">V.2</span>
-            </h1>
-            <p id="login-store-name">Apotek Doa Ibu</p>
-          </div>
-        </header>
-      </aside>
 
-      <section class="auth-stage">
-        <section class="login-card-shell" aria-labelledby="role-title">
-          <section class="role-selection">
-            <div class="section-heading">
-              <h2 id="role-title">Selamat Datang</h2>
+<main class="maintenance-shell" role="main">
+    <header class="brand-strip">
+        <img src="assets/kasirpro-symbol.svg" alt="KasirPro" class="brand-logo" onerror="this.style.display='none'">
+        <div class="brand-text">KASIR<span>PRO</span> V.2</div>
+        <div class="brand-store">Apotek Doa Ibu</div>
+    </header>
+
+    <div class="maintenance-content">
+        <div class="icon-stage">
+            <i class="fa-solid fa-gear icon-gear-spin"></i>
+        </div>
+
+        <div class="badge-status">
+            <span class="badge-pulse-dot"></span>
+            <span>PEMELIHARAAN SISTEM AKTIF</span>
+        </div>
+
+        <h1>Aplikasi Sedang Dikembangkan</h1>
+        <p class="lead">
+            Akses transaksi kasir (POS) dan manajemen ditutup sementara oleh Administrator untuk proses pembaruan sistem dan penyelarasan basis data.
+        </p>
+
+        <section class="info-card">
+            <div class="info-row">
+                <span>Status Akses:</span>
+                <strong style="color:#ea580c;">Tertutup Sementara</strong>
             </div>
-            <div class="role-grid" role="tablist" aria-label="Pilih mode masuk">
-              <button type="button" class="role-card role-admin active" data-role="admin" aria-pressed="true">
-                <strong>Administrator</strong>
-              </button>
-              <button type="button" class="role-card role-cashier" data-role="cashier" aria-pressed="false">
-                <strong>Kasir</strong>
-              </button>
+            <div class="info-row">
+                <span>Perangkat Terdampak:</span>
+                <strong>PC Kasir, Tablet &amp; Ponsel</strong>
             </div>
-          </section>
-
-          <section id="login-panel" class="login-panel" aria-labelledby="form-title">
-            <div class="section-heading login-panel-heading" hidden>
-              <button type="button" id="back-role-button" class="back-button"><span>Kembali</span></button>
-              <h2 id="form-title">Masuk</h2>
-              <p id="selected-role-label"></p>
+            <div class="info-row">
+                <span>Versi Rilis Target:</span>
+                <strong style="color:#2563eb;">KasirPro V2 (v2.2.0)</strong>
             </div>
-            <form id="login-form" autocomplete="on">
-              <div id="username-wrapper" class="form-group">
-                <label for="username">Username</label>
-                <div class="input-wrapper">
-                  <span class="input-icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
-                  <input type="text" id="username" name="username" autocomplete="username" placeholder="Username" required>
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="password">Password</label>
-                <div class="password-field">
-                  <div class="input-wrapper password-input-wrapper">
-                    <span class="input-icon" aria-hidden="true"><i class="fa-solid fa-lock"></i></span>
-                    <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Password" required>
-                  </div>
-                  <button type="button" id="toggle-password" class="password-toggle" aria-label="Tampilkan kata sandi">
-                    <i id="password-icon" class="fa-solid fa-eye" aria-hidden="true"></i>
-                  </button>
-                </div>
-              </div>
-
-              <p id="login-message" class="login-message" role="alert" aria-live="polite"></p>
-              <button type="submit" id="login-submit" class="login-submit">
-                <span id="login-submit-icon" class="login-submit-icon"><i class="fa-solid fa-right-to-bracket"></i></span>
-                <span id="login-submit-text">Masuk</span>
-              </button>
-            </form>
-          </section>
+            <div class="info-row">
+                <span>Integritas Data:</span>
+                <strong style="color:#059669;">Stok &amp; Transaksi Tersimpan Aman</strong>
+            </div>
         </section>
-      </section>
-    </section>
-  </main>
-  <div id="app-loading" class="app-loading" role="status" aria-live="polite" hidden>
-    <div class="app-loading-card"><i class="fa-solid fa-spinner"></i><strong>Memuat data KasirPro</strong><span>Mohon tunggu, data sedang disinkronkan.</span></div>
-  </div>
-  <script src="pwa.js" defer></script>
-  <script type="module" src="script.js?v=20260829-background-4"></script>
+
+        <div class="actions">
+            <button type="button" class="btn-refresh" id="btn-check-status">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span>Periksa Status Pembukaan</span>
+            </button>
+        </div>
+
+        <p class="cache-notice">
+            <i class="fa-solid fa-shield-halved"></i>
+            Penyimpanan cache offline dan Service Worker telah dibersihkan otomatis pada perangkat ini.
+        </p>
+    </div>
+</main>
+
+<script>
+    // 1. Pembersihan Menyeluruh Cache Browser & Pencabutan Service Worker
+    (async function clearPwaCaches() {
+        try {
+            // Cabut seluruh pendaftaran Service Worker aktif di perangkat ini
+            if ("serviceWorker" in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (const reg of registrations) {
+                    await reg.unregister();
+                }
+            }
+
+            // Bersihkan seluruh Cache Storage PWA
+            if ("caches" in window) {
+                const keys = await caches.keys();
+                for (const key of keys) {
+                    await caches.delete(key);
+                }
+            }
+
+            // Bersihkan sessionStorage sementara
+            try { sessionStorage.clear(); } catch (_) {}
+            console.log("[Maintenance] Cache PWA dan Service Worker berhasil dinetralkan.");
+        } catch (e) {
+            console.warn("[Maintenance] Catatan pembersihan cache:", e);
+        }
+    })();
+
+    // 2. Tombol Periksa Status (Reload bersih tanpa cache)
+    document.getElementById("btn-check-status")?.addEventListener("click", () => {
+        const btn = document.getElementById("btn-check-status");
+        if (btn) {
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memeriksa status server...';
+            btn.disabled = true;
+        }
+        setTimeout(() => {
+            window.location.href = window.location.origin + "/?t=" + Date.now();
+        }, 800);
+    });
+</script>
+
 </body>
 </html>
