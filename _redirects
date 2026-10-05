@@ -4,9 +4,11 @@
 # ==============================================================================
 
 # Izinkan akses halaman pemeliharaan & aset statis pendukung
+/maintenance           /maintenance.html      200
 /maintenance.html      /maintenance.html      200
 /assets/*              /assets/:splat         200
 /manifest.webmanifest  /manifest.webmanifest  200
 
-# Blokir seluruh rute lain dan alihkan paksa (302!) ke maintenance.html
-/*                     /maintenance.html      302!
+# Blokir seluruh rute lain dan alihkan paksa (302!) ke /maintenance
+/*                     /maintenance           302!
+
