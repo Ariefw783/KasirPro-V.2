@@ -175,6 +175,31 @@
   .module-header,.ops-card,.report-card,.report-filter-card { padding:12px; }
   .module-header-actions>*,.panel-actions>* { width:100%; flex-basis:100%; }
 
-  .data-table th,.data-table td { padding:6px 3px; font-size:.5rem; }
-  .data-table th { font-size:.47rem; }
+  /* Pastikan teks tabel di layar 480px tetap terbaca proporsional dan tidak diperas */
+  .table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .table-wrapper>.data-table,
+  .table-wrapper>table {
+    width: max-content !important;
+    min-width: 820px !important;
+    table-layout: auto !important;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 8px 10px !important;
+    font-size: 0.65rem !important;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    line-height: 1.4 !important;
+  }
+
+  .data-table th {
+    font-size: 0.62rem !important;
+  }
 }
+
