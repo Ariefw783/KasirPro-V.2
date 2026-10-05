@@ -673,4 +673,168 @@
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
 }
 
+/* ==============================================================================
+   RENOVASI VISUAL PREMIUM — SIDEBAR NAVIGASI MENU KASIRPRO V2
+   Modern Dark-Navy or Crisp White Executive Sidebar with Floating Pill Active
+   ============================================================================== */
+
+/* 1. STRUKTUR SIDEBAR DENGAN BORDER HALUS & SUBTLE SHADOW */
+.sidebar {
+    background: #ffffff !important;
+    border-right: 1px solid rgba(226, 232, 240, 0.8) !important;
+    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.025) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* 2. HEADER BRAND LOGO (APOTEK DOA IBU) */
+.sidebar-brand {
+    padding: 14px 18px !important;
+    border-bottom: 1px solid rgba(241, 245, 249, 0.95) !important;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%) !important;
+}
+
+.brand-logo {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 12px !important;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+    border: 1px solid #bfdbfe !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12) !important;
+    transition: transform 0.2s ease !important;
+}
+
+.sidebar-brand:hover .brand-logo {
+    transform: scale(1.05) rotate(-2deg) !important;
+}
+
+.brand-text strong {
+    font-size: 0.98rem !important;
+    font-weight: 850 !important;
+    letter-spacing: -0.01em !important;
+    background: linear-gradient(135deg, #0f2a43 0%, #2563eb 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+}
+
+.brand-text span {
+    font-size: 0.68rem !important;
+    font-weight: 650 !important;
+    color: #64748b !important;
+    letter-spacing: 0.01em !important;
+}
+
+/* 3. SECTION LABEL MENU */
+.nav-label {
+    margin: 12px 12px 8px !important;
+    font-size: 0.62rem !important;
+    font-weight: 850 !important;
+    letter-spacing: 0.09em !important;
+    color: #94a3b8 !important;
+    text-transform: uppercase !important;
+}
+
+/* 4. ITEM NAVIGASI MENU MODERN (FLOATING PILL & SOFT HOVER) */
+.nav-item {
+    min-height: 42px !important;
+    margin: 3px 6px !important;
+    padding: 9px 12px !important;
+    border-radius: 12px !important;
+    font-size: 0.76rem !important;
+    font-weight: 650 !important;
+    color: #475569 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+}
+
+.nav-item > i:first-child {
+    width: 20px !important;
+    font-size: 0.92rem !important;
+    color: #64748b !important;
+    text-align: center !important;
+    transition: all 0.2s ease !important;
+}
+
+/* State Hover Menu */
+.nav-item:hover {
+    color: #1d4ed8 !important;
+    background: #f1f5f9 !important;
+    transform: translateX(3px) !important;
+}
+
+.nav-item:hover > i:first-child {
+    color: #2563eb !important;
+    transform: scale(1.12) !important;
+}
+
+/* State Aktif Menu (Pill Modern Gradient dengan Glow Halus) */
+.nav-item.active {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) !important;
+    font-weight: 800 !important;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.3) !important;
+    transform: translateX(2px) !important;
+}
+
+.nav-item.active > i:first-child {
+    color: #ffffff !important;
+}
+
+/* Aksen Khusus Link POS Cepat di Sidebar */
+#sidebar-pos-link {
+    background: #f8fafc !important;
+    border: 1px dashed #cbd5e1 !important;
+    color: #0f2a43 !important;
+}
+
+#sidebar-pos-link:hover {
+    background: #eff6ff !important;
+    border-color: #2563eb !important;
+    color: #1d4ed8 !important;
+    border-style: solid !important;
+}
+
+#sidebar-pos-link > i:first-child {
+    color: #2563eb !important;
+}
+
+/* 5. FOOTER SIDEBAR & TOMBOL KELUAR */
+.sidebar-footer {
+    padding: 12px 14px !important;
+    border-top: 1px solid rgba(241, 245, 249, 0.95) !important;
+    background: #fbfcfe !important;
+}
+
+.logout-button {
+    min-height: 42px !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    border: 1px solid #fee2e2 !important;
+    color: #dc2626 !important;
+    font-size: 0.76rem !important;
+    font-weight: 750 !important;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.05) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.logout-button:hover {
+    background: #fef2f2 !important;
+    border-color: #fca5a5 !important;
+    color: #b91c1c !important;
+    transform: translateY(-1.5px) !important;
+    box-shadow: 0 6px 14px rgba(220, 38, 38, 0.12) !important;
+}
+
+.logout-button i {
+    font-size: 0.88rem !important;
+    transition: transform 0.2s ease !important;
+}
+
+.logout-button:hover i {
+    transform: translateX(2px) !important;
+}
+
+
 
