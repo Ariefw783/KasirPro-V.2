@@ -126,11 +126,11 @@ function populateFilterDropdowns(master) {
 
   // Pastikan status filter punya opsi lengkap dan rapi (tanpa duplikasi filter harga jual)
   const statusFilter = $("product-status-filter");
-  if (statusFilter && !statusFilter.querySelector('option[value="perlu harga jual"]')) {
+  if (statusFilter && (!statusFilter.querySelector('option[value="perlu harga jual"]') || statusFilter.querySelector('option[value="perlu harga jual"]')?.textContent.trim() !== "Aktif (Perlu harga jual)")) {
     statusFilter.innerHTML = `
       <option value="">Semua Status</option>
       <option value="aktif">Aktif</option>
-      <option value="perlu harga jual">Perlu Harga Jual</option>
+      <option value="perlu harga jual">Aktif (Perlu harga jual)</option>
       <option value="belum aktif">Belum Aktif</option>
       <option value="nonaktif">Nonaktif</option>
     `;
@@ -197,7 +197,8 @@ function applyFilters() {
       return !isAutoActive;
     }
     if (statusVal === "perlu harga jual") {
-      return sellPrice <= 0 || pStatus === "perlu harga jual";
+      // Produk yang aktif (memiliki stok > 0 atau tidak nonaktif) tetapi belum memiliki harga jual (> 0)
+      return sellPrice <= 0 && (stock > 0 || pStatus === "aktif" || pStatus === "perlu harga jual");
     }
     if (statusVal === "nonaktif") {
       return pStatus === "nonaktif";

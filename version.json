@@ -1,14 +1,14 @@
 {
-  "version": "2.2.1",
-  "build": "20261005.3",
+  "version": "2.2.2",
+  "build": "20261005.4",
   "releaseDate": "05 Oktober 2026",
   "title": "Pembaruan Arsitektur Sistem KasirPro V2",
   "description": "Rilis pemeliharaan berkala untuk sinkronisasi model data akuntansi, stabilitas offline caching, dan optimalisasi tata letak antarmuka multi-perangkat.",
   "changelog": [
+    "Dual-Method Pembayaran Faktur (Tunai & Tempo)",
+    "Filter Pintar Produk: Aktif (Perlu Harga Jual)",
+    "Penghapusan & Pembersihan Mandiri Faktur Uji Coba",
     "Algoritma Rekonsiliasi Fiskal Faktur",
-    "Optimasi Caching & Kuota Database",
-    "Otomasi Lifecycle Status Master Data",
-    "Auto-Registration Relasional",
     "Dual-Tier Data Deletion Protection",
     "Isolasi Kontainer & Viewport Fit Ponsel/PWA"
   ]

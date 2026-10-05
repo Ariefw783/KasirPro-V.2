@@ -17,7 +17,7 @@
  */
 
 import { $, num, text, norm, rupiah, formatNumber, escapeHtml, nowIso, uid, INVOICE_TOLERANCE_RP } from "../modules/core/utils.js";
-import { STORE_KEYS, readStore, writeStore, writeMasterDelta, readCurrentStock, writeStockTransaction } from "../modules/database/database-store.js";
+import { STORE_KEYS, readStore, writeStore, writeMasterDelta, readCurrentStock, writeStockTransaction, databaseStore } from "../modules/database/database-store.js";
 import { generatePurchaseInvoicePdf } from "../modules/core/pdf.js";
 
 let currentInvoices = [];
@@ -38,6 +38,8 @@ function bindEvents() {
   $("btn-manual-add-row")?.addEventListener("click", () => addManualInvoiceRow());
   $("btn-quick-add-supplier-inv")?.addEventListener("click", handleQuickAddSupplierInv);
   $("manual-inv-supplier")?.addEventListener("change", handleSupplierChange);
+  $("manual-inv-payment-type")?.addEventListener("change", handlePaymentTypeChange);
+  $("manual-inv-date")?.addEventListener("change", handleInvoiceDateChange);
   $("manual-inv-discount-type")?.addEventListener("change", handleDiscountTypeChange);
   $("manual-inv-ppn-rate")?.addEventListener("change", handlePpnRateChange);
   $("manual-inv-printed-total")?.addEventListener("input", calculateManualInvoiceTotals);
@@ -396,6 +398,7 @@ export function openManualInvoiceModal() {
         if ($("manual-inv-supplier")) $("manual-inv-supplier").value = d.supplierName || "";
         if ($("manual-inv-number")) $("manual-inv-number").value = d.invoiceNumber || "";
         if ($("manual-inv-date")) $("manual-inv-date").value = d.date || "";
+        if ($("manual-inv-payment-type")) $("manual-inv-payment-type").value = d.paymentType || "tempo";
         if ($("manual-inv-due-date")) $("manual-inv-due-date").value = d.dueDate || "";
         if ($("manual-inv-discount-type")) $("manual-inv-discount-type").value = d.discountType || "item";
         if ($("manual-inv-global-discount-rp")) $("manual-inv-global-discount-rp").value = d.globalDiscountRp || 0;
@@ -410,6 +413,7 @@ export function openManualInvoiceModal() {
     console.warn("Failed to restore manual invoice draft:", e);
   }
 
+  handlePaymentTypeChange();
   handleDiscountTypeChange();
   handlePpnRateChange();
 
@@ -468,6 +472,47 @@ async function handleQuickAddSupplierInv() {
     window.KasirProDialog?.success("Supplier Ditambahkan", `Supplier "${cleanName}" berhasil didaftarkan.`);
   } catch (e) {
     window.KasirProDialog?.error("Gagal", e.message);
+  }
+}
+
+function handlePaymentTypeChange() {
+  const payType = $("manual-inv-payment-type")?.value || "tempo";
+  const dueInput = $("manual-inv-due-date");
+  const dueReq = $("manual-inv-due-date-required");
+  const label = $("manual-inv-due-date-label");
+  const invDate = $("manual-inv-date")?.value || new Date().toISOString().slice(0, 10);
+
+  if (payType === "tunai") {
+    if (dueReq) dueReq.style.display = "none";
+    if (dueInput) {
+      dueInput.value = invDate;
+      dueInput.disabled = true;
+      dueInput.title = "Pembayaran tunai lunas langsung pada tanggal faktur";
+    }
+    if (label) label.innerHTML = 'Jatuh Tempo <span style="font-size:11px;color:#059669;font-weight:600;">(Lunas Tunai)</span>';
+  } else {
+    // Tempo
+    if (dueReq) dueReq.style.display = "inline";
+    if (dueInput) {
+      dueInput.disabled = false;
+      dueInput.title = "";
+      if (!dueInput.value || dueInput.value === invDate) {
+        const d = new Date(invDate);
+        d.setDate(d.getDate() + 30);
+        dueInput.value = d.toISOString().slice(0, 10);
+      }
+    }
+    if (label) label.innerHTML = 'Jatuh Tempo <span class="text-danger" id="manual-inv-due-date-required">*</span>';
+  }
+}
+
+function handleInvoiceDateChange() {
+  const payType = $("manual-inv-payment-type")?.value || "tempo";
+  const invDate = $("manual-inv-date")?.value;
+  if (!invDate) return;
+  if (payType === "tunai") {
+    const dueInput = $("manual-inv-due-date");
+    if (dueInput) dueInput.value = invDate;
   }
 }
 
@@ -996,6 +1041,7 @@ function handleSaveManualDraft() {
     supplierName: $("manual-inv-supplier")?.value || "",
     invoiceNumber: $("manual-inv-number")?.value || "",
     date: $("manual-inv-date")?.value || "",
+    paymentType: $("manual-inv-payment-type")?.value || "tempo",
     dueDate: $("manual-inv-due-date")?.value || "",
     discountType: $("manual-inv-discount-type")?.value || "item",
     globalDiscountRp: num($("manual-inv-global-discount-rp")?.value) || 0,
@@ -1021,6 +1067,8 @@ async function handleResetManualInvoice() {
   try { localStorage.removeItem(MANUAL_DRAFT_KEY); } catch (e) {}
 
   if ($("manual-inv-number")) $("manual-inv-number").value = "";
+  if ($("manual-inv-payment-type")) $("manual-inv-payment-type").value = "tempo";
+  handlePaymentTypeChange();
   if ($("manual-inv-printed-total")) $("manual-inv-printed-total").value = "";
   if ($("manual-inv-global-discount-rp")) $("manual-inv-global-discount-rp").value = 0;
   if ($("manual-inv-custom-ppn-rp")) $("manual-inv-custom-ppn-rp").value = 0;
@@ -1033,7 +1081,8 @@ async function handleConfirmManualInvoice() {
   const supName = text($("manual-inv-supplier")?.value);
   const invNum = text($("manual-inv-number")?.value);
   const invDate = text($("manual-inv-date")?.value);
-  const invDueDate = text($("manual-inv-due-date")?.value);
+  const payType = $("manual-inv-payment-type")?.value || "tempo";
+  let invDueDate = text($("manual-inv-due-date")?.value);
   const discType = $("manual-inv-discount-type")?.value || "item";
   const ppnRateSelect = $("manual-inv-ppn-rate")?.value || "11";
 
@@ -1048,6 +1097,17 @@ async function handleConfirmManualInvoice() {
   if (!invDate) {
     window.KasirProDialog?.warning("Perhatian", "Tanggal Faktur wajib diisi.");
     return;
+  }
+
+  if (payType === "tempo") {
+    if (!invDueDate) {
+      const d = new Date(invDate);
+      d.setDate(d.getDate() + 30);
+      invDueDate = d.toISOString().slice(0, 10);
+    }
+  } else {
+    // Tunai
+    invDueDate = invDate;
   }
 
   // Cek duplikasi nomor faktur
@@ -1076,6 +1136,9 @@ async function handleConfirmManualInvoice() {
     invoiceNumber: invNum,
     date: invDate,
     invoiceDate: invDate,
+    paymentMethod: payType,
+    paymentType: payType,
+    paymentStatus: payType === "tunai" ? "Lunas" : "Belum Lunas",
     dueDate: invDueDate || "",
     supplierName: supName,
     supplier: supName,
@@ -1141,6 +1204,7 @@ function installInvoiceDetailModal() {
             <button type="button" id="btn-print-detail-pdf" class="button button-secondary"><i class="fa-solid fa-file-pdf"></i> Cetak PDF</button>
           </div>
           <div style="display:flex;gap:8px;">
+            <button type="button" id="btn-delete-invoice" class="button button-danger" style="background:#ef4444;color:#fff;" title="Hapus faktur ini dari database"><i class="fa-solid fa-trash-can"></i> Hapus Faktur</button>
             <button type="button" id="btn-cancel-invoice" class="button button-danger" style="display:none;"><i class="fa-solid fa-ban"></i> Batalkan Faktur (Reversal)</button>
             <button type="button" id="btn-correct-invoice" class="button button-warning"><i class="fa-solid fa-pen-to-square"></i> Koreksi Faktur</button>
           </div>
@@ -1154,6 +1218,7 @@ function installInvoiceDetailModal() {
   $("btn-print-detail-pdf")?.addEventListener("click", () => {
     if (activeDetailInvoice) handlePrintInvoicePdf(activeDetailInvoice);
   });
+  $("btn-delete-invoice")?.addEventListener("click", handleDeleteInvoice);
   $("btn-cancel-invoice")?.addEventListener("click", handleReversalCancelInvoice);
   $("btn-correct-invoice")?.addEventListener("click", () => {
     if (activeDetailInvoice) openInvoiceCorrectionModal(activeDetailInvoice);
@@ -1174,10 +1239,15 @@ function openInvoiceDetailModal(inv) {
 
   const bodyEl = $("invoice-detail-body");
   const items = inv.items || [];
+  const isTunai = (inv.paymentMethod === "tunai" || inv.paymentType === "tunai");
+  const payBadge = isTunai
+    ? `<span class="badge" style="background:#ecfdf5;color:#059669;padding:3.5px 9px;border-radius:6px;font-weight:750;display:inline-flex;align-items:center;gap:5px;"><i class="fa-solid fa-money-bill-wave"></i> Tunai (Lunas Langsung)</span>`
+    : `<span class="badge" style="background:#eff6ff;color:#1d4ed8;padding:3.5px 9px;border-radius:6px;font-weight:750;display:inline-flex;align-items:center;gap:5px;"><i class="fa-solid fa-calendar-days"></i> Tempo (Jatuh Tempo: ${escapeHtml(inv.dueDate || '—')})</span>`;
 
   bodyEl.innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:14px;background:#f8fafc;padding:14px;border-radius:10px;margin-bottom:16px;">
-      <div><span style="font-size:12px;color:#64748b;">Status:</span><br>${getInvoiceStatusBadge(inv.status)}</div>
+      <div><span style="font-size:12px;color:#64748b;">Status Faktur:</span><br>${getInvoiceStatusBadge(inv.status)}</div>
+      <div><span style="font-size:12px;color:#64748b;">Metode Pembayaran:</span><br>${payBadge}</div>
       <div><span style="font-size:12px;color:#64748b;">Subtotal:</span><br><strong>${rupiah(inv.subtotal || 0)}</strong></div>
       <div><span style="font-size:12px;color:#64748b;">Diskon Global:</span><br><strong>${rupiah(inv.globalDiscountRp || 0)}</strong></div>
       <div><span style="font-size:12px;color:#64748b;">PPN Global:</span><br><strong>${rupiah(inv.globalTaxRp || 0)}</strong></div>
@@ -1218,6 +1288,73 @@ function openInvoiceDetailModal(inv) {
   `;
 
   modal.hidden = false;
+}
+
+async function handleDeleteInvoice() {
+  if (!activeDetailInvoice) return;
+  const inv = activeDetailInvoice;
+  const invId = inv.id || inv.invoiceNumber;
+  const isConfirmed = norm(inv.status) === "terkonfirmasi" || norm(inv.status) === "confirmed";
+
+  let confirmMsg = `Hapus Faktur #${inv.invoiceNumber || invId} secara permanen dari sistem?`;
+  if (isConfirmed) {
+    confirmMsg += `\n\nFaktur ini berstatus Terkonfirmasi. Penghapusan akan otomatis membalik stok delta produk agar stok sistem kembali bersih.`;
+  }
+
+  const ok = await window.KasirProDialog?.confirm("Hapus Faktur", confirmMsg);
+  if (!ok) return;
+
+  try {
+    // 1. Jika terkonfirmasi, balik stok delta produk
+    if (isConfirmed && Array.isArray(inv.items) && inv.items.length > 0) {
+      const movements = [];
+      const now = nowIso();
+      for (const item of inv.items) {
+        const code = item.matchedProductCode || item.code || item.productCode;
+        const baseQty = (num(item.qty) || 1) * (num(item.conversionRatio) || 1);
+        movements.push({
+          id: uid("mov-del"),
+          productCode: code || item.name,
+          productName: item.name,
+          type: "Penghapusan Faktur",
+          delta: -baseQty,
+          quantity: -baseQty,
+          source: "Penghapusan Faktur",
+          reference: inv.invoiceNumber || invId,
+          user: "Admin",
+          createdAt: now
+        });
+      }
+      if (movements.length) {
+        await writeStockTransaction([
+          { key: STORE_KEYS.movements, records: movements }
+        ]);
+      }
+    }
+
+    // 2. Hapus dari list currentInvoices
+    currentInvoices = currentInvoices.filter(i => (i.id || i.invoiceNumber) !== invId && i.invoiceNumber !== inv.invoiceNumber);
+
+    // 3. Simpan state baru ke database lokal
+    await writeStore(STORE_KEYS.invoices, currentInvoices);
+
+    // 4. Hapus dari Firestore jika online
+    try {
+      if (databaseStore && typeof databaseStore.deleteItem === "function") {
+        await databaseStore.deleteItem("purchaseInvoices", invId).catch(() => {});
+        if (inv.invoiceNumber && inv.invoiceNumber !== invId) {
+          await databaseStore.deleteItem("purchaseInvoices", inv.invoiceNumber).catch(() => {});
+        }
+      }
+    } catch (_) {}
+
+    closeInvoiceDetailModal();
+    renderInvoices();
+    window.KasirProDialog?.success("Faktur Dihapus", `Faktur #${inv.invoiceNumber || invId} berhasil dihapus permanen dari sistem.`);
+  } catch (err) {
+    console.error("[Invoices] Error deleting invoice:", err);
+    window.KasirProDialog?.error("Gagal Menghapus Faktur", err.message || "Terjadi kesalahan.");
+  }
 }
 
 function closeInvoiceDetailModal() {

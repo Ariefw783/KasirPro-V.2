@@ -87,9 +87,15 @@ function addPageFooters(doc) {
  */
 export function generatePurchaseInvoicePdf(invoice, storeSettings = {}, user = "Admin") {
   const doc = createA4Doc();
+  const isTunai = (invoice.paymentMethod === "tunai" || invoice.paymentType === "tunai");
+  const payMethodText = isTunai
+    ? "Tunai (Lunas Langsung)"
+    : `Tempo (Jatuh Tempo: ${invoice.dueDate || "—"})`;
+
   const startY = addDocHeader(doc, `FAKTUR PEMBELIAN #${invoice.invoiceNumber || invoice.id}`, storeSettings, [
     `Supplier: ${invoice.supplierName || invoice.supplier || "—"}`,
     `Tanggal Faktur: ${invoice.date || invoice.invoiceDate || "—"}`,
+    `Metode Pembayaran: ${payMethodText}`,
     `Status: ${invoice.status || "Terkonfirmasi"}`,
     `Dicetak oleh: ${user}`
   ]);

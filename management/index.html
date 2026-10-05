@@ -14,8 +14,8 @@
     <link rel="icon" type="image/png" sizes="192x192" href="../assets/icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="../assets/apple-touch-icon-180.png">
 
-    <link rel="stylesheet" href="management.css?v=20261005-responsive-fit-v2">
-    <link rel="stylesheet" href="management-mobile.css?v=20261005-responsive-fit-v2">
+    <link rel="stylesheet" href="management.css?v=20261005-invoice-v3">
+    <link rel="stylesheet" href="management-mobile.css?v=20261005-invoice-v3">
     <link rel="stylesheet" href="../ui-modal.css">
 
     <link
@@ -1427,17 +1427,11 @@
                         class="button button-secondary"
                         aria-label="Filter status produk"
                     >
-                        <option value="">
-                            Semua Status
-                        </option>
-
-                        <option value="aktif">
-                            Aktif
-                        </option>
-
-                        <option value="nonaktif">
-                            Nonaktif
-                        </option>
+                        <option value="">Semua Status</option>
+                        <option value="aktif">Aktif</option>
+                        <option value="perlu harga jual">Aktif (Perlu harga jual)</option>
+                        <option value="belum aktif">Belum Aktif</option>
+                        <option value="nonaktif">Nonaktif</option>
                     </select>
 
                 </div>
@@ -1928,7 +1922,7 @@
                                     <span><i class="fa-solid fa-building-columns text-primary"></i> 1. Informasi Supplier &amp; Faktur Fisik</span>
                                     <span style="font-size:11px;font-weight:500;color:#64748b;">* Wajib mencocokkan total fisik di kertas faktur</span>
                                 </div>
-                                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
+                                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;">
                                     <div>
                                         <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Nama Supplier <span class="text-danger">*</span></label>
                                         <div style="display:flex;gap:6px;">
@@ -1949,7 +1943,14 @@
                                         <input type="date" id="manual-inv-date" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;">
                                     </div>
                                     <div>
-                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Tanggal Jatuh Tempo</label>
+                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Metode Pembayaran <span class="text-danger">*</span></label>
+                                        <select id="manual-inv-payment-type" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;background:#fff;font-weight:600;">
+                                            <option value="tempo">Tempo (Kredit / Berjangka)</option>
+                                            <option value="tunai">Tunai (Cash / Lunas Langsung)</option>
+                                        </select>
+                                    </div>
+                                    <div id="manual-inv-due-date-wrapper">
+                                        <label id="manual-inv-due-date-label" style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Jatuh Tempo <span class="text-danger" id="manual-inv-due-date-required">*</span></label>
                                         <input type="date" id="manual-inv-due-date" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;">
                                     </div>
                                 </div>
