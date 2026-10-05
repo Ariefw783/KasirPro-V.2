@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "masterVersion": 0,
+  "generatedAt": null,
+  "dataFile": "master-data.json",
+  "checksum": "",
+  "counts": {
+    "products": 0,
+    "suppliers": 0,
+    "categories": 0,
+    "storeSettings": 0
+  },
+  "status": "not-generated"
+}

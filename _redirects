@@ -1,0 +1,7 @@
+# MODE PEMELIHARAAN SISTEM KASIRPRO V2 (CLOUDFLARE PAGES)
+# Seluruh rute diarahkan ke maintenance.html, kecuali file maintenance itu sendiri dan asset statis pendukung
+/maintenance.html   /maintenance.html   200
+/assets/*           /assets/:splat      200
+/manifest.webmanifest /manifest.webmanifest 200
+/*                  /maintenance.html   302!
+

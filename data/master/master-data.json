@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "masterVersion": 0,
+  "generatedAt": null,
+  "master": {
+    "produk": [],
+    "supplier": [],
+    "kategori": [],
+    "pengguna": [],
+    "pengaturan_toko": []
+  }
+}

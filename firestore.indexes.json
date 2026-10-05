@@ -1,0 +1,61 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "TransaksiPenjualan",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "TransaksiPenjualan",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "cashierUsername", "order": "ASCENDING" },
+        { "fieldPath": "at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "FakturPembelian",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "MutasiStok",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "type", "order": "ASCENDING" },
+        { "fieldPath": "at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Produk",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "Status Produk", "order": "ASCENDING" },
+        { "fieldPath": "Nama Produk", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Produk",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "Kategori", "order": "ASCENDING" },
+        { "fieldPath": "Nama Produk", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "Produk",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "Kode Supplier", "order": "ASCENDING" },
+        { "fieldPath": "Nama Produk", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

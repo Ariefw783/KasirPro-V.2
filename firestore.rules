@@ -1,0 +1,197 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isKasirProV2(namespace, storeId) {
+      return namespace == 'Kasir Pro V2'
+        && storeId == 'Toko Utama';
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isInitialAdmin() {
+      return isSignedIn()
+        && request.auth.token.email == 'apotekdoaibu.v2@gmail.com';
+    }
+
+    function profileExists(namespace, storeId) {
+      return isSignedIn() && exists(
+        /databases/$(database)/documents/$(namespace)/$(storeId)/Pengguna/$(request.auth.uid)
+      );
+    }
+
+    function profile(namespace, storeId) {
+      return get(
+        /databases/$(database)/documents/$(namespace)/$(storeId)/Pengguna/$(request.auth.uid)
+      ).data;
+    }
+
+    function isActiveMember(namespace, storeId) {
+      return isKasirProV2(namespace, storeId)
+        && profileExists(namespace, storeId)
+        && profile(namespace, storeId).status == 'aktif';
+    }
+
+    function isAdmin(namespace, storeId) {
+      return isActiveMember(namespace, storeId)
+        && profile(namespace, storeId).role == 'admin';
+    }
+
+    function isCashier(namespace, storeId) {
+      return isActiveMember(namespace, storeId)
+        && profile(namespace, storeId).role == 'cashier';
+    }
+
+    function isStockOperator(namespace, storeId) {
+      return isAdmin(namespace, storeId) || isCashier(namespace, storeId);
+    }
+
+    function validActiveStock(data) {
+      return data.keys().hasOnly([
+          'productCode', 'productName', 'quantity', 'updatedAt', 'syncUpdatedAt'
+        ])
+        && data.keys().hasAll(['productCode', 'productName', 'quantity', 'updatedAt'])
+        && data.productCode is string
+        && data.productCode.size() > 0
+        && data.productName is string
+        && data.productName.size() > 0
+        && data.quantity is int
+        && data.quantity >= 0
+        && data.updatedAt is string;
+    }
+
+    function validLoginDirectory(data) {
+      return data.keys().hasOnly([
+          'username',
+          'name',
+          'role',
+          'status',
+          'authEmail'
+        ])
+        && data.keys().hasAll([
+          'username',
+          'name',
+          'role',
+          'status',
+          'authEmail'
+        ])
+        && data.username is string
+        && data.name is string
+        && data.authEmail is string
+        && data.role == 'cashier'
+        && (data.status == 'aktif' || data.status == 'nonaktif');
+    }
+
+    match /{namespace}/{storeId} {
+      allow read: if isActiveMember(namespace, storeId);
+      allow create, update: if isAdmin(namespace, storeId);
+      allow delete: if false;
+
+      match /Pengguna/{userId} {
+        allow create: if isKasirProV2(namespace, storeId)
+          && isInitialAdmin()
+          && userId == request.auth.uid
+          && request.resource.data.role == 'admin'
+          && request.resource.data.status == 'aktif';
+        allow read: if isAdmin(namespace, storeId)
+          || (isActiveMember(namespace, storeId) && userId == request.auth.uid)
+          || (isKasirProV2(namespace, storeId) && isInitialAdmin() && userId == request.auth.uid);
+        allow create, update: if isAdmin(namespace, storeId);
+        allow delete: if false;
+      }
+
+      match /DaftarAkunLogin/{accountId} {
+        // Direktori hanya untuk administrasi akun. Login kasir menghitung alamat
+        // Authentication dari username sehingga data akun tidak perlu dibuka publik.
+        allow read: if isAdmin(namespace, storeId);
+        allow create, update: if isAdmin(namespace, storeId)
+          && validLoginDirectory(request.resource.data);
+        allow delete: if false;
+      }
+
+      match /MasterSnapshot/{snapshotId} {
+        allow read: if isActiveMember(namespace, storeId);
+        allow create, update, delete: if isAdmin(namespace, storeId);
+      }
+
+      match /MasterSnapshotChunks/{chunkId} {
+        allow read: if isActiveMember(namespace, storeId);
+        allow create, update, delete: if isAdmin(namespace, storeId);
+      }
+
+      match /Produk/{productId} {
+        allow read: if isActiveMember(namespace, storeId);
+        allow create, delete: if isAdmin(namespace, storeId);
+        allow update: if isAdmin(namespace, storeId)
+          || (isCashier(namespace, storeId)
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['Stok Awal', '_updatedAt', 'updatedAt']));
+      }
+
+      match /Kategori/{categoryId} {
+        allow read: if isActiveMember(namespace, storeId);
+        allow create, update, delete: if isAdmin(namespace, storeId);
+      }
+
+      match /Supplier/{supplierId} {
+        allow read: if isActiveMember(namespace, storeId);
+        allow create, update, delete: if isAdmin(namespace, storeId);
+      }
+
+      match /PengaturanToko/{settingsId} {
+        allow read: if isActiveMember(namespace, storeId);
+        allow create, update: if isAdmin(namespace, storeId);
+        allow delete: if false;
+      }
+
+      match /FakturPembelian/{invoiceId} {
+        allow read: if isActiveMember(namespace, storeId);
+        allow create, update, delete: if isAdmin(namespace, storeId);
+      }
+
+      match /TransaksiPenjualan/{saleId} {
+        allow read: if isActiveMember(namespace, storeId);
+        allow create: if isAdmin(namespace, storeId) || isCashier(namespace, storeId);
+        allow update, delete: if isAdmin(namespace, storeId);
+      }
+
+      match /MutasiStok/{movementId} {
+        allow read: if isActiveMember(namespace, storeId);
+        allow create: if isAdmin(namespace, storeId) || isCashier(namespace, storeId);
+        allow update: if false;
+        allow delete: if isAdmin(namespace, storeId);
+      }
+
+      match /StokAktif/{stockId} {
+        allow read: if isActiveMember(namespace, storeId);
+        allow create: if isStockOperator(namespace, storeId)
+          && validActiveStock(request.resource.data);
+        allow update: if isStockOperator(namespace, storeId)
+          && validActiveStock(request.resource.data)
+          && request.resource.data.productCode == resource.data.productCode;
+        allow delete: if isAdmin(namespace, storeId);
+      }
+
+      match /StockOpname/{opnameId} {
+        allow read: if isActiveMember(namespace, storeId);
+        allow create, update, delete: if isAdmin(namespace, storeId);
+      }
+
+      match /RiwayatMigrasi/{migrationId} {
+        allow read, create: if isAdmin(namespace, storeId);
+        allow update, delete: if false;
+      }
+
+      match /{unknownCollection}/{documentId} {
+        allow read, write: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

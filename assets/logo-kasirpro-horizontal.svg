@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 128" role="img" aria-labelledby="title">
+  <title id="title">KasirPro</title>
+  <g transform="translate(4)">
+    <path fill="#0F2A43" d="M25 14h23v39l32-39h29L67 62l44 52H81L48 74v40H25z"/>
+    <path fill="#38BDF8" d="M80 14h29L67 62 53 46z"/>
+  </g>
+  <text x="142" y="85" fill="#0F2A43" font-family="DejaVu Sans,Inter,Arial,sans-serif" font-size="60" font-weight="700" letter-spacing="-2">Kasir</text>
+  <text x="300" y="85" fill="#2563EB" font-family="DejaVu Sans,Inter,Arial,sans-serif" font-size="60" font-weight="800" letter-spacing="-2">Pro</text>
+  <text x="405" y="84" fill="#64748B" font-family="DejaVu Sans,Inter,Arial,sans-serif" font-size="27" font-weight="700">V.2</text>
+</svg>

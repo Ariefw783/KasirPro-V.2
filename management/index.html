@@ -1,0 +1,2480 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f2a43">
+    <meta name="description" content="Management KasirPro untuk produk, stok, pembelian, pengguna, dan laporan.">
+
+    <title>Management | KasirPro</title>
+
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link rel="icon" href="../assets/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="../assets/icon-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="../assets/apple-touch-icon-180.png">
+
+    <link rel="stylesheet" href="management.css">
+    <link rel="stylesheet" href="management-mobile.css">
+    <link rel="stylesheet" href="../ui-modal.css">
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+    >
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <aside id="sidebar" class="sidebar">
+
+        <div class="sidebar-brand">
+
+            <div class="brand-logo">
+                <img
+                    src="../assets/kasirpro-symbol.svg"
+                    alt="Logo KasirPro"
+                    onerror="this.style.display='none'"
+                >
+            </div>
+
+            <div class="brand-text">
+                <strong>KasirPro</strong>
+                <span id="management-store-name">Apotek Doa Ibu</span>
+            </div>
+
+        </div>
+
+
+        <nav class="sidebar-nav">
+
+            <div class="nav-group">
+                <span class="nav-label">MENU UTAMA</span>
+
+                <button
+                    type="button"
+                    class="nav-item active"
+                    data-view="dashboard"
+                >
+                    <i class="fa-solid fa-gauge-high"></i>
+                    <span>Dashboard</span>
+                </button>
+
+                <a
+                    href="../pos/index.html"
+                    class="nav-item"
+                    id="sidebar-pos-link"
+                >
+                    <i class="fa-solid fa-cash-register"></i>
+                    <span>POS</span>
+                </a>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-view="products"
+                >
+                    <i class="fa-solid fa-box"></i>
+                    <span>Produk</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-view="suppliers"
+                >
+                    <i class="fa-solid fa-truck"></i>
+                    <span>Supplier</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-view="categories"
+                >
+                    <i class="fa-solid fa-tags"></i>
+                    <span>Kategori</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-view="purchase-invoices"
+                >
+                    <i class="fa-solid fa-file-invoice"></i>
+                    <span>Faktur</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-view="stock"
+                >
+                    <i class="fa-solid fa-warehouse"></i>
+                    <span>Stok</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-view="stock-opname"
+                >
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    <span>Stock Opname</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-view="reports"
+                >
+                    <i class="fa-solid fa-chart-column"></i>
+                    <span>Laporan</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-view="users"
+                >
+                    <i class="fa-solid fa-users"></i>
+                    <span>Pengguna</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
+                    data-view="settings"
+                >
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Pengaturan</span>
+                </button>
+
+            </div>
+
+        </nav>
+
+
+        <div class="sidebar-footer">
+
+            <button
+                type="button"
+                id="logout-button"
+                class="logout-button"
+            >
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Keluar</span>
+            </button>
+
+        </div>
+
+    </aside>
+
+
+    <div
+        id="sidebar-overlay"
+        class="sidebar-overlay"
+    ></div>
+
+
+    <div class="main-area">
+
+        <header class="topbar">
+
+            <div class="topbar-left">
+
+                <button
+                    type="button"
+                    id="sidebar-toggle"
+                    class="topbar-icon-button"
+                >
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+
+                <div class="page-heading">
+
+                    <h1 id="page-title">
+                        Dashboard
+                    </h1>
+
+                    <p id="page-subtitle">
+                        Ringkasan operasional toko
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="topbar-right">
+
+                <a href="../pos/index.html" class="button button-secondary topbar-pos-link"><i class="fa-solid fa-cash-register"></i> Buka POS</a>
+
+                <div class="connection-status">
+                    <span class="status-dot"></span>
+                    <span>Online</span>
+                </div>
+
+                <div class="admin-profile">
+
+                    <div class="admin-avatar">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+
+                    <div class="admin-info">
+
+                        <strong id="current-user-name">
+                            Administrator
+                        </strong>
+
+                        <span>Admin</span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <main
+            id="main-content"
+            class="main-content"
+        >
+
+            <!-- DASHBOARD -->
+            <section
+                class="view-section"
+                data-view-section="dashboard"
+            >
+
+                <div class="dashboard-toolbar" aria-label="Filter periode dashboard">
+                    <div>
+                        <span class="dashboard-eyebrow">Ringkasan Usaha</span>
+                        <p id="dashboard-period-label">Hari Ini</p>
+                    </div>
+                    <div class="dashboard-periods" role="group" aria-label="Pilih periode">
+                        <button class="dashboard-period active" type="button" data-dashboard-period="today">Hari Ini</button>
+                        <button class="dashboard-period" type="button" data-dashboard-period="7days">7 Hari</button>
+                        <button class="dashboard-period" type="button" data-dashboard-period="month">Bulan Ini</button>
+                        <button class="dashboard-period" type="button" data-dashboard-period="all">Sepanjang Waktu</button>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid dashboard-grid-financial">
+                    <article class="dashboard-card dashboard-card-primary">
+                        <div class="dashboard-card-icon"><i class="fa-solid fa-money-bill-trend-up"></i></div>
+                        <div><span>Total Pendapatan</span><strong id="dashboard-total-revenue">Memuat…</strong><small>Total tagihan penjualan pelanggan pada periode terpilih.</small></div>
+                    </article>
+                    <article class="dashboard-card dashboard-card-success">
+                        <div class="dashboard-card-icon"><i class="fa-solid fa-chart-line"></i></div>
+                        <div><span>Laba Penjualan</span><strong id="dashboard-sales-profit">Memuat…</strong><small>Harga jual dikurangi harga beli produk terjual; biaya luar aplikasi tidak termasuk.</small></div>
+                    </article>
+                    <article class="dashboard-card dashboard-card-violet">
+                        <div class="dashboard-card-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                        <div><span>Total Nilai Faktur</span><strong id="dashboard-purchase-invoice-value">Memuat…</strong><small>Total nilai faktur pembelian dari supplier pada periode terpilih.</small></div>
+                    </article>
+                    <article class="dashboard-card dashboard-card-warning">
+                        <div class="dashboard-card-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+                        <div><span>Tagihan Supplier Jatuh Tempo</span><strong id="dashboard-supplier-due">Memuat…</strong><small id="dashboard-supplier-due-note">Faktur pembelian tempo yang sudah jatuh tempo.</small></div>
+                    </article>
+                </div>
+
+                <section class="dashboard-section">
+                    <div class="dashboard-section-heading"><div><h2>Data Operasional</h2><p>Kondisi aktif toko saat ini.</p></div></div>
+                    <div class="dashboard-grid dashboard-grid-operational">
+                        <article class="dashboard-card"><div class="dashboard-card-icon"><i class="fa-solid fa-warehouse"></i></div><div><span>Nilai Stok</span><strong id="dashboard-stock-value">Memuat…</strong><small>Total nilai stok berdasarkan harga beli.</small></div></article>
+                        <article class="dashboard-card"><div class="dashboard-card-icon"><i class="fa-solid fa-box"></i></div><div><span>Total Produk</span><strong id="dashboard-total-products">Memuat…</strong><small>Jumlah jenis produk yang terdaftar.</small></div></article>
+                        <article class="dashboard-card"><div class="dashboard-card-icon"><i class="fa-solid fa-cubes"></i></div><div><span>Total Item</span><strong id="dashboard-total-stock">Memuat…</strong><small>Total unit barang yang tersedia di stok.</small></div></article>
+                        <article class="dashboard-card"><div class="dashboard-card-icon"><i class="fa-solid fa-truck"></i></div><div><span>Jumlah Supplier</span><strong id="dashboard-total-suppliers">Memuat…</strong><small>Jumlah supplier yang terdaftar.</small></div></article>
+                        <article class="dashboard-card"><div class="dashboard-card-icon"><i class="fa-solid fa-receipt"></i></div><div><span>Transaksi Hari Ini</span><strong id="dashboard-sales-today">Memuat…</strong><small>Jumlah transaksi penjualan selesai hari ini.</small></div></article>
+                    </div>
+                </section>
+
+                <section class="dashboard-review" aria-labelledby="dashboard-review-title">
+                    <div class="dashboard-review-heading"><div><span class="dashboard-eyebrow">Tindakan</span><h2 id="dashboard-review-title">Perlu Ditinjau</h2><p>Prioritas yang memerlukan perhatian admin.</p></div><span id="dashboard-review-count" class="dashboard-review-count">0 perhatian</span></div>
+                    <div class="dashboard-review-list">
+                        <article class="dashboard-review-item"><span class="dashboard-review-icon danger"><i class="fa-solid fa-box-open"></i></span><div><strong>Stok Menipis atau Habis</strong><small>Produk yang perlu segera diperiksa atau dipesan.</small></div><b id="dashboard-low-stock">0</b></article>
+                        <article class="dashboard-review-item"><span class="dashboard-review-icon warning"><i class="fa-solid fa-file-pen"></i></span><div><strong>Faktur Pembelian Draft</strong><small>Faktur supplier yang belum dikonfirmasi sebagai barang masuk.</small></div><b id="dashboard-draft-invoices">0</b></article>
+                        <article class="dashboard-review-item"><span class="dashboard-review-icon neutral"><i class="fa-solid fa-ban"></i></span><div><strong>Transaksi VOID</strong><small>Transaksi penjualan yang dibatalkan pada periode terpilih.</small></div><b id="dashboard-void-sales">0</b></article>
+                    </div>
+                </section>
+
+
+                <div class="welcome-card">
+
+                    <div>
+
+                        <span class="welcome-badge">
+                            KasirPro
+                        </span>
+
+                        <h2>
+                            Management Apotek Doa Ibu
+                        </h2>
+
+                        <p>
+                            Kelola master data, persediaan,
+                            faktur, pengguna, dan laporan.
+                        </p>
+
+                    </div>
+
+                    <i class="fa-solid fa-store"></i>
+
+                </div>
+
+            </section>
+
+
+            <!-- IMPORT MASTER -->
+            <section
+                class="view-section"
+                data-view-section="import-master"
+                hidden
+            >
+
+                <div class="import-page">
+
+                    <header class="module-header">
+
+                        <div>
+
+                            <h2>
+                                Import Master Data
+                            </h2>
+
+                            <p>
+                                Semua kolom bersifat opsional.
+                                Data parsial tetap dapat diproses
+                                dengan peringatan.
+                            </p>
+
+                        </div>
+
+                        <div class="module-header-actions">
+
+                            <button
+                                type="button"
+                                id="btn-back-to-products"
+                                class="button button-secondary"
+                            >
+                                <i class="fa-solid fa-arrow-left"></i>
+                                Kembali ke Produk
+                            </button>
+
+                            <a
+                                href="../data/templates/Template_Master_KasirPro_V2.xlsx"
+                                class="button button-secondary"
+                                download="Template_Master_KasirPro_V2.xlsx"
+                            >
+                                <i class="fa-solid fa-download"></i>
+                                Download Template Master
+                            </a>
+
+                        </div>
+
+                    </header>
+
+
+                    <ol class="import-steps">
+
+                        <li
+                            class="import-step active"
+                            data-step-indicator="1"
+                        >
+                            <span class="step-number">1</span>
+
+                            <span class="step-content">
+                                <strong>Pilih File</strong>
+                                <small>Upload Excel</small>
+                            </span>
+                        </li>
+
+
+                        <li
+                            class="import-step"
+                            data-step-indicator="2"
+                        >
+                            <span class="step-number">2</span>
+
+                            <span class="step-content">
+                                <strong>Preview</strong>
+                                <small>Periksa data</small>
+                            </span>
+                        </li>
+
+
+                        <li
+                            class="import-step"
+                            data-step-indicator="3"
+                        >
+                            <span class="step-number">3</span>
+
+                            <span class="step-content">
+                                <strong>Peringatan</strong>
+                                <small>Validasi</small>
+                            </span>
+                        </li>
+
+
+                        <li
+                            class="import-step"
+                            data-step-indicator="4"
+                        >
+                            <span class="step-number">4</span>
+
+                            <span class="step-content">
+                                <strong>Import</strong>
+                                <small>Konfirmasi</small>
+                            </span>
+                        </li>
+
+                    </ol>
+
+
+                    <!-- STEP 1 -->
+                    <section
+                        class="import-panel"
+                        data-import-step="1"
+                    >
+
+                        <div class="panel-header">
+
+                            <div>
+                                <h3>Pilih File Master</h3>
+                                <p>Format XLSX atau XLS.</p>
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            id="master-drop-zone"
+                            class="upload-zone"
+                            tabindex="0"
+                            role="button"
+                        >
+
+                            <input
+                                type="file"
+                                id="master-file-input"
+                                accept=".xlsx,.xls"
+                                hidden
+                            >
+
+                            <div class="upload-icon">
+                                <i class="fa-solid fa-file-excel"></i>
+                            </div>
+
+                            <div class="upload-content">
+
+                                <strong>
+                                    Tarik file Excel ke sini
+                                </strong>
+
+                                <span>atau</span>
+
+                                <button
+                                    type="button"
+                                    id="browse-master-file"
+                                    class="button button-primary"
+                                >
+                                    <i class="fa-solid fa-folder-open"></i>
+                                    Pilih File
+                                </button>
+
+                                <small>XLSX / XLS</small>
+
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            id="selected-master-file"
+                            class="selected-file"
+                            hidden
+                        >
+
+                            <div class="selected-file-icon">
+                                <i class="fa-solid fa-file-excel"></i>
+                            </div>
+
+                            <div class="selected-file-info">
+
+                                <strong id="selected-file-name">
+                                    -
+                                </strong>
+
+                                <span id="selected-file-size">
+                                    -
+                                </span>
+
+                            </div>
+
+                            <button
+                                type="button"
+                                id="remove-master-file"
+                                class="icon-button danger"
+                            >
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+
+                        </div>
+
+
+                        <div class="panel-actions">
+
+                            <button
+                                type="button"
+                                id="read-master-file"
+                                class="button button-primary"
+                                disabled
+                            >
+                                Baca File
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+
+                        </div>
+
+                        <!-- PANDUAN PENULISAN INPUT PATEN -->
+                        <div style="margin-top:24px;padding:18px 20px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;">
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                                <i class="fa-solid fa-circle-question" style="color:#0284c7;font-size:18px;"></i>
+                                <strong style="color:#0f2a43;font-size:14px;">Panduan Penulisan Input Paten Master Produk (Agar Diterima Sistem)</strong>
+                            </div>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:14px;font-size:12.5px;color:#334155;line-height:1.6;">
+                                <div style="background:#fff;padding:12px;border-radius:8px;border:1px solid #e2e8f0;">
+                                    <strong style="color:#0f172a;display:block;margin-bottom:4px;"><i class="fa-solid fa-barcode text-primary"></i> 1. Kode & Barcode</strong>
+                                    <span>• <b>Kode Produk Internal</b>: Format standar <code>[NamaSupplier]-PRD-[Nomor]</code> (contoh: <code>PT. KIMIA FARMA-PRD-001</code>). Jangan gunakan karakter miring (<code>/</code> atau <code>\</code>).<br>
+                                    • <b>Barcode</b>: Opsional, nomor EAN/UPC fisik produk tanpa spasi.</span>
+                                </div>
+                                <div style="background:#fff;padding:12px;border-radius:8px;border:1px solid #e2e8f0;">
+                                    <strong style="color:#0f172a;display:block;margin-bottom:4px;"><i class="fa-solid fa-building text-primary"></i> 2. Supplier & Kategori</strong>
+                                    <span>• <b>Supplier</b>: Tuliskan Nama Perusahaan resmi lengkap (contoh: <code>PT Kimia Farma Trading</code> atau <code>PT Anugrah Argon Medica</code>). Jangan tulis <i>Supplier 1</i>.<br>
+                                    • <b>Kategori</b>: Nama kelompok resmi (contoh: <code>Obat Bebas</code>, <code>Generik</code>, <code>Alkes</code>).</span>
+                                </div>
+                                <div style="background:#fff;padding:12px;border-radius:8px;border:1px solid #e2e8f0;">
+                                    <strong style="color:#0f172a;display:block;margin-bottom:4px;"><i class="fa-solid fa-layer-group text-primary"></i> 3. Satuan & Konversi</strong>
+                                    <span>• <b>Satuan Dasar</b>: Satuan terkecil jual &amp; stok (contoh: <code>Tablet</code>, <code>Kapsul</code>, <code>Botol</code>, <code>Pcs</code>).<br>
+                                    • <b>Satuan Pembelian</b>: Satuan saat kulakan (contoh: <code>Box</code>, <code>Dus</code>).<br>
+                                    • <b>Konversi</b>: Isi pcs dalam 1 satuan beli (contoh: 1 Box = 100 Tablet &rarr; isi angka <code>100</code>).</span>
+                                </div>
+                                <div style="background:#fff;padding:12px;border-radius:8px;border:1px solid #e2e8f0;">
+                                    <strong style="color:#0f172a;display:block;margin-bottom:4px;"><i class="fa-solid fa-money-bill-wave text-primary"></i> 4. Harga & Status</strong>
+                                    <span>• <b>Harga Beli Terakhir &amp; Harga Jual</b>: Tulis angka murni tanpa simbol <code>Rp</code> atau titik pemisah ribuan (contoh: <code>15000</code>).<br>
+                                    • <b>Status</b>: Gunakan <code>Aktif</code> (jika ada harga jual) atau <code>Perlu Harga Jual</code>.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </section>
+
+
+                    <!-- STEP 2 -->
+                    <section
+                        class="import-panel"
+                        data-import-step="2"
+                        hidden
+                    >
+
+                        <div class="panel-header">
+
+                            <div>
+                                <h3>Preview Workbook</h3>
+                                <p>Periksa data yang akan diproses.</p>
+                            </div>
+
+                            <button
+                                type="button"
+                                class="button button-secondary"
+                                data-import-back="1"
+                            >
+                                <i class="fa-solid fa-arrow-left"></i>
+                                Ganti File
+                            </button>
+
+                        </div>
+
+
+                        <div class="workbook-summary">
+
+                            <article class="summary-card">
+
+                                <span class="summary-icon">
+                                    <i class="fa-solid fa-table"></i>
+                                </span>
+
+                                <div>
+                                    <span>Sheet</span>
+                                    <strong id="summary-sheet-count">0</strong>
+                                </div>
+
+                            </article>
+
+
+                            <article class="summary-card">
+
+                                <span class="summary-icon">
+                                    <i class="fa-solid fa-list"></i>
+                                </span>
+
+                                <div>
+                                    <span>Total Data</span>
+                                    <strong id="summary-row-count">0</strong>
+                                </div>
+
+                            </article>
+
+
+                            <article class="summary-card">
+
+                                <span class="summary-icon">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                </span>
+
+                                <div>
+                                    <span>Peringatan</span>
+                                    <strong id="summary-warning-count">0</strong>
+                                </div>
+
+                            </article>
+
+                        </div>
+
+
+                        <div
+                            id="master-sheet-tabs"
+                            class="sheet-tabs"
+                        ></div>
+
+
+                        <div class="preview-toolbar">
+
+                            <div class="preview-search">
+
+                                <i class="fa-solid fa-magnifying-glass"></i>
+
+                                <input
+                                    id="master-preview-search"
+                                    type="search"
+                                    placeholder="Cari data..."
+                                >
+
+                            </div>
+
+                            <div class="preview-meta">
+
+                                Menampilkan
+
+                                <strong id="preview-visible-count">
+                                    0
+                                </strong>
+
+                                data
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="table-wrapper">
+
+                            <table class="data-table">
+
+                                <thead id="master-preview-head"></thead>
+
+                                <tbody id="master-preview-body">
+
+                                    <tr>
+                                        <td class="empty-table-state">
+                                            Belum ada data.
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+
+                        <div class="panel-actions split">
+
+                            <button
+                                type="button"
+                                class="button button-secondary"
+                                data-import-back="1"
+                            >
+                                Kembali
+                            </button>
+
+                            <button
+                                type="button"
+                                id="review-master-warnings"
+                                class="button button-primary"
+                            >
+                                Tinjau Peringatan
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- STEP 3 -->
+                    <section
+                        class="import-panel"
+                        data-import-step="3"
+                        hidden
+                    >
+
+                        <div class="panel-header">
+
+                            <div>
+                                <h3>Pemeriksaan Data</h3>
+
+                                <p>
+                                    Warning tidak otomatis
+                                    membatalkan proses import.
+                                </p>
+                            </div>
+
+                        </div>
+
+
+                        <div class="workbook-summary">
+
+                            <article class="summary-card">
+
+                                <span class="summary-icon">
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                </span>
+
+                                <div>
+                                    <span>Total Peringatan</span>
+                                    <strong id="warning-total-count">0</strong>
+                                </div>
+
+                            </article>
+
+
+                            <article class="summary-card">
+
+                                <span class="summary-icon">
+                                    <i class="fa-solid fa-file-circle-minus"></i>
+                                </span>
+
+                                <div>
+                                    <span>Baris Kosong</span>
+                                    <strong id="warning-empty-row-count">0</strong>
+                                </div>
+
+                            </article>
+
+
+                            <article class="summary-card">
+
+                                <span class="summary-icon">
+                                    <i class="fa-solid fa-file-circle-question"></i>
+                                </span>
+
+                                <div>
+                                    <span>Data Parsial</span>
+                                    <strong id="warning-partial-row-count">0</strong>
+                                </div>
+
+                            </article>
+
+                        </div>
+
+
+                        <div class="table-wrapper">
+
+                            <table class="data-table">
+
+                                <thead>
+
+                                    <tr>
+                                        <th>Status</th>
+                                        <th>Sheet</th>
+                                        <th>Temuan</th>
+                                        <th>Jumlah</th>
+                                        <th>Keterangan</th>
+                                    </tr>
+
+                                </thead>
+
+                                <tbody id="master-warning-body"></tbody>
+
+                            </table>
+
+                        </div>
+
+
+                        <div class="panel-actions split">
+
+                            <button
+                                type="button"
+                                class="button button-secondary"
+                                data-import-back="2"
+                            >
+                                <i class="fa-solid fa-arrow-left"></i>
+                                Preview
+                            </button>
+
+                            <button
+                                type="button"
+                                id="continue-master-confirm"
+                                class="button button-primary"
+                            >
+                                Lanjutkan
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- STEP 4 -->
+                    <section
+                        class="import-panel"
+                        data-import-step="4"
+                        hidden
+                    >
+
+                        <div class="panel-header">
+
+                            <div>
+
+                                <h3>Konfirmasi Import</h3>
+
+                                <p>
+                                    Periksa hasil pencocokan sebelum
+                                    data disimpan.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="workbook-summary">
+
+                            <article class="summary-card">
+
+                                <span class="summary-icon">
+                                    <i class="fa-solid fa-circle-plus"></i>
+                                </span>
+
+                                <div>
+                                    <span>Data Baru</span>
+                                    <strong id="match-new-count">0</strong>
+                                </div>
+
+                            </article>
+
+
+                            <article class="summary-card">
+
+                                <span class="summary-icon">
+                                    <i class="fa-solid fa-link"></i>
+                                </span>
+
+                                <div>
+                                    <span>Data Sudah Ada</span>
+                                    <strong id="match-exact-count">0</strong>
+                                </div>
+
+                            </article>
+
+
+                            <article class="summary-card">
+
+                                <span class="summary-icon">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                </span>
+
+                                <div>
+                                    <span>Perlu Ditinjau</span>
+                                    <strong id="match-review-count">0</strong>
+                                </div>
+
+                            </article>
+
+                        </div>
+
+
+                        <div
+                            class="workbook-summary"
+                            style="grid-template-columns: repeat(2, minmax(0,1fr));"
+                        >
+
+                            <article class="summary-card">
+
+                                <span class="summary-icon">
+                                    <i class="fa-solid fa-clone"></i>
+                                </span>
+
+                                <div>
+                                    <span>Duplikat Workbook</span>
+                                    <strong id="match-duplicate-count">0</strong>
+                                </div>
+
+                            </article>
+
+
+                            <article class="summary-card">
+
+                                <span class="summary-icon">
+                                    <i class="fa-solid fa-list-check"></i>
+                                </span>
+
+                                <div>
+                                    <span>Total Data</span>
+                                    <strong id="match-total-count">0</strong>
+                                </div>
+
+                            </article>
+
+                        </div>
+
+
+                        <fieldset
+                            class="import-options"
+                            style="margin-top:14px;"
+                        >
+
+                            <legend>
+                                Jika Kode Produk
+                                sudah ada
+                            </legend>
+
+
+                            <label class="radio-option">
+
+                                <input
+                                    type="radio"
+                                    name="existingDataMode"
+                                    value="update"
+                                    checked
+                                >
+
+                                <span>
+
+                                    <strong>
+                                        Perbarui Data Lama
+                                    </strong>
+
+                                    <small>
+                                        Data sistem diperbarui
+                                        menggunakan isi Excel.
+                                    </small>
+
+                                </span>
+
+                            </label>
+
+
+                            <label class="radio-option">
+
+                                <input
+                                    type="radio"
+                                    name="existingDataMode"
+                                    value="skip"
+                                >
+
+                                <span>
+
+                                    <strong>
+                                        Lewati Data Lama
+                                    </strong>
+
+                                    <small>
+                                        Data yang sudah ada
+                                        tidak diubah.
+                                    </small>
+
+                                </span>
+
+                            </label>
+
+                        </fieldset>
+
+
+                        <div
+                            class="module-header"
+                            style="margin-top:14px;"
+                        >
+
+                            <div>
+
+                                <h2>
+                                    Data Perlu Ditinjau
+                                </h2>
+
+                                <p>
+                                    Jika Kode Produk tidak cocok,
+                                    tetapi Nama Produk sama dengan
+                                    data lama, sistem
+                                    <strong>tidak akan mengimportnya otomatis</strong>.
+                                    Data tersebut ditahan untuk
+                                    diperiksa Admin.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <div
+                            class="table-wrapper"
+                            style="margin-top:14px;"
+                        >
+
+                            <table class="data-table">
+
+                                <thead>
+
+                                    <tr>
+                                        <th>Sheet</th>
+                                        <th>Baris</th>
+                                        <th>Identitas</th>
+                                        <th>Status</th>
+                                        <th>Dasar Pencocokan</th>
+                                    </tr>
+
+                                </thead>
+
+                                <tbody id="master-match-body"></tbody>
+
+                            </table>
+
+                        </div>
+
+
+                        <div class="preview-note" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;">
+
+                            <i class="fa-solid fa-shield-halved" style="color:#2563eb;"></i>
+
+                            Data transaksi dan stok fisik saat ini tidak akan diubah atau direset.
+                            Perubahan master langsung disimpan ke IndexedDB dan disinkronkan ke Firestore cloud.
+
+                        </div>
+
+
+                        <div class="panel-actions split">
+
+                            <button
+                                type="button"
+                                class="button button-secondary"
+                                data-import-back="3"
+                            >
+                                <i class="fa-solid fa-arrow-left"></i>
+                                Kembali
+                            </button>
+
+                            <button
+                                type="button"
+                                id="confirm-master-import"
+                                class="button button-primary"
+                            >
+                                <i class="fa-solid fa-file-import"></i>
+                                Import Sekarang
+                            </button>
+
+                        </div>
+
+                    </section>
+
+
+                    <!-- RESULT PANEL (RINGKASAN LENGKAP IMPORT) -->
+                    <section
+                        id="master-import-result"
+                        class="import-panel"
+                        hidden
+                    >
+
+                        <div class="stage-placeholder" style="padding:32px 20px;">
+
+                            <i
+                                class="fa-solid fa-circle-check"
+                                style="color:#16a34a;font-size:48px;"
+                            ></i>
+
+                            <h3 style="font-size:20px;font-weight:800;color:#0f2a43;margin-top:14px;">
+                                Import Master Berhasil
+                            </h3>
+
+                            <p id="master-import-result-text" style="color:#475569;font-size:14px;max-width:560px;margin:8px auto 20px;">
+                                Seluruh perubahan master data telah berhasil disimpan dan disinkronkan ke database.
+                            </p>
+
+
+                            <div
+                                class="workbook-summary"
+                                style="margin-top:18px;max-width:760px;margin-left:auto;margin-right:auto;"
+                            >
+
+                                <article class="summary-card">
+
+                                    <span class="summary-icon">
+                                        <i class="fa-solid fa-plus" style="color:#0284c7;"></i>
+                                    </span>
+
+                                    <div>
+                                        <span>Produk Ditambahkan</span>
+                                        <strong id="result-added-count">0</strong>
+                                    </div>
+
+                                </article>
+
+
+                                <article class="summary-card">
+
+                                    <span class="summary-icon">
+                                        <i class="fa-solid fa-pen" style="color:#d97706;"></i>
+                                    </span>
+
+                                    <div>
+                                        <span>Produk Diperbarui</span>
+                                        <strong id="result-updated-count">0</strong>
+                                    </div>
+
+                                </article>
+
+
+                                <article class="summary-card">
+
+                                    <span class="summary-icon">
+                                        <i class="fa-solid fa-forward" style="color:#64748b;"></i>
+                                    </span>
+
+                                    <div>
+                                        <span>Produk Dilewati</span>
+                                        <strong id="result-skipped-count">0</strong>
+                                    </div>
+
+                                </article>
+
+                            </div>
+
+
+                            <div
+                                class="panel-actions"
+                                style="justify-content:center;margin-top:28px;gap:12px;flex-wrap:wrap;"
+                            >
+
+                                <button
+                                    type="button"
+                                    id="btn-result-to-dashboard"
+                                    class="button button-primary"
+                                    style="padding:10px 22px;"
+                                >
+                                    <i class="fa-solid fa-gauge-high"></i>
+                                    Kembali ke Dashboard
+                                </button>
+
+                                <button
+                                    type="button"
+                                    id="btn-result-to-products"
+                                    class="button button-secondary"
+                                    style="padding:10px 22px;"
+                                >
+                                    <i class="fa-solid fa-boxes-stacked"></i>
+                                    Lihat Daftar Produk
+                                </button>
+
+                                <button
+                                    type="button"
+                                    id="import-another-master"
+                                    class="button button-secondary"
+                                    style="padding:10px 22px;"
+                                >
+                                    <i class="fa-solid fa-file-excel"></i>
+                                    Import File Lain
+                                </button>
+
+                            </div>
+
+                        </div>
+
+                    </section>
+
+                </div>
+
+            </section>
+
+
+
+            <section class="view-section" data-view-section="import-opname" hidden>
+                <div class="ops-page">
+                    <header class="module-header">
+                        <div>
+                            <h2>Import Hasil Stock Opname</h2>
+                            <p>Unggah file hasil hitung fisik yang sebelumnya diekspor melalui Stock Opname, lalu tinjau selisih dan konfirmasi adjustment.</p>
+                        </div>
+                        <div class="module-header-actions">
+                            <button type="button" id="btn-back-to-opname" class="button button-secondary">
+                                <i class="fa-solid fa-arrow-left"></i> Kembali ke Stock Opname
+                            </button>
+                            <a href="../data/templates/Template_Stock_Opname_KasirPro.xlsx" class="button button-secondary" download="Template_Stock_Opname_KasirPro.xlsx">
+                                <i class="fa-solid fa-download"></i> Template Opname Kosong
+                            </a>
+                        </div>
+                    </header>
+                    <section class="ops-card">
+                        <div class="ops-grid cols-3">
+                            <label class="ops-field wide"><span>File Excel</span><input id="opname-import-file" type="file" accept=".xlsx,.xls"></label>
+                            <div class="ops-action-field"><button id="read-opname-import" type="button" class="button button-primary"><i class="fa-solid fa-file-import"></i> Baca &amp; Preview</button></div>
+                        </div>
+                        <div id="opname-import-summary" class="ops-notice" hidden></div>
+                        <div id="opname-import-preview" class="table-wrapper" hidden>
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Kode</th>
+                                        <th>Produk</th>
+                                        <th>Stok Sistem</th>
+                                        <th>Stok Fisik</th>
+                                        <th>Selisih</th>
+                                        <th>Nilai Selisih</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="opname-import-preview-body"></tbody>
+                            </table>
+                        </div>
+                        <div id="opname-import-actions" class="panel-actions" hidden>
+                            <button id="confirm-opname-import" type="button" class="button button-primary"><i class="fa-solid fa-check"></i> Konfirmasi Adjustment</button>
+                        </div>
+                    </section>
+                </div>
+            </section>
+            <section
+    class="view-section"
+    data-view-section="products"
+    hidden
+>
+
+    <div class="import-page">
+
+        <header class="module-header">
+
+            <div>
+
+                <h2>
+                    DAFTAR PRODUK SUPPLIER
+                </h2>
+
+                <p>
+                    Kelola seluruh master produk yang digunakan oleh Faktur, Stok, POS, dan Laporan.
+                </p>
+
+            </div>
+
+            <div class="module-header-actions">
+
+                <button
+                    type="button"
+                    id="btn-add-product"
+                    class="button button-primary"
+                    title="Tambah master produk baru secara manual"
+                >
+                    <i class="fa-solid fa-plus"></i>
+                    Tambah Produk
+                </button>
+
+                <button
+                    type="button"
+                    id="export-master-button"
+                    class="button button-secondary"
+                    title="Export seluruh master produk ke Excel"
+                >
+                    <i class="fa-solid fa-file-export"></i>
+                    Export Master Produk
+                </button>
+
+                <button
+                    type="button"
+                    id="btn-goto-import-master"
+                    class="button button-secondary"
+                    title="Import atau update master produk dari Excel"
+                >
+                    <i class="fa-solid fa-file-import"></i>
+                    Import Master Produk
+                </button>
+
+                <button
+                    type="button"
+                    id="refresh-products"
+                    class="button button-secondary"
+                >
+                    <i class="fa-solid fa-rotate"></i>
+                    Refresh
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- RINGKASAN -->
+        <div class="workbook-summary">
+
+            <article class="summary-card">
+
+                <span class="summary-icon">
+                    <i class="fa-solid fa-box"></i>
+                </span>
+
+                <div>
+                    <span>Total Produk</span>
+
+                    <strong id="product-total-count">
+                        0
+                    </strong>
+                </div>
+
+            </article>
+
+
+            <article class="summary-card">
+
+                <span class="summary-icon">
+                    <i class="fa-solid fa-box-open"></i>
+                </span>
+
+                <div>
+                    <span>Total Stok</span>
+
+                    <strong id="product-total-stock">
+                        0
+                    </strong>
+                </div>
+
+            </article>
+
+
+            <article class="summary-card">
+
+                <span class="summary-icon">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </span>
+
+                <div>
+                    <span>Stok Minimum</span>
+
+                    <strong id="product-low-stock-count">
+                        0
+                    </strong>
+                </div>
+
+            </article>
+
+        </div>
+
+
+        <!-- TOOLBAR -->
+        <section class="import-panel">
+
+            <div class="preview-toolbar">
+
+                <div class="preview-search">
+
+                    <i class="fa-solid fa-magnifying-glass"></i>
+
+                    <input
+                        type="search"
+                        id="product-search"
+                        placeholder="Cari kode atau nama produk..."
+                    >
+
+                </div>
+
+
+                <div
+                    class="module-header-actions"
+                    style="display:flex; gap:8px; flex-wrap:wrap;"
+                >
+
+                    <select
+                        id="product-category-filter"
+                        class="button button-secondary"
+                        aria-label="Filter kategori"
+                    >
+                        <option value="">
+                            Semua Kategori
+                        </option>
+                    </select>
+
+
+                    <select
+                        id="product-supplier-filter"
+                        class="button button-secondary"
+                        aria-label="Filter supplier"
+                    >
+                        <option value="">
+                            Semua Supplier
+                        </option>
+                    </select>
+
+
+                    <select
+                        id="product-status-filter"
+                        class="button button-secondary"
+                        aria-label="Filter status produk"
+                    >
+                        <option value="">
+                            Semua Status
+                        </option>
+
+                        <option value="aktif">
+                            Aktif
+                        </option>
+
+                        <option value="nonaktif">
+                            Nonaktif
+                        </option>
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <!-- TABEL PRODUK -->
+            <div class="table-wrapper">
+
+                <table
+                    id="products-table"
+                    class="data-table"
+                >
+
+                    <thead>
+
+                        <tr>
+                            <th>Kode Produk</th>
+                            <th>Nama Produk</th>
+                            <th>Kategori</th>
+                            <th>Supplier</th>
+                            <th>Harga Beli</th>
+                            <th>Harga Jual</th>
+                            <th>Satuan (Beli &rarr; Dasar)</th>
+                            <th>Stok</th>
+                            <th>Stok Minimum</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody id="products-table-body">
+
+                        <tr>
+
+                            <td
+                                colspan="11"
+                                class="empty-table-state"
+                            >
+                                Belum ada data produk.
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <!-- FOOTER TABEL -->
+            <div
+                class="panel-actions split"
+                style="align-items:center;"
+            >
+
+                <div class="preview-meta">
+
+                    Menampilkan
+
+                    <strong id="products-visible-count">
+                        0
+                    </strong>
+
+                    dari
+
+                    <strong id="products-total-result-count">
+                        0
+                    </strong>
+
+                    produk
+
+                </div>
+
+
+                <div
+                    style="display:flex; gap:8px;"
+                >
+
+                    <button
+                        type="button"
+                        id="products-prev-page"
+                        class="button button-secondary"
+                        disabled
+                    >
+                        <i class="fa-solid fa-chevron-left"></i>
+                        Sebelumnya
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="products-next-page"
+                        class="button button-secondary"
+                        disabled
+                    >
+                        Berikutnya
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+
+</section>
+
+
+            <!-- DETAIL PRODUK -->
+            <div
+                id="product-detail-overlay"
+                class="product-detail-overlay"
+                hidden
+            >
+                <section
+                    class="product-detail-panel"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="product-detail-title"
+                >
+                    <header class="product-detail-header">
+                        <div>
+                            <span class="product-detail-label">Detail Produk</span>
+                            <h2 id="product-detail-title">-</h2>
+                            <p id="product-detail-code">-</p>
+                        </div>
+
+                        <button
+                            type="button"
+                            id="close-product-detail"
+                            class="product-detail-close"
+                            aria-label="Tutup detail produk"
+                        >
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </header>
+
+                    <div class="product-detail-body">
+                        <section class="product-detail-section">
+                            <h3>Informasi Produk</h3>
+                            <div class="product-detail-grid">
+                                <div class="product-detail-item"><span>Kode Produk</span><strong id="detail-product-code">—</strong></div>
+                                <div class="product-detail-item"><span>Nama Produk</span><strong id="detail-product-name">—</strong></div>
+                                <div class="product-detail-item"><span>Kategori</span><strong id="detail-product-category">—</strong></div>
+                                <div class="product-detail-item"><span>Satuan</span><strong id="detail-product-unit">—</strong></div>
+                                <div class="product-detail-item"><span>Supplier</span><strong id="detail-product-supplier">—</strong></div>
+                            </div>
+                        </section>
+
+                        <section class="product-detail-section">
+                            <h3>Harga & Stok</h3>
+                            <div class="product-detail-grid">
+                                <div class="product-detail-item"><span>Harga Beli</span><strong id="detail-product-buy-price">Rp0</strong></div>
+                                <div class="product-detail-item"><span>Harga Jual</span><strong id="detail-product-sell-price">Rp0</strong></div>
+                                <div class="product-detail-item"><span>Stok</span><div id="detail-product-stock" class="product-detail-value">—</div></div>
+                                <div class="product-detail-item"><span>Stok Minimum</span><strong id="detail-product-min-stock">0</strong></div>
+                                <div class="product-detail-item"><span>Lokasi Rak</span><strong id="detail-product-location">—</strong></div>
+                                <div class="product-detail-item"><span>Status Produk</span><div id="detail-product-status" class="product-detail-value">—</div></div>
+                            </div>
+                        </section>
+
+                        <section class="product-detail-section">
+                            <h3>Batch & Kedaluwarsa</h3>
+                            <div class="product-detail-grid">
+                                <div class="product-detail-item"><span>Batch</span><strong id="detail-product-batch">—</strong></div>
+                                <div class="product-detail-item"><span>Tanggal Expired</span><strong id="detail-product-expired">—</strong></div>
+                            </div>
+                        </section>
+
+                        <section class="product-detail-section">
+                            <h3>Catatan</h3>
+                            <div id="detail-product-notes" class="product-detail-notes">Tidak ada catatan.</div>
+                        </section>
+                    </div>
+
+                    <footer class="product-detail-footer">
+                        <span>Data berasal dari Master Produk.</span>
+                        <button type="button" id="close-product-detail-footer" class="button button-secondary">Tutup</button>
+                    </footer>
+                </section>
+            </div>
+
+
+            <!-- MASTER KATEGORI -->
+            <section class="view-section" data-view-section="categories" hidden>
+                <div class="import-page">
+                    <header class="module-header">
+                        <div>
+                            <h2>Master Kategori</h2>
+                            <p>Daftar kategori yang tersimpan dari hasil Import Master Excel.</p>
+                        </div>
+                        <div class="module-header-actions">
+                            <button type="button" id="refresh-categories" class="button button-secondary">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                                Muat Ulang
+                            </button>
+                        </div>
+                    </header>
+                    <div class="workbook-summary">
+                        <article class="summary-card">
+                            <span class="summary-icon"><i class="fa-solid fa-tags"></i></span>
+                            <div><span>Total Kategori</span><strong id="category-total-count">0</strong></div>
+                        </article>
+                        <article class="summary-card">
+                            <span class="summary-icon"><i class="fa-solid fa-circle-check"></i></span>
+                            <div><span>Kategori Aktif</span><strong id="category-active-count">0</strong></div>
+                        </article>
+                    </div>
+
+                    <section class="import-panel">
+                        <div class="preview-toolbar">
+                            <div class="preview-search">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="search" id="category-search" placeholder="Cari kode, nama, atau deskripsi kategori...">
+                            </div>
+                            <select id="category-status-filter" class="product-filter">
+                                <option value="">Semua Status</option>
+                                <option value="aktif">Aktif</option>
+                                <option value="nonaktif">Nonaktif</option>
+                            </select>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Kode Kategori</th>
+                                        <th>Nama Kategori</th>
+                                        <th>Deskripsi</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categories-table-body">
+                                    <tr><td colspan="4" class="empty-table-state">Belum ada data kategori.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="panel-actions split">
+                            <div class="preview-meta">
+                                Menampilkan <strong id="categories-visible-count">0</strong>
+                                dari <strong id="categories-total-result-count">0</strong> kategori
+                            </div>
+                            <div class="pagination">
+                                <button type="button" id="categories-prev-page" class="button button-secondary">
+                                    <i class="fa-solid fa-chevron-left"></i> Sebelumnya
+                                </button>
+                                <button type="button" id="categories-next-page" class="button button-secondary">
+                                    Berikutnya <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </section>
+
+            <!-- DETAIL KATEGORI -->
+            <div id="category-detail-overlay" class="product-detail-overlay" hidden>
+                <section class="product-detail-panel" role="dialog" aria-modal="true" aria-labelledby="category-detail-title">
+                    <header class="product-detail-header">
+                        <div>
+                            <span class="product-detail-label">Detail Kategori</span>
+                            <h2 id="category-detail-title">-</h2>
+                            <p id="category-detail-code">-</p>
+                        </div>
+                        <button type="button" id="close-category-detail" class="product-detail-close" aria-label="Tutup detail kategori">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </header>
+
+                    <div class="product-detail-body">
+                        <section class="product-detail-section">
+                            <h3>Informasi Kategori</h3>
+                            <div class="product-detail-grid">
+                                <div class="product-detail-item"><span>Kode Kategori</span><strong id="detail-category-code">—</strong></div>
+                                <div class="product-detail-item"><span>Nama Kategori</span><strong id="detail-category-name">—</strong></div>
+                                <div class="product-detail-item"><span>Status</span><div id="detail-category-status" class="product-detail-value">—</div></div>
+                            </div>
+                        </section>
+                        <section class="product-detail-section">
+                            <h3>Deskripsi</h3>
+                            <div id="detail-category-description" class="product-detail-notes">Tidak ada deskripsi.</div>
+                        </section>
+                    </div>
+
+                    <footer class="product-detail-footer">
+                        <span>Data berasal dari Master Kategori.</span>
+                        <button type="button" id="close-category-detail-footer" class="button button-secondary">Tutup</button>
+                    </footer>
+                </section>
+            </div>
+            <!-- MASTER SUPPLIER -->
+            <section class="view-section" data-view-section="suppliers" hidden>
+                <div class="import-page">
+                    <header class="module-header">
+                        <div>
+                            <h2>Master Supplier</h2>
+                            <p>Daftar supplier yang tersimpan dari hasil Import Master Excel.</p>
+                        </div>
+                        <div class="module-header-actions">
+                            <button type="button" id="refresh-suppliers" class="button button-secondary">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                                Muat Ulang
+                            </button>
+                        </div>
+                    </header>
+
+                    <div class="workbook-summary">
+                        <article class="summary-card">
+                            <span class="summary-icon"><i class="fa-solid fa-truck"></i></span>
+                            <div><span>Total Supplier</span><strong id="supplier-total-count">0</strong></div>
+                        </article>
+                        <article class="summary-card">
+                            <span class="summary-icon"><i class="fa-solid fa-circle-check"></i></span>
+                            <div><span>Supplier Aktif</span><strong id="supplier-active-count">0</strong></div>
+                        </article>
+                        <article class="summary-card">
+                            <span class="summary-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
+                            <div><span>Produk Terhubung</span><strong id="supplier-linked-product-count">0</strong></div>
+                        </article>
+                    </div>
+
+                    <section class="import-panel">
+                        <div class="preview-toolbar">
+                            <div class="preview-search">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="search" id="supplier-search" placeholder="Cari kode, nama, kontak, telepon, atau email supplier...">
+                            </div>
+                            <select id="supplier-status-filter" class="product-filter">
+                                <option value="">Semua Status</option>
+                                <option value="aktif">Aktif</option>
+                                <option value="nonaktif">Nonaktif</option>
+                            </select>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Supplier</th>
+                                        <th>Nama Supplier</th>
+                                        <th>Kontak Person</th>
+                                        <th>Telepon</th>
+                                        <th>Email</th>
+                                        <th>Termin</th>
+                                        <th>Produk</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="suppliers-table-body">
+                                    <tr><td colspan="8" class="empty-table-state">Belum ada data supplier.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="panel-actions split">
+                            <div class="preview-meta">
+                                Menampilkan <strong id="suppliers-visible-count">0</strong>
+                                dari <strong id="suppliers-total-result-count">0</strong> supplier
+                            </div>
+                            <div class="pagination">
+                                <button type="button" id="suppliers-prev-page" class="button button-secondary">
+                                    <i class="fa-solid fa-chevron-left"></i> Sebelumnya
+                                </button>
+                                <button type="button" id="suppliers-next-page" class="button button-secondary">
+                                    Berikutnya <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </section>
+
+            <!-- DETAIL SUPPLIER -->
+            <div id="supplier-detail-overlay" class="product-detail-overlay" hidden>
+                <section class="product-detail-panel" role="dialog" aria-modal="true" aria-labelledby="supplier-detail-title">
+                    <header class="product-detail-header">
+                        <div>
+                            <span class="product-detail-label">Detail Supplier</span>
+                            <h2 id="supplier-detail-title">-</h2>
+                            <p id="supplier-detail-code">-</p>
+                        </div>
+                        <button type="button" id="close-supplier-detail" class="product-detail-close" aria-label="Tutup detail supplier">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </header>
+
+                    <div class="product-detail-body">
+                        <section class="product-detail-section">
+                            <h3>Informasi Supplier</h3>
+                            <div class="product-detail-grid">
+                                <div class="product-detail-item"><span>Supplier</span><strong id="detail-supplier-code">—</strong></div>
+                                <div class="product-detail-item"><span>Nama Supplier</span><strong id="detail-supplier-name">—</strong></div>
+                                <div class="product-detail-item"><span>Status</span><div id="detail-supplier-status" class="product-detail-value">—</div></div>
+                                <div class="product-detail-item"><span>Kontak Person</span><strong id="detail-supplier-contact">—</strong></div>
+                                <div class="product-detail-item"><span>Telepon</span><strong id="detail-supplier-phone">—</strong></div>
+                                <div class="product-detail-item"><span>Email</span><strong id="detail-supplier-email">—</strong></div>
+                                <div class="product-detail-item"><span>NPWP</span><strong id="detail-supplier-npwp">—</strong></div>
+                                <div class="product-detail-item"><span>Termin Default</span><strong id="detail-supplier-term">—</strong></div>
+                                <div class="product-detail-item"><span>Produk Terhubung</span><strong id="detail-supplier-product-count">0</strong></div>
+                            </div>
+                        </section>
+
+                        <section class="product-detail-section">
+                            <h3>Alamat</h3>
+                            <div id="detail-supplier-address" class="product-detail-notes">Tidak ada alamat.</div>
+                        </section>
+
+                        <section class="product-detail-section">
+                            <h3>Catatan</h3>
+                            <div id="detail-supplier-notes" class="product-detail-notes">Tidak ada catatan.</div>
+                        </section>
+                    </div>
+
+                    <footer class="product-detail-footer">
+                        <span>Data berasal dari Master Supplier.</span>
+                        <button type="button" id="close-supplier-detail-footer" class="button button-secondary">Tutup</button>
+                    </footer>
+                </section>
+            </div>
+            <section class="view-section" data-view-section="stock" hidden>
+                <div class="ops-page">
+                    <header class="module-header">
+                        <div>
+                            <h2>Stok</h2>
+                            <p>Pusat informasi posisi stok saat ini dan riwayat pergerakan stok (Barang Masuk, Mutasi, dan Koreksi).</p>
+                        </div>
+                        <div class="module-header-actions">
+                            <button id="refresh-stock" class="button button-primary" type="button"><i class="fa-solid fa-rotate"></i> Muat Ulang</button>
+                        </div>
+                    </header>
+
+                    <div class="stock-sub-tabs" style="display:flex;gap:10px;margin-bottom:16px;">
+                        <button type="button" id="tab-sub-stock-current" class="button button-primary" style="padding:8px 18px;font-size:13px;">
+                            <i class="fa-solid fa-boxes-stacked"></i> Stok Saat Ini
+                        </button>
+                        <button type="button" id="tab-sub-stock-movements" class="button button-secondary" style="padding:8px 18px;font-size:13px;">
+                            <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Mutasi &amp; Barang Masuk
+                        </button>
+                    </div>
+
+                    <!-- Panel 1: Stok Saat Ini -->
+                    <div id="panel-sub-stock-current">
+                        <div class="workbook-summary"><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-boxes-stacked"></i></span><div><span>Total Produk</span><strong id="stock-product-count">0</strong></div></article><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-cubes"></i></span><div><span>Total Stok</span><strong id="stock-unit-count">0</strong></div></article><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-triangle-exclamation"></i></span><div><span>Menipis/Habis</span><strong id="stock-alert-count">0</strong></div></article></div>
+                        <section class="ops-card"><div class="preview-toolbar stock-filter-toolbar"><div class="preview-search"><i class="fa-solid fa-magnifying-glass"></i><input id="stock-search" type="search" placeholder="Cari kode atau nama produk..." aria-label="Cari kode atau nama produk"></div><select id="stock-category-filter" aria-label="Filter kategori"><option value="">Semua Kategori</option></select><select id="stock-supplier-filter" aria-label="Filter supplier"><option value="">Semua Supplier</option></select><select id="stock-status-filter" aria-label="Filter status stok"><option value="">Semua Stok</option><option value="safe">Stok Aman</option><option value="low">Stok Menipis</option><option value="empty">Stok Habis</option></select><button id="stock-reset-filter" class="button button-secondary" type="button" hidden>Reset Filter</button></div><p id="stock-loading-status" class="stock-loading-status" role="status" aria-live="polite" hidden><i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Memuat stok saat ini…</p><div class="table-wrapper"><table class="data-table"><thead><tr><th>Kode</th><th>Produk</th><th>Kategori</th><th>Stok</th><th>Min.</th><th>Harga Beli</th><th>Nilai Stok</th><th>Status Stok</th><th>Aksi</th></tr></thead><tbody id="stock-table-body"></tbody></table></div><div class="panel-actions split stock-pagination"><div class="preview-meta" id="stock-page-info" aria-live="polite"></div><div class="pagination"><button id="stock-prev-page" type="button" class="button button-secondary"><i class="fa-solid fa-chevron-left" aria-hidden="true"></i> Sebelumnya</button><button id="stock-next-page" type="button" class="button button-secondary">Berikutnya <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button></div></div></section>
+                    </div>
+
+                    <!-- Panel 2: Riwayat Mutasi & Barang Masuk -->
+                    <div id="panel-sub-stock-movements" hidden>
+                        <section class="ops-card"><div class="preview-toolbar"><div class="preview-search"><i class="fa-solid fa-magnifying-glass"></i><input id="movement-search" type="search" placeholder="Cari produk, referensi, atau jenis mutasi..."></div><select id="movement-type-filter"><option value="">Semua Mutasi</option><option value="purchase">Barang Masuk</option><option value="opening">Stok Awal</option><option value="opname">Stock Opname</option><option value="sale">Penjualan</option><option value="reversal">Pembalikan</option></select></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Waktu</th><th>Jenis</th><th>Referensi</th><th>Kode</th><th>Produk</th><th>Perubahan</th><th>Stok Setelah</th><th>Keterangan</th></tr></thead><tbody id="movement-table-body"></tbody></table></div></section>
+                    </div>
+                </div>
+            </section>
+            <section class="view-section" data-view-section="goods-in" hidden>
+                <div class="ops-page"><header class="module-header"><div><h2>Barang Masuk & Mutasi Stok</h2><p>Riwayat perubahan stok dari faktur pembelian, stok awal produk baru, stock opname, dan penjualan POS.</p></div><button id="refresh-goods-in" class="button button-primary" type="button"><i class="fa-solid fa-rotate"></i> Muat Ulang</button></header><section class="ops-card"><div class="preview-toolbar"><div class="preview-search"><i class="fa-solid fa-magnifying-glass"></i><input id="movement-search" type="search" placeholder="Cari produk, referensi, atau jenis mutasi..."></div><select id="movement-type-filter"><option value="">Semua Mutasi</option><option value="purchase">Barang Masuk</option><option value="opening">Stok Awal</option><option value="opname">Stock Opname</option><option value="sale">Penjualan</option><option value="reversal">Pembalikan</option></select></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Waktu</th><th>Jenis</th><th>Referensi</th><th>Kode</th><th>Produk</th><th>Perubahan</th><th>Stok Setelah</th><th>Keterangan</th></tr></thead><tbody id="movement-table-body"></tbody></table></div></section></div>
+            </section>
+            <section class="view-section" data-view-section="stock-opname" hidden>
+                <div class="ops-page"><header class="module-header"><div><h2>Stock Opname</h2><p>Halaman utama untuk memulai opname dari stok aktual dan melihat riwayat penyesuaian.</p></div><div class="module-header-actions"><button id="opname-export-button" class="button button-secondary" type="button"><i class="fa-solid fa-file-export"></i> Export Stok Sistem</button><button id="go-import-opname" class="button button-primary" type="button"><i class="fa-solid fa-file-import"></i> Import Hasil Opname</button></div></header><section class="ops-card"><div class="ops-notice"><strong>Alur:</strong> 1) Export stok sistem → 2) isi kolom Stok Fisik → 3) Import Hasil Opname → 4) periksa Selisih → 5) Konfirmasi Adjustment.</div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Tanggal</th><th>Referensi</th><th>Produk Disesuaikan</th><th>Total Selisih Qty</th><th>Nilai Selisih</th></tr></thead><tbody id="opname-history-body"></tbody></table></div></section></div>
+            </section>
+            <section class="view-section" data-view-section="purchase-invoices" hidden>
+                <div class="ops-page"><header class="module-header"><div><h2>Faktur Pembelian</h2><p>Kelola faktur pembelian distributor farmasi via Input Grid Manual dengan rekonsiliasi matematis.</p></div><div class="module-header-actions"><button id="btn-open-manual-invoice" class="button button-primary" type="button"><i class="fa-solid fa-plus"></i> Input Faktur Manual</button></div></header>
+                <div class="workbook-summary"><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-file-invoice"></i></span><div><span>Total Faktur</span><strong id="invoice-count">0</strong></div></article><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-pen"></i></span><div><span>Review / Pending</span><strong id="invoice-draft-count">0</strong></div></article><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-circle-check"></i></span><div><span>Terkonfirmasi</span><strong id="invoice-confirmed-count">0</strong></div></article><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-money-bill"></i></span><div><span>Total Nilai</span><strong id="invoice-value-total">Rp0</strong></div></article></div>
+                <section class="ops-card"><div class="preview-toolbar"><div class="preview-search"><i class="fa-solid fa-magnifying-glass"></i><input id="invoice-search" type="search" placeholder="Cari nomor faktur atau supplier..."></div><select id="invoice-status-filter"><option value="">Semua Status</option><option value="perlu review">Perlu Review</option><option value="siap konfirmasi">Siap Konfirmasi</option><option value="terkonfirmasi">Terkonfirmasi</option></select></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Nomor Faktur</th><th>Tanggal</th><th>Supplier</th><th>Item</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="invoice-table-body"></tbody></table></div></section></div>
+
+                <!-- MODAL INPUT FAKTUR MANUAL (GRID MODE DENGAN REKONSILIASI MATEMATIKA) -->
+                <div id="modal-manual-invoice" class="product-detail-overlay" hidden>
+                    <section class="product-detail-panel manual-invoice-dialog" role="dialog" aria-modal="true" aria-labelledby="manual-invoice-title" style="width:min(1280px, 98vw);max-width:98vw;">
+                        <header class="product-detail-header" style="background:#0f172a;color:#fff;border-bottom:1px solid #1e293b;padding:14px 20px;">
+                            <div>
+                                <span class="product-detail-label" style="color:#38bdf8;"><i class="fa-solid fa-file-circle-plus"></i> Faktur Pembelian Fisik</span>
+                                <h2 id="manual-invoice-title" style="color:#f8fafc;font-size:1.25rem;font-weight:800;margin:2px 0;">Input Faktur Manual (Grid Mode)</h2>
+                                <p style="color:#94a3b8;font-size:0.8rem;margin:0;">Lengkapi data fisik faktur distributor, cek rekonsiliasi selisih, dan konfirmasi barang masuk.</p>
+                            </div>
+                            <button id="close-manual-invoice-modal" class="product-detail-close" type="button" style="color:#94a3b8;" title="Tutup Modal"><i class="fa-solid fa-xmark"></i></button>
+                        </header>
+
+                        <div class="product-detail-body manual-invoice-body" style="padding:16px 20px;max-height:calc(88vh - 140px);overflow-y:auto;background:#f8fafc;">
+                            <!-- Bagian 1: Header Faktur Fisik -->
+                            <div class="manual-invoice-card" style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e2e8f0;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+                                    <span><i class="fa-solid fa-building-columns text-primary"></i> 1. Informasi Supplier &amp; Faktur Fisik</span>
+                                    <span style="font-size:11px;font-weight:500;color:#64748b;">* Wajib mencocokkan total fisik di kertas faktur</span>
+                                </div>
+                                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
+                                    <div>
+                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Nama Supplier <span class="text-danger">*</span></label>
+                                        <div style="display:flex;gap:6px;">
+                                            <select id="manual-inv-supplier" style="flex:1;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;background:#fff;font-weight:600;">
+                                                <option value="">-- Pilih Supplier --</option>
+                                            </select>
+                                            <button type="button" id="btn-quick-add-supplier-inv" class="button button-small button-secondary" title="Tambah Supplier Baru" style="padding:0 10px;">
+                                                <i class="fa-solid fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">No. Faktur Fisik <span class="text-danger">*</span></label>
+                                        <input type="text" id="manual-inv-number" placeholder="Contoh: 26-026281" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;font-weight:700;letter-spacing:0.5px;">
+                                    </div>
+                                    <div>
+                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Tanggal Faktur <span class="text-danger">*</span></label>
+                                        <input type="date" id="manual-inv-date" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;">
+                                    </div>
+                                    <div>
+                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Tanggal Jatuh Tempo</label>
+                                        <input type="date" id="manual-inv-due-date" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;">
+                                    </div>
+                                </div>
+
+                                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-top:12px;padding-top:12px;border-top:1px dashed #e2e8f0;">
+                                    <div>
+                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Metode Diskon Faktur</label>
+                                        <select id="manual-inv-discount-type" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:#fff;">
+                                            <option value="item">Diskon Tercetak per Baris Item (Standar PBF)</option>
+                                            <option value="global">Diskon Tambahan di Footer Faktur</option>
+                                        </select>
+                                    </div>
+                                    <div id="manual-inv-global-discount-box" hidden>
+                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Diskon Footer Faktur (Rp)</label>
+                                        <input type="number" id="manual-inv-global-discount-rp" min="0" step="100" value="0" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+                                    </div>
+                                    <div>
+                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">PPN Faktur (%)</label>
+                                        <select id="manual-inv-ppn-rate" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:#fff;">
+                                            <option value="11" selected>11% (PPN Standar)</option>
+                                            <option value="0">0% (Bebas PPN / Non-PKP)</option>
+                                            <option value="custom">Kustom Nominal PPN</option>
+                                        </select>
+                                    </div>
+                                    <div id="manual-inv-custom-ppn-box" hidden>
+                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Nominal PPN Tercetak (Rp)</label>
+                                        <input type="number" id="manual-inv-custom-ppn-rp" min="0" step="1" value="0" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+                                    </div>
+                                    <div>
+                                        <label style="display:block;font-size:12px;font-weight:700;color:#b91c1c;margin-bottom:4px;">Total Akhir Tercetak di Kertas (Rp) <span class="text-danger">*</span></label>
+                                        <input type="number" id="manual-inv-printed-total" min="0" step="1" placeholder="Angka Total di Kertas Faktur" style="width:100%;min-height:36px;padding:6px 10px;border:2px solid #f87171;border-radius:6px;font-size:14px;font-weight:800;color:#991b1b;background:#fff5f5;">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bagian 2: Tabel Grid Item Faktur & Wadah Konversi -->
+                            <div class="manual-invoice-card" style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e2e8f0;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                                    <div>
+                                        <strong style="font-size:13px;color:#0f172a;"><i class="fa-solid fa-boxes-stacked text-primary"></i> 2. Daftar Obat / Barang &amp; Wadah Konversi</strong>
+                                        <p style="font-size:11px;color:#64748b;margin:2px 0 0 0;">Ketik nama produk untuk mencari. Jika belum ada, pilih <strong>[+ Daftarkan Produk Baru]</strong> untuk membuka wadah registrasi.</p>
+                                    </div>
+                                    <div style="display:flex;gap:8px;">
+                                        <button type="button" id="btn-manual-add-row" class="button button-small button-primary" style="padding:6px 14px;">
+                                            <i class="fa-solid fa-plus"></i> Tambah Baris Obat
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="table-wrapper manual-invoice-grid-wrapper" style="overflow-x:auto;border:1px solid #cbd5e1;border-radius:8px;">
+                                    <table class="data-table manual-grid-table" style="min-width:1320px;font-size:12.5px;width:100%;border-collapse:collapse;">
+                                        <thead style="background:#f1f5f9;border-bottom:2px solid #cbd5e1;">
+                                            <tr>
+                                                <th style="width:36px;text-align:center;">#</th>
+                                                <th style="min-width:240px;">Nama Produk &amp; Pencarian</th>
+                                                <th style="width:105px;" title="Nomor batch fisik dari pabrik">No. Batch</th>
+                                                <th style="width:125px;" title="Tanggal kedaluwarsa fisik obat">Exp. Date</th>
+                                                <th style="width:85px;" title="Satuan Beli saat pesan ke supplier">Satuan Besar</th>
+                                                <th style="width:115px;" title="Satuan Antara (misal Strip / Blister)">Satuan Sedang</th>
+                                                <th style="width:100px;" title="Unit terkecil stok apotek (Tablet, Kaplet, Botol, Pcs)">Satuan Terkecil</th>
+                                                <th style="width:80px;" title="Total Satuan Terkecil dalam 1 Satuan Besar">Isi Konversi</th>
+                                                <th style="width:65px;">Qty Beli</th>
+                                                <th style="width:80px;" title="Jumlah stok satuan terkecil yang masuk">Total Masuk</th>
+                                                <th style="width:100px;">Harga Beli (Rp)</th>
+                                                <th style="width:70px;">Disc (%)</th>
+                                                <th style="width:80px;">Disc (Rp)</th>
+                                                <th style="width:105px;text-align:right;">Subtotal</th>
+                                                <th style="width:38px;text-align:center;">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="manual-invoice-items-body"></tbody>
+                                    </table>
+                                </div>
+                                <div id="manual-inv-global-ac" class="inv-prod-autocomplete" style="position:fixed;display:none;z-index:999999;box-shadow:0 10px 25px rgba(0,0,0,0.2);max-width:420px;border-radius:8px;"></div>
+                            </div>
+
+                            <!-- Bagian 3: Live Rekonsiliasi & Status Match -->
+                            <div class="manual-invoice-card" style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:12px;">
+                                    <i class="fa-solid fa-calculator text-primary"></i> 3. Rekonsiliasi Matematika Faktur (Live Verification)
+                                </div>
+                                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;background:#f8fafc;padding:12px;border-radius:8px;border:1px solid #e2e8f0;">
+                                    <div>
+                                        <div style="font-size:11px;color:#64748b;font-weight:600;">Subtotal Kotor</div>
+                                        <strong id="rec-subtotal-gross" style="font-size:14px;color:#1e293b;">Rp0</strong>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:11px;color:#64748b;font-weight:600;">Total Diskon Item</div>
+                                        <strong id="rec-discount-item" style="font-size:14px;color:#ea580c;">Rp0</strong>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:11px;color:#64748b;font-weight:600;">DPP (Dasar Pajak)</div>
+                                        <strong id="rec-dpp" style="font-size:14px;color:#1e293b;">Rp0</strong>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:11px;color:#64748b;font-weight:600;">PPN Faktur</div>
+                                        <strong id="rec-ppn" style="font-size:14px;color:#0284c7;">Rp0</strong>
+                                    </div>
+                                    <div style="background:#f1f5f9;padding:6px 10px;border-radius:6px;">
+                                        <div style="font-size:11px;color:#334155;font-weight:700;">Total Hitung Sistem</div>
+                                        <strong id="rec-total-system" style="font-size:16px;color:#0f172a;">Rp0</strong>
+                                    </div>
+                                    <div style="background:#fef2f2;padding:6px 10px;border-radius:6px;border:1px solid #fecaca;">
+                                        <div style="font-size:11px;color:#991b1b;font-weight:700;">Total Tercetak Fisik</div>
+                                        <strong id="rec-total-printed" style="font-size:16px;color:#b91c1c;">Rp0</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Rekonsiliasi Badge Status -->
+                                <div id="rec-status-banner" style="margin-top:12px;padding:10px 14px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;">
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <i id="rec-status-icon" class="fa-solid fa-circle-info"></i>
+                                        <span id="rec-status-text">Masukkan data obat dan nominal total tercetak fisik di kertas faktur.</span>
+                                    </div>
+                                    <strong id="rec-diff-amount" style="font-size:14px;">Selisih: Rp0</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <footer class="product-detail-footer" style="padding:14px 20px;background:#fff;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+                            <div style="display:flex;gap:8px;">
+                                <button type="button" id="btn-save-manual-draft" class="button button-secondary">
+                                    <i class="fa-solid fa-floppy-disk"></i> Simpan Draft Lokal
+                                </button>
+                                <button type="button" id="btn-reset-manual-inv" class="button button-secondary" style="color:#ef4444;">
+                                    <i class="fa-solid fa-trash-can"></i> Bersihkan Form
+                                </button>
+                            </div>
+                            <div style="display:flex;gap:10px;">
+                                <button type="button" id="btn-cancel-manual-inv" class="button button-secondary">Tutup</button>
+                                <button type="button" id="btn-confirm-manual-inv" class="button button-primary" style="font-weight:700;padding:8px 20px;">
+                                    <i class="fa-solid fa-box-open"></i> Konfirmasi Faktur &amp; Masuk Stok
+                                </button>
+                            </div>
+                        </footer>
+                    </section>
+                </div>
+            </section>
+            <section class="view-section" data-view-section="sales" hidden>
+                <div class="ops-page sales-management-page">
+                    <header class="module-header">
+                        <div>
+                            <h2>Transaksi Penjualan</h2>
+                            <p>Riwayat seluruh transaksi dari POS. Admin dapat melihat detail, mencetak ulang, dan melakukan VOID dengan pengembalian stok.</p>
+                        </div>
+                        <div class="module-header-actions">
+                            <a href="../pos/index.html" class="button button-secondary topbar-pos-link"><i class="fa-solid fa-cash-register"></i> Buka POS</a>
+                            <button id="sales-refresh" class="button button-primary" type="button"><i class="fa-solid fa-rotate"></i> Muat Ulang</button>
+                        </div>
+                    </header>
+
+                    <div class="sales-summary-grid">
+                        <article class="report-kpi"><span class="report-kpi-icon blue"><i class="fa-solid fa-receipt"></i></span><div><span>Total Transaksi</span><strong id="sales-total-count">0</strong><small>Sesuai filter aktif</small></div></article>
+                        <article class="report-kpi"><span class="report-kpi-icon green"><i class="fa-solid fa-circle-check"></i></span><div><span>Selesai</span><strong id="sales-completed-count">0</strong><small>Transaksi berhasil</small></div></article>
+                        <article class="report-kpi"><span class="report-kpi-icon violet"><i class="fa-solid fa-box"></i></span><div><span>Produk Terjual</span><strong id="sales-unit-count">0</strong><small>Tidak termasuk transaksi VOID</small></div></article>
+                        <article class="report-kpi"><span class="report-kpi-icon amber"><i class="fa-solid fa-coins"></i></span><div><span>Total Penjualan</span><strong id="sales-revenue-total">Rp0</strong><small>Transaksi selesai</small></div></article>
+                        <article class="report-kpi"><span class="report-kpi-icon slate"><i class="fa-solid fa-ban"></i></span><div><span>Transaksi VOID</span><strong id="sales-void-count">0</strong><small>Stok telah dikembalikan</small></div></article>
+                    </div>
+
+                    <section class="ops-card sales-filter-card">
+                        <div class="sales-filter-grid">
+                            <label class="ops-field sales-search-field"><span>Pencarian</span><div class="report-search-box"><i class="fa-solid fa-magnifying-glass"></i><input id="sales-search" type="search" placeholder="Cari nomor transaksi, kasir, atau produk..."></div></label>
+                            <label class="ops-field"><span>Periode</span><select id="sales-period"><option value="today">Hari Ini</option><option value="7">7 Hari Terakhir</option><option value="30">30 Hari Terakhir</option><option value="month" selected>Bulan Ini</option><option value="all">Semua Data</option></select></label>
+                            <label class="ops-field"><span>Status</span><select id="sales-status-filter"><option value="">Semua Status</option><option value="SELESAI">Selesai</option><option value="VOID">VOID</option></select></label>
+                            <label class="ops-field"><span>Pembayaran</span><select id="sales-payment-filter"><option value="">Semua Pembayaran</option><option value="Cash">Cash</option><option value="QRIS">QRIS</option><option value="Transfer">Transfer</option></select></label>
+                        </div>
+                        <div class="report-filter-status"><span id="sales-filter-label">Bulan ini</span><span id="sales-last-updated">Belum dimuat</span></div>
+                    </section>
+
+                    <section class="ops-card">
+                        <div class="report-card-head"><div><h3>Daftar Transaksi</h3><p>Klik Detail untuk melihat item, pembayaran, serta informasi VOID.</p></div><span id="sales-result-count" class="report-count-chip">0 data</span></div>
+                        <div class="table-wrapper"><table class="data-table sales-table"><thead><tr><th>Waktu</th><th>No. Transaksi</th><th>Kasir</th><th>Pembayaran</th><th>Produk</th><th>Subtotal</th><th>Diskon</th><th>Pajak</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="sales-table-body"></tbody></table></div>
+                        <div class="sales-pagination"><span id="sales-page-info">Halaman 1</span><div><button id="sales-prev-page" type="button" class="button button-secondary">Sebelumnya</button><button id="sales-next-page" type="button" class="button button-secondary">Berikutnya</button></div></div>
+                    </section>
+                </div>
+
+                <div id="sales-detail-overlay" class="product-detail-overlay" hidden>
+                    <section class="product-detail-panel sales-detail-panel" role="dialog" aria-modal="true" aria-labelledby="sales-detail-title">
+                        <header class="product-detail-header"><div><span class="product-detail-label">Detail Transaksi</span><h2 id="sales-detail-title">Transaksi</h2><p id="sales-detail-subtitle">Informasi transaksi penjualan.</p></div><button id="close-sales-detail" class="product-detail-close" type="button" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button></header>
+                        <div id="sales-detail-print-area" class="product-detail-body sales-detail-body"></div>
+                        <footer class="product-detail-footer sales-detail-actions"><button id="sales-detail-void" class="button sales-void-button" type="button"><i class="fa-solid fa-ban"></i> VOID Transaksi</button><span></span><button id="sales-detail-print" class="button button-secondary" type="button"><i class="fa-solid fa-print"></i> Cetak Ulang</button><button id="sales-detail-close-button" class="button button-primary" type="button">Tutup</button></footer>
+                    </section>
+                </div>
+            </section>
+            <section class="view-section" data-view-section="reports" hidden>
+                <div class="ops-page reports-page">
+                    <header class="module-header">
+                        <div>
+                            <h2>Laporan Operasional</h2>
+                            <p>Analisis penjualan, produk terjual, stok, barang masuk, faktur pembelian, margin, dan kinerja kasir.</p>
+                        </div>
+                        <div class="module-header-actions">
+                            <button id="report-print" class="button button-secondary" type="button"><i class="fa-solid fa-print"></i> Cetak</button>
+                            <button id="report-refresh" class="button button-primary" type="button"><i class="fa-solid fa-rotate"></i> Muat Ulang</button>
+                        </div>
+                    </header>
+
+                    <section class="ops-card report-filter-card">
+                        <div class="report-filter-grid">
+                            <label class="ops-field"><span>Periode</span><select id="report-period"><option value="today">Hari Ini</option><option value="7">7 Hari Terakhir</option><option value="30">30 Hari Terakhir</option><option value="month" selected>Bulan Ini</option><option value="all">Semua Data</option><option value="custom">Tanggal Khusus</option></select></label>
+                            <label class="ops-field"><span>Tanggal Mulai</span><input id="report-start-date" type="date" disabled></label>
+                            <label class="ops-field"><span>Tanggal Akhir</span><input id="report-end-date" type="date" disabled></label>
+                            <label class="ops-field report-search-field"><span>Pencarian</span><div class="report-search-box"><i class="fa-solid fa-magnifying-glass"></i><input id="report-search" type="search" placeholder="Cari transaksi, produk, kasir, atau faktur..."></div></label>
+                        </div>
+                        <div class="report-filter-status"><span id="report-period-label">Bulan ini</span><span id="report-last-updated">Belum dimuat</span></div>
+                    </section>
+
+                    <div class="report-summary-grid">
+                        <article class="report-kpi"><span class="report-kpi-icon blue"><i class="fa-solid fa-coins"></i></span><div><span>Omzet Bersih</span><strong id="report-revenue">Rp0</strong><small>Transaksi selesai, termasuk pajak</small></div></article>
+                        <article class="report-kpi"><span class="report-kpi-icon green"><i class="fa-solid fa-receipt"></i></span><div><span>Transaksi</span><strong id="report-transaction-count">0</strong><small id="report-void-count">0 transaksi VOID</small></div></article>
+                        <article class="report-kpi"><span class="report-kpi-icon violet"><i class="fa-solid fa-box"></i></span><div><span>Produk Terjual</span><strong id="report-unit-count">0</strong><small>Total kuantitas produk</small></div></article>
+                        <article class="report-kpi"><span class="report-kpi-icon amber"><i class="fa-solid fa-chart-line"></i></span><div><span>Estimasi Laba Kotor</span><strong id="report-profit">Rp0</strong><small>Penjualan sebelum pajak − HPP</small></div></article>
+                        <article class="report-kpi"><span class="report-kpi-icon cyan"><i class="fa-solid fa-file-invoice-dollar"></i></span><div><span>Faktur Pembelian</span><strong id="report-purchase-value">Rp0</strong><small id="report-invoice-count">0 faktur pada periode</small></div></article>
+                        <article class="report-kpi"><span class="report-kpi-icon slate"><i class="fa-solid fa-warehouse"></i></span><div><span>Nilai Stok Saat Ini</span><strong id="report-stock-value">Rp0</strong><small id="report-low-stock-count">0 produk menipis/habis</small></div></article>
+                    </div>
+
+                    <nav class="report-tabs" aria-label="Jenis laporan">
+                        <button type="button" class="report-tab active" data-report-tab="summary">Ringkasan</button>
+                        <button type="button" class="report-tab" data-report-tab="sales">Penjualan</button>
+                        <button type="button" class="report-tab" data-report-tab="products">Produk Terjual</button>
+                        <button type="button" class="report-tab" data-report-tab="stock">Stok</button>
+                        <button type="button" class="report-tab" data-report-tab="goods">Barang Masuk</button>
+                        <button type="button" class="report-tab" data-report-tab="invoices">Faktur</button>
+                        <button type="button" class="report-tab" data-report-tab="cashiers">Per Kasir</button>
+                    </nav>
+
+                    <section class="report-panel-grid" data-report-panel="summary">
+                        <article class="ops-card"><div class="report-card-head"><div><h3>Ringkasan Harian</h3><p>Pergerakan transaksi selama periode terpilih.</p></div></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Tanggal</th><th>Transaksi</th><th>Item</th><th>Omzet</th><th>Laba Kotor</th></tr></thead><tbody id="report-daily-body"></tbody></table></div></article>
+                        <article class="ops-card"><div class="report-card-head"><div><h3>Metode Pembayaran</h3><p>Komposisi pembayaran transaksi selesai.</p></div></div><div id="report-payment-list" class="report-breakdown-list"></div></article>
+                    </section>
+
+                    <section class="ops-card" data-report-panel="sales" hidden><div class="report-card-head"><div><h3>Laporan Penjualan</h3><p>Transaksi selesai dan VOID pada periode terpilih.</p></div><span id="report-sales-count" class="report-count-chip">0 data</span></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Waktu</th><th>No. Transaksi</th><th>Kasir</th><th>Pembayaran</th><th>Item</th><th>Subtotal</th><th>Diskon</th><th>Pajak</th><th>Total</th><th>Status</th></tr></thead><tbody id="report-sales-body"></tbody></table></div></section>
+
+                    <section class="ops-card" data-report-panel="products" hidden><div class="report-card-head"><div><h3>Produk Terjual</h3><p>Rekap kuantitas, omzet, HPP, dan estimasi laba tiap produk.</p></div><span id="report-products-count" class="report-count-chip">0 produk</span></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Kode</th><th>Produk</th><th>Qty Terjual</th><th>Omzet Bersih</th><th>HPP</th><th>Estimasi Laba</th></tr></thead><tbody id="report-products-body"></tbody></table></div></section>
+
+                    <section class="ops-card" data-report-panel="stock" hidden><div class="report-card-head"><div><h3>Laporan Stok Saat Ini</h3><p>Posisi stok terbaru dan estimasi nilainya.</p></div><span id="report-stock-count" class="report-count-chip">0 produk</span></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Kode</th><th>Produk</th><th>Kategori</th><th>Stok</th><th>Minimum</th><th>Harga Beli</th><th>Nilai Stok</th><th>Status</th></tr></thead><tbody id="report-stock-body"></tbody></table></div></section>
+
+                    <section class="ops-card" data-report-panel="goods" hidden><div class="report-card-head"><div><h3>Laporan Barang Masuk</h3><p>Mutasi penambahan stok dari faktur pembelian.</p></div><span id="report-goods-count" class="report-count-chip">0 mutasi</span></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Waktu</th><th>Referensi</th><th>Kode</th><th>Produk</th><th>Qty Masuk</th><th>Stok Setelah</th><th>Estimasi Nilai</th></tr></thead><tbody id="report-goods-body"></tbody></table></div></section>
+
+                    <section class="ops-card" data-report-panel="invoices" hidden><div class="report-card-head"><div><h3>Laporan Faktur Pembelian</h3><p>Faktur draft dan terkonfirmasi pada periode terpilih.</p></div><span id="report-invoices-count" class="report-count-chip">0 faktur</span></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Tanggal</th><th>Nomor Faktur</th><th>Supplier</th><th>Item</th><th>Nilai</th><th>Status</th></tr></thead><tbody id="report-invoices-body"></tbody></table></div></section>
+
+                    <section class="ops-card" data-report-panel="cashiers" hidden><div class="report-card-head"><div><h3>Rekap Per Kasir</h3><p>Jumlah transaksi, produk, omzet, dan estimasi laba tiap kasir.</p></div><span id="report-cashiers-count" class="report-count-chip">0 kasir</span></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Kasir</th><th>Transaksi Selesai</th><th>Transaksi VOID</th><th>Produk Terjual</th><th>Omzet</th><th>Rata-rata Transaksi</th><th>Estimasi Laba</th></tr></thead><tbody id="report-cashiers-body"></tbody></table></div></section>
+
+                    <p class="report-footnote"><i class="fa-solid fa-circle-info"></i> Estimasi laba kotor dihitung dari penjualan sebelum pajak dikurangi HPP yang tersimpan pada transaksi. Nilai dapat berubah jika harga beli produk tidak tersedia.</p>
+                </div>
+            </section>
+            <!-- MASTER PENGGUNA -->
+            <section class="view-section" data-view-section="users" hidden>
+                <div class="import-page">
+                    <header class="module-header">
+                        <div>
+                            <h2>Master Pengguna</h2>
+                            <p>Kelola profil dan kredensial akun aktif Firebase. Password tidak pernah disimpan di Excel atau Firestore.</p>
+                        </div>
+                        <div class="module-header-actions">
+                            <button type="button" id="btn-add-user" class="button button-primary">
+                                <i class="fa-solid fa-user-plus"></i>
+                                Tambah Pengguna
+                            </button>
+                            <button type="button" id="export-database-backup" class="button button-secondary">
+                                <i class="fa-solid fa-file-zipper"></i>
+                                Backup Database JSON
+                            </button>
+                            <button type="button" id="refresh-users" class="button button-secondary">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                                Muat Ulang
+                            </button>
+                        </div>
+                    </header>
+
+                    <div class="ops-notice">
+                        Daftar ini membaca profil akun dari koleksi Firestore <strong>users</strong>. Firebase Authentication tidak dapat menampilkan seluruh akun melalui aplikasi browser; setiap akun Authentication harus memiliki profil pengguna yang sesuai.
+                    </div>
+
+                    <div class="workbook-summary">
+                        <article class="summary-card">
+                            <span class="summary-icon"><i class="fa-solid fa-users"></i></span>
+                            <div><span>Total Pengguna</span><strong id="user-total-count">0</strong></div>
+                        </article>
+                        <article class="summary-card">
+                            <span class="summary-icon"><i class="fa-solid fa-user-shield"></i></span>
+                            <div><span>Admin</span><strong id="user-admin-count">0</strong></div>
+                        </article>
+                        <article class="summary-card">
+                            <span class="summary-icon"><i class="fa-solid fa-cash-register"></i></span>
+                            <div><span>Kasir</span><strong id="user-cashier-count">0</strong></div>
+                        </article>
+                        <article class="summary-card">
+                            <span class="summary-icon"><i class="fa-solid fa-circle-check"></i></span>
+                            <div><span>Pengguna Aktif</span><strong id="user-active-count">0</strong></div>
+                        </article>
+                    </div>
+
+                    <section class="import-panel">
+                        <div class="preview-toolbar">
+                            <div class="preview-search">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input type="search" id="user-search" placeholder="Cari ID, nama, username, telepon, atau email...">
+                            </div>
+                            <select id="user-role-filter" class="product-filter">
+                                <option value="">Semua Role</option>
+                                <option value="admin">Admin</option>
+                                <option value="kasir">Kasir</option>
+                            </select>
+                            <select id="user-status-filter" class="product-filter">
+                                <option value="">Semua Status</option>
+                                <option value="aktif">Aktif</option>
+                                <option value="nonaktif">Nonaktif</option>
+                            </select>
+                        </div>
+
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID Pengguna</th>
+                                        <th>Nama</th>
+                                        <th>Role</th>
+                                        <th>Username</th>
+                                        <th>Nomor Telepon</th>
+                                        <th>Email</th>
+                                        <th>Autentikasi</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body">
+                                    <tr><td colspan="8" class="empty-table-state">Belum ada data pengguna.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="panel-actions split">
+                            <div class="preview-meta">
+                                Menampilkan <strong id="users-visible-count">0</strong>
+                                dari <strong id="users-total-result-count">0</strong> pengguna
+                            </div>
+                            <div class="pagination">
+                                <button type="button" id="users-prev-page" class="button button-secondary">
+                                    <i class="fa-solid fa-chevron-left"></i> Sebelumnya
+                                </button>
+                                <button type="button" id="users-next-page" class="button button-secondary">
+                                    Berikutnya <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </section>
+
+            <!-- DETAIL PENGGUNA -->
+            <div id="user-detail-overlay" class="product-detail-overlay" hidden>
+                <section class="product-detail-panel" role="dialog" aria-modal="true" aria-labelledby="user-detail-title">
+                    <header class="product-detail-header">
+                        <div>
+                            <span class="product-detail-label">Detail Pengguna</span>
+                            <h2 id="user-detail-title">-</h2>
+                            <p id="user-detail-id">-</p>
+                        </div>
+                        <button type="button" id="close-user-detail" class="product-detail-close" aria-label="Tutup detail pengguna">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </header>
+
+                    <div class="product-detail-body">
+                        <section class="product-detail-section">
+                            <h3>Informasi Akun</h3>
+                            <div class="product-detail-grid">
+                                <div class="product-detail-item"><span>ID Pengguna</span><strong id="detail-user-id">—</strong></div>
+                                <div class="product-detail-item"><span>Nama</span><strong id="detail-user-name">—</strong></div>
+                                <div class="product-detail-item"><span>Role</span><strong id="detail-user-role">—</strong></div>
+                                <div class="product-detail-item"><span>Username</span><strong id="detail-user-username">—</strong></div>
+                                <div class="product-detail-item"><span>Status</span><div id="detail-user-status" class="product-detail-value">—</div></div>
+                                <div class="product-detail-item"><span>Password</span><strong id="detail-user-password-state">Dikelola Firebase</strong></div>
+                            </div>
+                        </section>
+
+                        <section class="product-detail-section">
+                            <h3>Kontak</h3>
+                            <div class="product-detail-grid">
+                                <div class="product-detail-item"><span>Nomor Telepon</span><strong id="detail-user-phone">—</strong></div>
+                                <div class="product-detail-item"><span>Email</span><strong id="detail-user-email">—</strong></div>
+                            </div>
+                        </section>
+
+                        <section class="product-detail-section">
+                            <h3>Catatan</h3>
+                            <div id="detail-user-notes" class="product-detail-notes">Tidak ada catatan.</div>
+                        </section>
+                    </div>
+
+                    <footer class="product-detail-footer">
+                        <span>Password tidak ditampilkan untuk menjaga kerahasiaan kredensial.</span>
+                        <button type="button" id="edit-user" class="button button-primary"><i class="fa-solid fa-user-pen"></i> Kelola Akun</button>
+                        <button type="button" id="close-user-detail-footer" class="button button-secondary">Tutup</button>
+                    </footer>
+                </section>
+            </div>
+
+            <div id="user-editor-overlay" class="product-detail-overlay" hidden>
+                <section class="product-detail-panel ops-dialog-wide" role="dialog" aria-modal="true" aria-labelledby="user-editor-title">
+                    <header class="product-detail-header"><div><span class="product-detail-label">Kelola Pengguna</span><h2 id="user-editor-title">Akun</h2><p>Perubahan langsung disinkronkan ke Firebase.</p></div><button id="close-user-editor" type="button" class="product-detail-close" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button></header>
+                    <form id="user-editor-form" class="product-detail-body" autocomplete="off">
+                        <div class="ops-grid cols-3">
+                            <label class="ops-field"><span>Nama Tampilan</span><input id="edit-user-name" required></label>
+                            <label class="ops-field"><span>Nomor Telepon</span><input id="edit-user-phone"></label>
+                            <label class="ops-field"><span>Status</span><select id="edit-user-status"><option value="aktif">Aktif</option><option value="nonaktif">Nonaktif</option></select></label>
+                        </div>
+                        <p class="ops-note">Password hanya dapat diubah melalui tombol Reset Password via Email. Username dan email login tidak dapat diubah dari aplikasi.</p>
+                    </form>
+                    <footer class="product-detail-footer"><button id="cancel-user-editor" type="button" class="button button-secondary">Batal</button><button id="save-user-editor" type="submit" form="user-editor-form" class="button button-primary"><i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan</button></footer>
+                </section>
+            </div>
+            <!-- PENGATURAN TOKO -->
+            <section class="view-section" data-view-section="settings" hidden>
+                <div class="import-page settings-page">
+                    <header class="module-header">
+                        <div>
+                            <h2>Pengaturan Toko</h2>
+                            <p>Konfigurasi profil toko dan ukuran cetak struk kasir.</p>
+                        </div>
+                        <div class="module-header-actions">
+                            <button type="button" id="reload-store-settings" class="button button-secondary">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                                Muat Ulang
+                            </button>
+                        </div>
+                    </header>
+
+                    <form id="store-settings-form" class="settings-form" autocomplete="off">
+                        <section class="import-panel settings-section" style="max-width:760px;margin:0 auto;padding:24px;">
+                            <div class="panel-header" style="margin-bottom:20px;">
+                                <div>
+                                    <h3 style="margin:0 0 6px;font-size:16px;color:#0f2a43;">Informasi Toko / Apotek</h3>
+                                    <p style="margin:0;font-size:13px;color:#64748b;">Pengaturan langsung disimpan ke database dan otomatis sinkron ke POS &amp; struk cetak.</p>
+                                </div>
+                            </div>
+
+                            <div style="display:grid;gap:18px;">
+                                <label style="display:grid;gap:6px;">
+                                    <span style="font-weight:700;font-size:13.5px;color:#1e293b;">Nama Apotek / Toko <span style="color:#dc2626;">*</span></span>
+                                    <input id="setting-store-name" type="text" required placeholder="Apotek Doa Ibu" style="width:100%;min-height:42px;padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;">
+                                </label>
+
+                                <label style="display:grid;gap:6px;">
+                                    <span style="font-weight:700;font-size:13.5px;color:#1e293b;">Alamat Lengkap</span>
+                                    <textarea id="setting-store-address" rows="3" placeholder="Alamat lengkap toko / apotek" style="width:100%;padding:10px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;"></textarea>
+                                </label>
+
+                                <label style="display:grid;gap:6px;">
+                                    <span style="font-weight:700;font-size:13.5px;color:#1e293b;">Nomor Telepon</span>
+                                    <input id="setting-store-phone" type="text" inputmode="tel" placeholder="Contoh: (021) 1234567 atau 08123456789" style="width:100%;min-height:42px;padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;">
+                                </label>
+
+                                <label style="display:grid;gap:6px;">
+                                    <span style="font-weight:700;font-size:13.5px;color:#1e293b;">Ukuran Cetak Struk <span style="color:#dc2626;">*</span></span>
+                                    <select id="setting-receipt-size" required style="width:100%;min-height:42px;padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;background:#fff;">
+                                        <option value="58 mm">58 mm (Thermal Kasir Standar)</option>
+                                        <option value="80 mm">80 mm (Thermal Kasir Lebar)</option>
+                                        <option value="A4">A4 (Nota / Faktur Penuh)</option>
+                                    </select>
+                                    <small style="color:#64748b;font-size:12px;">Layout cetak di POS otomatis menyesuaikan ukuran kertas yang dipilih.</small>
+                                </label>
+
+                                <label style="display:grid;gap:6px;">
+                                    <span style="font-weight:700;font-size:13.5px;color:#1e293b;">Pesan Footer Struk (Catatan Bawah Struk)</span>
+                                    <textarea id="setting-receipt-footer" rows="2" placeholder="Contoh: Terima kasih atas kunjungan Anda. Semoga lekas sembuh." style="width:100%;padding:10px 14px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;"></textarea>
+                                    <small style="color:#64748b;font-size:12px;">Pesan atau ucapan yang akan dicetak di bagian paling bawah struk kasir.</small>
+                                </label>
+                            </div>
+
+                            <div style="margin-top:28px;padding-top:18px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+                                <span id="settings-data-source" style="font-size:12px;color:#64748b;">Konfigurasi tersimpan lokal &amp; cloud.</span>
+                                <button type="submit" class="button button-primary" style="padding:10px 24px;">
+                                    <i class="fa-solid fa-floppy-disk"></i> Simpan Pengaturan
+                                </button>
+                            </div>
+                        </section>
+                    </form>
+                </div>
+            </section>
+
+        </main>
+
+    </div>
+
+</div>
+
+<div id="app-modal" class="app-modal" hidden>
+    <section class="app-modal-card" role="dialog" aria-modal="true" aria-labelledby="app-modal-title">
+        <div class="app-modal-icon"><i id="app-modal-icon" class="fa-solid fa-circle-info"></i></div>
+        <h2 id="app-modal-title">Konfirmasi</h2>
+        <p id="app-modal-message"></p>
+        <div class="app-modal-actions">
+            <button id="app-modal-cancel" class="button button-secondary" type="button">Batal</button>
+            <button id="app-modal-confirm" class="button button-primary" type="button">Lanjutkan</button>
+        </div>
+    </section>
+</div>
+
+<div id="app-loading" class="app-loading" role="status" aria-live="polite">
+    <div class="app-loading-card"><i class="fa-solid fa-spinner"></i><strong>Memuat data KasirPro</strong><span>Mohon tunggu, data sedang disinkronkan.</span></div>
+</div>
+
+
+<script src="../pwa.js" defer></script>
+
+<script
+    src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+></script>
+
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+></script>
+
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
+></script>
+
+<script
+    type="module"
+    src="management.js"
+></script>
+
+</body>
+</html>

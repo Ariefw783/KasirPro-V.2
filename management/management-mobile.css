@@ -1,0 +1,166 @@
+/* KasirPro Management — responsive mobile only */
+
+@media (max-width:820px) {
+  *,*::before,*::after { box-sizing:border-box; }
+
+  html,body {
+    width:100%;
+    max-width:100%;
+    overflow-x:hidden;
+  }
+
+  .app-shell,.main-area,.main-content,.view-section,.import-page,.ops-page,.reports-page,.sales-management-page {
+    width:100%;
+    max-width:100%;
+    min-width:0;
+  }
+
+  .main-area { margin-left:0; }
+  .main-content { min-width:0; overflow-x:visible; padding:14px 12px; }
+
+  .view-section>*,.module-header>*,.topbar-left,.topbar-right,.page-heading,.admin-profile,
+  .panel,.card,.ops-card,.report-card,.report-filter-card,.report-kpi,.welcome-card,
+  .content-placeholder,.stage-placeholder {
+    min-width:0;
+    max-width:100%;
+  }
+
+  .topbar {
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    gap:8px;
+    padding-inline:12px;
+  }
+
+  .topbar-left { flex:1 1 auto; overflow:hidden; }
+  .topbar-right { flex:0 1 auto; gap:8px; }
+  .page-heading h1,.page-heading p { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .connection-status,.admin-info { display:none; }
+  .topbar-pos-link { white-space:nowrap; }
+
+  .module-header,.module-header-actions,.preview-toolbar,.panel-actions,
+  .settings-bottom-actions,.sales-pagination,.sales-detail-actions {
+    min-width:0;
+    max-width:100%;
+    flex-wrap:wrap;
+  }
+
+  .module-header { flex-direction:column; align-items:stretch; gap:10px; }
+  .module-header-actions { display:flex; width:100%; }
+  .module-header-actions>*,.panel-actions>* { flex:1 1 150px; min-width:0; }
+
+  .dashboard-grid,.workbook-summary,.import-steps,.settings-grid,.settings-switch-grid,
+  .ops-grid.cols-3,.ops-grid.cols-6,.report-filter-grid,.report-summary-grid,
+  .report-panel-grid,.sales-summary-grid,.sales-filter-grid,.sales-detail-summary,
+  .product-detail-grid {
+    grid-template-columns:1fr !important;
+    min-width:0;
+    max-width:100%;
+  }
+
+  .ops-field.wide,.ops-grid.cols-6 .wide,.settings-field-wide,
+  .report-search-field,.sales-search-field {
+    grid-column:1 / -1 !important;
+  }
+
+  input,select,textarea,button,.button,.preview-search,.preview-search input {
+    min-width:0;
+    max-width:100%;
+  }
+
+  .preview-toolbar { align-items:stretch; flex-direction:column; }
+  .preview-search { width:100%; flex:1 1 auto; }
+  .preview-search input { width:100%; }
+
+  /* Tables are compressed and wrap their content: no horizontal page or table scrolling. */
+  .table-wrapper {
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    max-height:none;
+    overflow:visible;
+  }
+
+  .panel-actions.split { align-items:stretch !important; gap:12px; }
+  .panel-actions.split>.pagination,
+  .panel-actions.split>div:has(> [id$="-prev-page"]) {
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    width:100%;
+    gap:8px !important;
+  }
+  .panel-actions.split>.pagination .button,
+  .panel-actions.split>div:has(> [id$="-prev-page"]) .button {
+    width:100%;
+    min-height:42px;
+    padding:8px 6px;
+    white-space:nowrap;
+  }
+  .panel-actions.split>.preview-meta { width:100%; text-align:center; }
+
+  .table-wrapper>.data-table,.table-wrapper>table {
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    table-layout:fixed;
+  }
+
+  .data-table th,.data-table td {
+    min-width:0;
+    padding:7px 5px;
+    white-space:normal !important;
+    overflow-wrap:anywhere;
+    word-break:break-word;
+    font-size:.56rem;
+    line-height:1.35;
+  }
+
+  .data-table th { font-size:.52rem; }
+  .sales-table th,.sales-table td { white-space:normal; }
+
+  .report-tabs,.sheet-tabs {
+    min-width:0;
+    max-width:100%;
+    overflow:hidden;
+    flex-wrap:wrap;
+  }
+
+  .report-tab,.sheet-tab {
+    flex:1 1 100px;
+    min-width:0;
+    white-space:normal;
+  }
+
+  .product-detail-overlay { padding:10px; }
+
+  .product-detail-panel,.sales-detail-panel {
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    margin:0;
+  }
+
+  .product-detail-body,.sales-detail-body,.product-detail-header,.product-detail-footer {
+    min-width:0;
+    max-width:100%;
+  }
+
+  .welcome-card { align-items:flex-start; flex-direction:column; }
+  .welcome-card>i { align-self:flex-end; font-size:3rem; }
+
+  .sales-detail-actions { display:grid; grid-template-columns:1fr 1fr; }
+  .sales-detail-actions .sales-void-button { grid-column:1 / -1; }
+}
+
+@media (max-width:480px) {
+  .main-content { padding-inline:8px; }
+  .topbar { padding-inline:8px; }
+  .topbar-pos-link { padding-inline:7px; font-size:.58rem; }
+
+  .module-header,.ops-card,.report-card,.report-filter-card { padding:12px; }
+  .module-header-actions>*,.panel-actions>* { width:100%; flex-basis:100%; }
+
+  .data-table th,.data-table td { padding:6px 3px; font-size:.5rem; }
+  .data-table th { font-size:.47rem; }
+}

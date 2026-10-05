@@ -1,0 +1,15 @@
+{
+  "version": "2.2.0",
+  "build": "20261004.2",
+  "releaseDate": "04 Oktober 2026",
+  "title": "Pembaruan Sistem KasirPro V2",
+  "description": "Pembaruan ini wajib diterapkan agar seluruh data transaksi, harga, dan stok tetap sinkron dan seragam antar perangkat (Admin & Kasir).",
+  "changelog": [
+    "Rekonsiliasi Cerdas Diskon & PPN Faktur (Mendukung Metode Per Item & Global tanpa selisih).",
+    "Modal Pop-Up Loading Progres Aktual saat proses impor data (mencegah layar freeze).",
+    "Status Produk Otomatis Berbasis Stok Fisik ('Aktif' jika ada stok, 'Belum Aktif' jika belum ada stok).",
+    "Auto-registrasi Supplier & Kategori baru saat input produk manual.",
+    "Proteksi Hapus Data Pintar (Hard Delete untuk data baru/coba & Soft Archive untuk data berriwayat).",
+    "Peningkatan sinkronisasi real-time multi-perangkat (PC Admin & Kasir)."
+  ]
+}

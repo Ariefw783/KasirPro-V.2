@@ -1,0 +1,32 @@
+# Security headers for every static response.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+
+# HTML and application code are revalidated so new releases reach the PWA.
+/
+  Cache-Control: no-cache
+
+/*.html
+  Cache-Control: no-cache
+
+/*.js
+  Cache-Control: no-cache
+
+/*.css
+  Cache-Control: no-cache
+
+/*.json
+  Cache-Control: no-cache
+
+/*.webmanifest
+  Cache-Control: no-cache
+
+# Images and downloadable templates change less frequently.
+/assets/*
+  Cache-Control: public, max-age=86400
+
+/data/templates/*
+  Cache-Control: public, max-age=86400
+  Content-Disposition: attachment

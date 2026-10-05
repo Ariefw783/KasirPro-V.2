@@ -1,0 +1,216 @@
+@import url("./management-base.css");
+
+.stock-filter-toolbar {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+}
+
+.stock-filter-toolbar .preview-search {
+    flex: 1 1 220px;
+}
+
+.stock-filter-toolbar select {
+    flex: 1 1 150px;
+    max-width: 230px;
+}
+
+.stock-filter-toolbar #stock-reset-filter[hidden] {
+    display: none;
+}
+
+@media (max-width: 680px) {
+    .stock-filter-toolbar select,
+    .stock-filter-toolbar #stock-reset-filter:not([hidden]) {
+        width: 100%;
+        max-width: none;
+    }
+}
+
+/* =========================================================
+   ACCEPTANCE — DASHBOARD READABILITY
+   Fokus pada hierarchy teks tanpa menambah visual yang ramai.
+========================================================= */
+
+.dashboard-toolbar {
+    padding: 16px 18px;
+}
+
+.dashboard-eyebrow {
+    font-size: 0.64rem;
+    font-weight: 850;
+}
+
+.dashboard-toolbar p {
+    font-size: 0.92rem;
+    font-weight: 800;
+}
+
+.dashboard-card {
+    min-height: 112px;
+    padding: 17px 16px;
+    gap: 13px;
+}
+
+.dashboard-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+    font-size: 1rem;
+}
+
+.dashboard-card span {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.dashboard-card strong {
+    color: var(--text-main);
+    font-size: 1.28rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+}
+
+.dashboard-card small {
+    font-size: 0.59rem;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+.dashboard-section-heading h2,
+.dashboard-review-heading h2 {
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+
+.dashboard-section-heading p,
+.dashboard-review-heading p {
+    font-size: 0.64rem;
+}
+
+.dashboard-review-count {
+    font-size: 0.62rem;
+}
+
+@media (max-width: 1180px) {
+    .dashboard-card {
+        min-height: 104px;
+    }
+
+    .dashboard-card strong {
+        font-size: 1.18rem;
+    }
+}
+
+@media (max-width: 720px) {
+    .dashboard-card {
+        min-height: 96px;
+        padding: 14px;
+    }
+
+    .dashboard-card-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .dashboard-card span {
+        font-size: 0.72rem;
+    }
+
+    .dashboard-card strong {
+        font-size: 1.12rem;
+    }
+}
+
+/* =========================================================
+   MANUAL INVOICE GRID & AUTOCOMPLETE STYLES
+   ========================================================= */
+.manual-grid-table input,
+.manual-grid-table select {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 32px;
+    padding: 4px 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 12px;
+    background: #ffffff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.manual-grid-table input:focus,
+.manual-grid-table select:focus {
+    outline: none;
+    border-color: #0284c7;
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+.manual-grid-table td {
+    padding: 6px 8px !important;
+    vertical-align: middle;
+}
+
+.manual-grid-table tr:hover td {
+    background-color: #f8fafc;
+}
+
+.inv-prod-cell {
+    position: relative;
+}
+
+.inv-prod-autocomplete {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    max-height: 220px;
+    overflow-y: auto;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    margin-top: 2px;
+}
+
+.inv-prod-opt {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.inv-prod-opt:hover,
+.inv-prod-opt.active {
+    background-color: #f0f9ff;
+    color: #0369a1;
+}
+
+.inv-prod-opt-add {
+    background: #f8fafc;
+    color: #0284c7;
+    font-weight: 700;
+    border-top: 1px solid #e2e8f0;
+}
+
+.inv-prod-opt-add:hover {
+    background: #0284c7;
+    color: #ffffff;
+}
+
+.rec-banner-match {
+    background: #f0fdf4 !important;
+    border: 1px solid #bbf7d0 !important;
+    color: #166534 !important;
+}
+
+.rec-banner-mismatch {
+    background: #fef2f2 !important;
+    border: 1px solid #fecaca !important;
+    color: #991b1b !important;
+}
