@@ -1,8 +1,12 @@
 # ==============================================================================
-# MODE NORMAL (PRODUKSI AKTIF) - KASIRPRO V2
-# Gunakan isi file ini sebagai `_redirects` saat aplikasi siap digunakan publik.
+# MODE PEMELIHARAAN (MAINTENANCE AKTIF) - KASIRPRO V2
+# Gunakan isi file ini sebagai `_redirects` saat sistem sedang dalam perbaikan.
 # ==============================================================================
 
-# Menjaga kompatibilitas navigasi folder POS dan Management
-/pos /pos/ 301
-/management /management/ 301
+# Izinkan akses halaman pemeliharaan & aset statis pendukung
+/maintenance.html      /maintenance.html      200
+/assets/*              /assets/:splat         200
+/manifest.webmanifest  /manifest.webmanifest  200
+
+# Blokir seluruh rute lain dan alihkan paksa (302!) ke maintenance.html
+/*                     /maintenance.html      302!
