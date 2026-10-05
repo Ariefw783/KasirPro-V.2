@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v48-mobile-layout-fix";
+const CACHE_VERSION = "kasirpro-pwa-v49-mobile-filter-fix";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
