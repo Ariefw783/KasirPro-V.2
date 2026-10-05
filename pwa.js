@@ -1,7 +1,18 @@
 (function () {
     "use strict";
 
-    // Mode Produksi Aktif: Service worker dan update tracker berjalan normal
+    // Cek Status Pemeliharaan Sistem (Maintenance Check)
+    const currentPath = window.location.pathname;
+    if (!currentPath.endsWith("maintenance.html") && !currentPath.endsWith("/maintenance")) {
+        fetch(new URL(`system-status.json?t=${Date.now()}`, appRoot), { cache: "no-store" })
+            .then(res => res.ok ? res.json() : null)
+            .then(status => {
+                if (status && status.maintenance === true) {
+                    window.location.replace(new URL("maintenance.html", appRoot).href);
+                }
+            })
+            .catch(() => {});
+    }
 
     const scriptUrl = new URL(document.currentScript.src);
     const appRoot = new URL("./", scriptUrl);
