@@ -16,7 +16,7 @@
  * 10. Cetak PDF Faktur resmi A4 Portrait.
  */
 
-import { $, num, text, norm, rupiah, formatNumber, escapeHtml, nowIso, uid, INVOICE_TOLERANCE_RP } from "../modules/core/utils.js";
+import { $, num, parseMoney, text, norm, rupiah, formatNumber, escapeHtml, nowIso, uid, INVOICE_TOLERANCE_RP } from "../modules/core/utils.js";
 import { STORE_KEYS, readStore, writeStore, writeMasterDelta, readCurrentStock, writeStockTransaction, databaseStore } from "../modules/database/database-store.js";
 import { generatePurchaseInvoicePdf } from "../modules/core/pdf.js";
 
@@ -42,9 +42,24 @@ function bindEvents() {
   $("manual-inv-date")?.addEventListener("change", handleInvoiceDateChange);
   $("manual-inv-discount-type")?.addEventListener("change", handleDiscountTypeChange);
   $("manual-inv-ppn-rate")?.addEventListener("change", handlePpnRateChange);
-  $("manual-inv-printed-total")?.addEventListener("input", calculateManualInvoiceTotals);
-  $("manual-inv-global-discount-rp")?.addEventListener("input", calculateManualInvoiceTotals);
-  $("manual-inv-custom-ppn-rp")?.addEventListener("input", calculateManualInvoiceTotals);
+
+  // Auto format titik live pada input header mata uang
+  const setupLiveCurrencyInput = (elId) => {
+    const el = $(elId);
+    if (!el) return;
+    el.addEventListener("input", (e) => {
+      const digits = e.target.value.replace(/[^0-9]/g, "");
+      const valNum = parseInt(digits, 10) || 0;
+      e.target.value = valNum ? formatNumber(valNum) : "";
+      calculateManualInvoiceTotals();
+    });
+    el.addEventListener("focus", (e) => e.target.select());
+  };
+
+  setupLiveCurrencyInput("manual-inv-printed-total");
+  setupLiveCurrencyInput("manual-inv-global-discount-rp");
+  setupLiveCurrencyInput("manual-inv-custom-ppn-rp");
+
   $("btn-save-manual-draft")?.addEventListener("click", handleSaveManualDraft);
   $("btn-reset-manual-inv")?.addEventListener("click", handleResetManualInvoice);
   $("btn-confirm-manual-inv")?.addEventListener("click", handleConfirmManualInvoice);
@@ -535,15 +550,15 @@ function addManualInvoiceRow(prefill = {}) {
     productCode: prefill.productCode || "",
     name: prefill.name || "",
     barcode: prefill.barcode || "",
-    purchaseUnit: prefill.purchaseUnit || "BOX",
+    purchaseUnit: prefill.purchaseUnit || "",
     intermediateUnit: prefill.intermediateUnit || "",
-    intermediateQty: prefill.intermediateQty || 1,
-    baseUnit: prefill.baseUnit || "TABLET",
-    conversionRatio: prefill.conversionRatio || 1,
-    qty: prefill.qty !== undefined ? prefill.qty : 1,
-    buyPrice: prefill.buyPrice !== undefined ? prefill.buyPrice : 0,
-    discountPercent: prefill.discountPercent || 0,
-    discountRp: prefill.discountRp || 0,
+    intermediateQty: prefill.intermediateQty || "",
+    baseUnit: prefill.baseUnit || "",
+    conversionRatio: prefill.conversionRatio !== undefined && prefill.conversionRatio !== null ? prefill.conversionRatio : "",
+    qty: prefill.qty !== undefined && prefill.qty !== null ? prefill.qty : "",
+    buyPrice: prefill.buyPrice !== undefined && prefill.buyPrice !== null ? prefill.buyPrice : "",
+    discountPercent: prefill.discountPercent !== undefined && prefill.discountPercent !== null ? prefill.discountPercent : "",
+    discountRp: prefill.discountRp !== undefined && prefill.discountRp !== null ? prefill.discountRp : "",
     subtotal: prefill.subtotal || 0,
     batch: prefill.batch || "",
     expiryDate: prefill.expiryDate || ""
@@ -587,7 +602,17 @@ function renderManualInvoiceItems() {
   const supSelected = !!currentSup;
 
   tbody.innerHTML = manualInvoiceItems.map((item, idx) => {
-    const totalBase = (num(item.qty) || 0) * (num(item.conversionRatio) || 1);
+    const qNum = num(item.qty) || 0;
+    const convNum = num(item.conversionRatio) || 1;
+    const totalBase = qNum * convNum;
+
+    const buyPriceStr = (item.buyPrice !== undefined && item.buyPrice !== null && item.buyPrice !== "") ? (num(item.buyPrice) ? formatNumber(num(item.buyPrice)) : "") : "";
+    const discRpStr = (item.discountRp !== undefined && item.discountRp !== null && item.discountRp !== "") ? (num(item.discountRp) ? formatNumber(num(item.discountRp)) : "") : "";
+    const discPctStr = (item.discountPercent !== undefined && item.discountPercent !== null && item.discountPercent !== "" && item.discountPercent !== 0) ? item.discountPercent : "";
+    const qtyStr = (item.qty !== undefined && item.qty !== null && item.qty !== "") ? item.qty : "";
+    const convStr = (item.conversionRatio !== undefined && item.conversionRatio !== null && item.conversionRatio !== "") ? item.conversionRatio : "";
+    const midQtyStr = (item.intermediateQty !== undefined && item.intermediateQty !== null && item.intermediateQty !== "" && item.intermediateUnit) ? item.intermediateQty : "";
+
     return `
       <tr data-index="${idx}">
         <td style="text-align:center;font-weight:700;color:#64748b;">${idx + 1}</td>
@@ -607,34 +632,34 @@ function renderManualInvoiceItems() {
           <input type="date" class="row-exp" data-index="${idx}" value="${escapeHtml(item.expiryDate || '')}" style="font-size:11.5px;">
         </td>
         <td>
-          <input type="text" class="row-purchase-unit" data-index="${idx}" value="${escapeHtml(item.purchaseUnit || 'BOX')}" placeholder="BOX">
+          <input type="text" class="row-purchase-unit" data-index="${idx}" value="${escapeHtml(item.purchaseUnit || '')}" placeholder="BOX / BTL">
         </td>
         <td>
           <div style="display:flex;align-items:center;gap:4px;">
-            <input type="text" class="row-mid-unit" data-index="${idx}" value="${escapeHtml(item.intermediateUnit || '')}" placeholder="STRIP" style="flex:1;">
-            <input type="number" class="row-mid-qty" data-index="${idx}" min="1" step="1" value="${item.intermediateQty || 1}" title="Isi per Strip" style="width:45px;" placeholder="10">
+            <input type="text" class="row-mid-unit" data-index="${idx}" value="${escapeHtml(item.intermediateUnit || '')}" placeholder="Opsional" style="flex:1;">
+            <input type="number" class="row-mid-qty" data-index="${idx}" min="1" step="1" value="${midQtyStr}" title="Isi per Satuan Sedang" style="width:48px;" placeholder="Isi">
           </div>
         </td>
         <td>
-          <input type="text" class="row-base-unit" data-index="${idx}" value="${escapeHtml(item.baseUnit || 'TABLET')}" placeholder="TABLET">
+          <input type="text" class="row-base-unit" data-index="${idx}" value="${escapeHtml(item.baseUnit || '')}" placeholder="TAB / BTL">
         </td>
         <td>
-          <input type="number" class="row-conversion" data-index="${idx}" min="1" step="1" value="${item.conversionRatio || 1}" title="Total Satuan Terkecil dalam 1 Satuan Besar" style="font-weight:800;color:#0369a1;">
+          <input type="number" class="row-conversion" data-index="${idx}" min="1" step="1" value="${convStr}" title="Total Satuan Terkecil dalam 1 Satuan Besar" style="font-weight:800;color:#0369a1;" placeholder="1">
         </td>
         <td>
-          <input type="number" class="row-qty" data-index="${idx}" min="0.01" step="any" value="${item.qty || 1}" style="font-weight:700;">
+          <input type="number" class="row-qty" data-index="${idx}" min="0.01" step="any" value="${qtyStr}" style="font-weight:700;" placeholder="1">
         </td>
         <td class="row-total-base-cell" style="text-align:center;font-weight:700;color:#0369a1;background:#f0f9ff;border-radius:4px;">
-          ${totalBase} <small style="font-size:10px;">${escapeHtml(item.baseUnit || '')}</small>
+          ${totalBase > 0 ? totalBase : '—'} <small style="font-size:10px;">${escapeHtml(item.baseUnit || '')}</small>
         </td>
         <td>
-          <input type="number" class="row-buy-price" data-index="${idx}" min="0" step="1" value="${item.buyPrice || 0}">
+          <input type="text" inputmode="numeric" class="row-buy-price" data-index="${idx}" value="${buyPriceStr}" placeholder="0" style="font-weight:600;">
         </td>
         <td>
-          <input type="number" class="row-disc-pct" data-index="${idx}" min="0" max="100" step="0.1" value="${item.discountPercent || 0}">
+          <input type="number" class="row-disc-pct" data-index="${idx}" min="0" max="100" step="0.1" value="${discPctStr}" placeholder="0">
         </td>
         <td>
-          <input type="number" class="row-disc-rp" data-index="${idx}" min="0" step="1" value="${item.discountRp || 0}">
+          <input type="text" inputmode="numeric" class="row-disc-rp" data-index="${idx}" value="${discRpStr}" placeholder="0">
         </td>
         <td class="row-subtotal-cell" style="text-align:right;font-weight:800;color:#0f172a;">
           ${rupiah(item.subtotal || 0)}
@@ -651,9 +676,37 @@ function renderManualInvoiceItems() {
   bindManualItemRowEvents();
 }
 
+function checkAutoUnitFallback(idx) {
+  const item = manualInvoiceItems[idx];
+  if (!item) return;
+  const pUnit = norm(item.purchaseUnit);
+  const bUnit = norm(item.baseUnit);
+  if (pUnit && bUnit && pUnit === bUnit) {
+    item.conversionRatio = 1;
+    item.intermediateUnit = "";
+    item.intermediateQty = 1;
+    const row = document.querySelector(`tr[data-index="${idx}"]`);
+    if (row) {
+      const midUnitInp = row.querySelector(".row-mid-unit");
+      if (midUnitInp) midUnitInp.value = "";
+      const midQtyInp = row.querySelector(".row-mid-qty");
+      if (midQtyInp) midQtyInp.value = "";
+      const convInp = row.querySelector(".row-conversion");
+      if (convInp && (!convInp.value || convInp.value === "0")) convInp.value = "1";
+    }
+  }
+}
+
 function bindManualItemRowEvents() {
   const tbody = $("manual-invoice-items-body");
   if (!tbody) return;
+
+  // Auto-select text saat fokus untuk seluruh input di baris tabel
+  tbody.querySelectorAll("input").forEach(inp => {
+    inp.addEventListener("focus", (e) => {
+      e.target.select();
+    });
+  });
 
   // Search autocomplete
   tbody.querySelectorAll(".row-prod-search").forEach(input => {
@@ -682,18 +735,19 @@ function bindManualItemRowEvents() {
     });
   });
 
-  // Input changes
+  // Input Satuan & Konversi
   tbody.querySelectorAll(".row-purchase-unit").forEach(el => {
     el.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.index, 10);
-      manualInvoiceItems[idx].purchaseUnit = e.target.value;
+      manualInvoiceItems[idx].purchaseUnit = e.target.value.trim();
+      checkAutoUnitFallback(idx);
     });
   });
 
   tbody.querySelectorAll(".row-mid-unit").forEach(el => {
     el.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.index, 10);
-      manualInvoiceItems[idx].intermediateUnit = e.target.value;
+      manualInvoiceItems[idx].intermediateUnit = e.target.value.trim();
     });
   });
 
@@ -708,7 +762,8 @@ function bindManualItemRowEvents() {
   tbody.querySelectorAll(".row-base-unit").forEach(el => {
     el.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.index, 10);
-      manualInvoiceItems[idx].baseUnit = e.target.value;
+      manualInvoiceItems[idx].baseUnit = e.target.value.trim();
+      checkAutoUnitFallback(idx);
       recalculateRow(idx, false);
     });
   });
@@ -729,10 +784,14 @@ function bindManualItemRowEvents() {
     });
   });
 
+  // Live auto thousand dots untuk Harga Beli
   tbody.querySelectorAll(".row-buy-price").forEach(el => {
     el.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.index, 10);
-      manualInvoiceItems[idx].buyPrice = num(e.target.value) || 0;
+      const digits = e.target.value.replace(/[^0-9]/g, "");
+      const valNum = parseInt(digits, 10) || 0;
+      e.target.value = valNum ? formatNumber(valNum) : "";
+      manualInvoiceItems[idx].buyPrice = valNum;
       recalculateRow(idx, false);
     });
   });
@@ -915,10 +974,31 @@ function selectProductForRow(idx, prod) {
   item.name = prod["Nama Produk"] || prod.name || "";
   item.barcode = prod["Barcode"] || "";
   item.purchaseUnit = prod["Kemasan Beli"] || prod["Satuan Pembelian"] || "BOX";
-  item.intermediateUnit = (prod["Satuan Antara"] && norm(prod["Satuan Antara"]) !== norm(prod["Satuan Dasar"] || prod["Satuan"])) ? prod["Satuan Antara"] : "";
-  item.intermediateQty = num(prod["Isi Satuan Antara"]) || 1;
-  item.baseUnit = prod["Satuan Dasar"] || prod["Satuan"] || "TABLET";
-  item.conversionRatio = num(prod["Konversi"] ?? prod["Isi Kemasan"] ?? 1) || 1;
+
+  const baseU = prod["Satuan Dasar"] || prod["Satuan"] || "TABLET";
+  const interU = prod["Satuan Antara"] || "";
+  const conv = num(prod["Konversi"] ?? prod["Isi Kemasan"] ?? 1) || 1;
+  const interQty = num(prod["Isi Satuan Antara"]) || 1;
+
+  item.baseUnit = baseU;
+  item.conversionRatio = conv;
+
+  // Cek fleksibilitas satuan: 1 satuan (Btl/Tube), 2 satuan (Box -> Sachet), atau 3 satuan (Box -> Strip -> Tab)
+  if (norm(item.purchaseUnit) === norm(baseU) || conv <= 1) {
+    // 1 Satuan murni
+    item.intermediateUnit = "";
+    item.intermediateQty = "";
+    item.conversionRatio = 1;
+  } else if (!interU || norm(interU) === norm(baseU) || interQty <= 1 || interQty === conv) {
+    // 2 Satuan murni
+    item.intermediateUnit = "";
+    item.intermediateQty = "";
+  } else {
+    // 3 Satuan lengkap
+    item.intermediateUnit = interU;
+    item.intermediateQty = interQty;
+  }
+
   item.buyPrice = num(prod["Harga Beli Terakhir"] ?? prod["Harga Beli"] ?? 0);
 
   recalculateRow(idx);
@@ -1204,8 +1284,7 @@ function installInvoiceDetailModal() {
             <button type="button" id="btn-print-detail-pdf" class="button button-secondary"><i class="fa-solid fa-file-pdf"></i> Cetak PDF</button>
           </div>
           <div style="display:flex;gap:8px;">
-            <button type="button" id="btn-delete-invoice" class="button button-danger" style="background:#ef4444;color:#fff;" title="Hapus faktur ini dari database"><i class="fa-solid fa-trash-can"></i> Hapus Faktur</button>
-            <button type="button" id="btn-cancel-invoice" class="button button-danger" style="display:none;"><i class="fa-solid fa-ban"></i> Batalkan Faktur (Reversal)</button>
+            <button type="button" id="btn-invoice-action-danger" class="button button-danger" style="background:#ef4444;color:#fff;"><i class="fa-solid fa-trash-can"></i> Hapus Faktur</button>
             <button type="button" id="btn-correct-invoice" class="button button-warning"><i class="fa-solid fa-pen-to-square"></i> Koreksi Faktur</button>
           </div>
         </footer>
@@ -1218,8 +1297,15 @@ function installInvoiceDetailModal() {
   $("btn-print-detail-pdf")?.addEventListener("click", () => {
     if (activeDetailInvoice) handlePrintInvoicePdf(activeDetailInvoice);
   });
-  $("btn-delete-invoice")?.addEventListener("click", handleDeleteInvoice);
-  $("btn-cancel-invoice")?.addEventListener("click", handleReversalCancelInvoice);
+  $("btn-invoice-action-danger")?.addEventListener("click", () => {
+    if (!activeDetailInvoice) return;
+    const isConfirmed = norm(activeDetailInvoice.status) === "terkonfirmasi" || norm(activeDetailInvoice.status) === "confirmed";
+    if (isConfirmed) {
+      handleReversalCancelInvoice();
+    } else {
+      handleDeleteInvoice();
+    }
+  });
   $("btn-correct-invoice")?.addEventListener("click", () => {
     if (activeDetailInvoice) openInvoiceCorrectionModal(activeDetailInvoice);
   });
@@ -1234,8 +1320,16 @@ function openInvoiceDetailModal(inv) {
   $("invoice-detail-sub").textContent = `${inv.supplierName || inv.supplier} | Tanggal: ${inv.date || inv.invoiceDate}`;
 
   const isConfirmed = norm(inv.status) === "terkonfirmasi" || norm(inv.status) === "confirmed";
-  const cancelBtn = $("btn-cancel-invoice");
-  if (cancelBtn) cancelBtn.style.display = isConfirmed ? "inline-flex" : "none";
+  const dangerBtn = $("btn-invoice-action-danger");
+  if (dangerBtn) {
+    if (isConfirmed) {
+      dangerBtn.innerHTML = `<i class="fa-solid fa-ban"></i> Batalkan Faktur (Reversal Stok)`;
+      dangerBtn.title = "Batalkan faktur ini dan kembalikan stok obat secara otomatis";
+    } else {
+      dangerBtn.innerHTML = `<i class="fa-solid fa-trash-can"></i> Hapus Faktur Permanen`;
+      dangerBtn.title = "Hapus data faktur ini secara permanen dari sistem";
+    }
+  }
 
   const bodyEl = $("invoice-detail-body");
   const items = inv.items || [];

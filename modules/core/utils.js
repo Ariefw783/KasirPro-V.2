@@ -14,7 +14,20 @@ export function norm(val) {
 }
 
 export function num(val) {
-  return Number(String(val ?? 0).replace(/[^0-9.-]/g, "")) || 0;
+  if (typeof val === "number") return Number.isFinite(val) ? val : 0;
+  const s = String(val ?? 0).trim();
+  if (!s) return 0;
+  // Jika format ribuan Indonesia dengan pemisah titik (misal: "39.048", "1.240.099")
+  if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) {
+    return Number(s.replace(/\./g, "")) || 0;
+  }
+  return Number(s.replace(/[^0-9.-]/g, "")) || 0;
+}
+
+export function parseMoney(val) {
+  if (typeof val === "number") return Number.isFinite(val) ? val : 0;
+  const digits = String(val ?? "").replace(/[^0-9-]/g, "");
+  return parseInt(digits, 10) || 0;
 }
 
 export function rupiah(val) {

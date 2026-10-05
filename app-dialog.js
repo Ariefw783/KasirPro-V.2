@@ -7,7 +7,9 @@ function install(){
   const style=document.createElement('style');
   style.id='kp-dialog-v4-style';
   style.textContent=`
-  .kp-dialog-v4{position:fixed;inset:0;z-index:2147483646;display:grid;place-items:center;padding:20px}.kp-dialog-v4[hidden]{display:none!important}
+  .kp-dialog-v4{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:20px}.kp-dialog-v4[hidden]{display:none!important}
+  #kp-dialog-v4{z-index:2147483647!important}
+  #kp-dialog-progress{z-index:2147483647!important}
   .kp-dialog-v4__backdrop{position:absolute;inset:0;background:rgba(15,23,42,.48);backdrop-filter:blur(3px)}
   .kp-dialog-v4__card{position:relative;width:min(94vw,430px);overflow:hidden;border:1px solid #e2e8f0;border-radius:18px;background:#fff;box-shadow:0 28px 90px rgba(15,23,42,.3)}
   .kp-dialog-v4__body{padding:24px 24px 18px;text-align:center}.kp-dialog-v4__icon{width:54px;height:54px;margin:0 auto 15px;border-radius:16px;display:grid;place-items:center;font-size:24px;background:#eff6ff;color:#2563eb}
