@@ -2,6 +2,15 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <script>
+      // SAKLAR CEPAT PEMELIHARAAN SISTEM
+      if (window.location.hostname.includes("pages.dev")) {
+        fetch("system-status.json?t=" + Date.now(), { cache: "no-store" })
+          .then(r => r.ok ? r.json() : null)
+          .then(s => { if (s && s.maintenance === true) window.location.replace("maintenance.html"); })
+          .catch(() => {});
+      }
+    </script>
 
     <meta
         name="viewport"
