@@ -1,7 +1,7 @@
 {
   "version": "2.2.0",
-  "build": "20261004.2",
-  "releaseDate": "04 Oktober 2026",
+  "build": "20261005.1",
+  "releaseDate": "05 Oktober 2026",
   "title": "Pembaruan Sistem KasirPro V2",
   "description": "Pembaruan ini wajib diterapkan agar seluruh data transaksi, harga, dan stok tetap sinkron dan seragam antar perangkat (Admin & Kasir).",
   "changelog": [
