@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v50-invoice-payment-method";
+const CACHE_VERSION = "kasirpro-pwa-v51-instant-update-flow";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
@@ -36,7 +36,6 @@ self.addEventListener("install", event => {
     event.waitUntil((async () => {
         const cache = await caches.open(STATIC_CACHE);
         await cache.addAll(STATIC_ASSETS);
-        self.skipWaiting();
     })());
 });
 

@@ -94,18 +94,18 @@
             if (res.ok) return await res.json();
         } catch (_) {}
         return {
-            version: "2.2.0",
-            build: "20261004.2",
-            releaseDate: "04 Oktober 2026",
-            title: "Pembaruan Sistem KasirPro V2",
+            version: "2.2.3",
+            build: "20261006.1",
+            releaseDate: "06 Oktober 2026",
+            title: "Pembaruan Arsitektur Sistem KasirPro V2",
             description: "Pembaruan ini wajib diterapkan agar seluruh data transaksi antar perangkat tetap selaras dan akurat.",
             changelog: [
-                "Rekonsiliasi Cerdas Diskon & PPN Faktur (Mendukung per item & global).",
-                "Modal Pop-Up Loading Progres Aktual saat proses impor master data.",
-                "Status Produk Otomatis Berbasis Ketersediaan Stok Fisik.",
-                "Auto-registrasi Supplier & Kategori baru saat input produk manual.",
-                "Proteksi Hapus Data Pintar (Hard Delete data baru & Soft Archive data berriwayat).",
-                "Peningkatan sinkronisasi real-time multi-perangkat (PC Admin & Kasir)."
+                "Live Auto-Separator Ribuan Input Harga Faktur",
+                "Fleksibilitas Multi-Tingkat Satuan (1, 2, atau 3 Satuan)",
+                "Penyederhanaan Smart Action Pembatalan & Hapus Faktur",
+                "Dual-Method Pembayaran Faktur (Tunai & Tempo)",
+                "Filter Pintar Produk: Aktif (Perlu Harga Jual)",
+                "Isolasi Kontainer & Viewport Fit Ponsel/PWA"
             ]
         };
     }
@@ -238,10 +238,16 @@
             const currentVersion = localStorage.getItem("kasirpro_app_version");
             const currentBuild = localStorage.getItem("kasirpro_app_build");
 
-            if (!currentVersion) {
-                // Pengguna baru pertama kali buka aplikasi
-                localStorage.setItem("kasirpro_app_version", meta.version || "2.2.0");
-                localStorage.setItem("kasirpro_app_build", meta.build || "");
+            if (!currentVersion || !currentBuild) {
+                // Jika belum ada rekaman versi tapi sudah ada controller service worker yang aktif,
+                // berarti aplikasi sudah terpasang dan memerlukan pembaruan ini.
+                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                    const targetWorker = registration?.waiting || registration?.installing || navigator.serviceWorker.controller;
+                    showMandatoryUpdateModal(targetWorker);
+                    return;
+                }
+                localStorage.setItem("kasirpro_app_version", meta.version || "2.2.3");
+                localStorage.setItem("kasirpro_app_build", meta.build || "20261006.1");
                 return;
             }
 
@@ -334,14 +340,18 @@
                 window.location.reload();
             });
 
-            // Cek update saat kembali membuka tab / aplikasi (window focus)
+            // Cek update saat kembali membuka tab / aplikasi (window focus atau visible)
             window.addEventListener("focus", checkForAppUpdates);
+            document.addEventListener("visibilitychange", () => {
+                if (document.visibilityState === "visible") checkForAppUpdates();
+            });
 
-            // Cek berkala setiap 3 menit di latar belakang
-            setInterval(checkForAppUpdates, 3 * 60 * 1000);
+            // Cek berkala setiap 2 menit di latar belakang
+            setInterval(checkForAppUpdates, 2 * 60 * 1000);
 
-            // Cek metadata versi setelah 2.5 detik
-            setTimeout(checkForAppUpdates, 2500);
+            // Cek metadata versi secara cepat saat startup
+            setTimeout(checkForAppUpdates, 500);
+            setTimeout(checkForAppUpdates, 2000);
 
         } catch (error) {
             console.error("PWA KasirPro gagal diaktifkan:", error);
