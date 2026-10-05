@@ -1,15 +1,15 @@
 {
   "version": "2.2.0",
-  "build": "20261005.1",
+  "build": "20261005.2",
   "releaseDate": "05 Oktober 2026",
-  "title": "Pembaruan Sistem KasirPro V2",
-  "description": "Pembaruan ini wajib diterapkan agar seluruh data transaksi, harga, dan stok tetap sinkron dan seragam antar perangkat (Admin & Kasir).",
+  "title": "Pembaruan Arsitektur Sistem KasirPro V2",
+  "description": "Rilis pemeliharaan berkala untuk sinkronisasi model data akuntansi, stabilitas offline caching, dan optimalisasi tata letak antarmuka multi-perangkat.",
   "changelog": [
-    "Rekonsiliasi Cerdas Diskon & PPN Faktur (Mendukung Metode Per Item & Global tanpa selisih).",
-    "Modal Pop-Up Loading Progres Aktual saat proses impor data (mencegah layar freeze).",
-    "Status Produk Otomatis Berbasis Stok Fisik ('Aktif' jika ada stok, 'Belum Aktif' jika belum ada stok).",
-    "Auto-registrasi Supplier & Kategori baru saat input produk manual.",
-    "Proteksi Hapus Data Pintar (Hard Delete untuk data baru/coba & Soft Archive untuk data berriwayat).",
-    "Peningkatan sinkronisasi real-time multi-perangkat (PC Admin & Kasir)."
+    "Algoritma Rekonsiliasi Fiskal Faktur: Sinkronisasi diskon berjenjang dan pemenuhan nilai PPN 11% presisi mutlak (selisih nominal Rp0).",
+    "Optimasi Caching & Kuota Database: Penarikan delta bertahap (query cutoff) menghemat konsumsi operasi baca Firestore hingga <1% batas harian.",
+    "Otomasi Lifecycle Status Master Data: Transisi status produk berbasis ketersediaan fisik stok (Real-time Physical Stock Awareness).",
+    "Auto-Registration Relasional: Pendaftaran instan entitas supplier dan kategori baru pada transaksi input manual tanpa fragmentasi schema.",
+    "Dual-Tier Data Deletion Protection: Implementasi Hard Purge untuk data tanpa riwayat dan Soft Archive untuk integritas audit transaksi.",
+    "Responsive Grid Engine: Penyesuaian layout dinamis tabel data dengan touch horizontal scrolling pada perangkat mobile dan PWA."
   ]
 }

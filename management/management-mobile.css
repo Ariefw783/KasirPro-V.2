@@ -73,13 +73,18 @@
   .preview-search { width:100%; flex:1 1 auto; }
   .preview-search input { width:100%; }
 
-  /* Tables are compressed and wrap their content: no horizontal page or table scrolling. */
+  /* Tables in mobile/PWA: Horizontal Touch-Scrolling with clean formatting */
   .table-wrapper {
-    width:100%;
-    max-width:100%;
-    min-width:0;
-    max-height:none;
-    overflow:visible;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    max-height: 70vh !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 14px !important;
+    background: #ffffff !important;
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04) !important;
   }
 
   .panel-actions.split { align-items:stretch !important; gap:12px; }
@@ -99,25 +104,34 @@
   }
   .panel-actions.split>.preview-meta { width:100%; text-align:center; }
 
-  .table-wrapper>.data-table,.table-wrapper>table {
-    width:100% !important;
-    min-width:0 !important;
-    max-width:100% !important;
-    table-layout:fixed;
+  .table-wrapper>.data-table,
+  .table-wrapper>table {
+    width: max-content !important;
+    min-width: 780px !important;
+    table-layout: auto !important;
   }
 
-  .data-table th,.data-table td {
-    min-width:0;
-    padding:7px 5px;
-    white-space:normal !important;
-    overflow-wrap:anywhere;
-    word-break:break-word;
-    font-size:.56rem;
-    line-height:1.35;
+  .data-table th,
+  .data-table td {
+    min-width: fit-content !important;
+    padding: 10px 12px !important;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+    font-size: 0.70rem !important;
+    line-height: 1.4 !important;
+    vertical-align: middle !important;
   }
 
-  .data-table th { font-size:.52rem; }
-  .sales-table th,.sales-table td { white-space:normal; }
+  .data-table th {
+    font-size: 0.66rem !important;
+    font-weight: 850 !important;
+  }
+
+  .sales-table th,
+  .sales-table td {
+    white-space: nowrap !important;
+  }
 
   .report-tabs,.sheet-tabs {
     min-width:0;
