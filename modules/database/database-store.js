@@ -858,9 +858,12 @@ export async function writeStockTransaction(entries = []) {
 
   const affectedCodes = [...new Set(movements.map(m => norm(m.productCode || m["Kode Produk"])).filter(Boolean))];
 
+  const newStockValues = new Map();
+
   // Eksekusi Atomic Transaction di Firestore
   await runTransaction(firebaseDb, async (transaction) => {
     const now = new Date().toISOString();
+    newStockValues.clear();
 
     // 1. Baca StokAktif terkini untuk semua kode produk terkait
     const stockDocs = new Map();
@@ -871,7 +874,6 @@ export async function writeStockTransaction(entries = []) {
     }
 
     // 2. Hitung dan verifikasi kuantitas stok baru
-    const newStockValues = new Map();
     for (const m of movements) {
       const code = norm(m.productCode || m["Kode Produk"]);
       if (!code) continue;
