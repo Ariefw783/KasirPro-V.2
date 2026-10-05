@@ -22,34 +22,36 @@
         .kp-pwa-toast{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));z-index:100001;transform:translate(-50%,18px);max-width:min(520px,calc(100vw - 32px));padding:11px 16px;border-radius:12px;background:#172033;color:#fff;box-shadow:0 10px 28px rgba(15,23,42,.28);font:500 14px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;opacity:0;pointer-events:none;transition:.2s ease}
         .kp-pwa-toast.is-visible{opacity:1;transform:translate(-50%,0)}
         
-        /* MODAL PEMBARUAN WAJIB (MANDATORY UPDATE MODAL) */
-        .kp-update-modal{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:18px;background:rgba(15,23,42,.78);backdrop-filter:blur(8px);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+        /* MODAL PEMBARUAN WAJIB (TECHNICAL ENTERPRISE CODE MODAL) */
+        .kp-update-modal{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:16px;background:rgba(10,18,30,.84);backdrop-filter:blur(10px);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
         .kp-update-modal[hidden]{display:none!important}
-        .kp-update-card{position:relative;width:min(520px,100%);max-height:92vh;overflow-y:auto;background:#ffffff;border-radius:22px;border:1px solid rgba(226,232,240,.9);box-shadow:0 28px 80px rgba(15,23,42,.5);padding:28px 24px 22px;text-align:center;animation:kp-modal-pop .25s ease-out}
-        @keyframes kp-modal-pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+        .kp-update-card{position:relative;width:min(480px,100%);max-height:92vh;overflow-y:auto;background:#ffffff;border-radius:20px;border:1px solid #cbd5e1;box-shadow:0 25px 70px rgba(10,18,30,.45);padding:24px 20px 20px;text-align:center;animation:kp-modal-pop .25s ease-out}
+        @keyframes kp-modal-pop{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
         
-        .kp-update-icon{width:64px;height:64px;margin:0 auto 14px;border-radius:20px;background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;display:grid;place-items:center;font-size:28px;box-shadow:0 10px 26px rgba(37,99,235,.38)}
-        .kp-update-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:#eff6ff;color:#2563eb;border:1px solid #dbeafe;border-radius:999px;font-size:11.5px;font-weight:750;margin-bottom:10px}
-        .kp-update-title{margin:0 0 6px;color:#0f172a;font-size:20px;font-weight:800;line-height:1.25}
-        .kp-update-subtitle{margin:0 0 16px;color:#64748b;font-size:13px;line-height:1.55}
+        .kp-update-icon{width:56px;height:56px;margin:0 auto 12px;border-radius:16px;background:linear-gradient(135deg,#0f2a43,#1d4ed8);color:#fff;display:grid;place-items:center;font-size:24px;box-shadow:0 8px 22px rgba(15,42,67,.3)}
+        .kp-update-badge{display:inline-flex;align-items:center;gap:6px;padding:3.5px 11px;background:#f1f5f9;color:#0f2a43;border:1px solid #cbd5e1;border-radius:999px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;font-weight:750;letter-spacing:.02em;margin-bottom:8px}
+        .kp-update-title{margin:0 0 5px;color:#0f172a;font-size:18.5px;font-weight:850;line-height:1.25}
+        .kp-update-subtitle{margin:0 0 14px;color:#64748b;font-size:12.5px;line-height:1.45}
         
-        .kp-update-changelog-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px;margin-bottom:20px;text-align:left}
-        .kp-update-changelog-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px;font-weight:750;color:#334155;text-transform:uppercase;letter-spacing:.5px}
-        .kp-update-list{margin:0;padding:0;list-style:none;display:grid;gap:9px}
-        .kp-update-list li{font-size:13px;color:#1e293b;line-height:1.45;display:flex;align-items:flex-start;gap:9px}
-        .kp-update-list li svg{width:16px;height:16px;flex:0 0 auto;fill:#10b981;margin-top:2px}
+        /* TECHNICAL CODE TERMINAL CHANGELOG BOX */
+        .kp-update-changelog-box{background:#091422;border:1px solid #1e3a5f;border-radius:12px;padding:14px 16px;margin-bottom:18px;text-align:left;box-shadow:inset 0 2px 8px rgba(0,0,0,.3)}
+        .kp-update-changelog-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.08);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:10.5px;font-weight:700;color:#38bdf8;text-transform:uppercase;letter-spacing:.05em}
+        .kp-update-list{margin:0;padding:0;list-style:none;display:grid;gap:6.5px}
+        .kp-update-list li{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:12px;color:#e2e8f0;line-height:1.4;display:flex;align-items:center;gap:8px}
+        .kp-update-item-num{color:#38bdf8;font-weight:750;font-size:11px;background:rgba(56,189,248,.12);padding:1px 5px;border-radius:4px;border:1px solid rgba(56,189,248,.25);flex:0 0 auto}
+        .kp-update-item-text{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         
-        .kp-update-btn{width:100%;min-height:48px;padding:12px 20px;background:#2563eb;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s;box-shadow:0 8px 22px rgba(37,99,235,.32)}
-        .kp-update-btn:hover{background:#1d4ed8;box-shadow:0 10px 26px rgba(37,99,235,.4)}
+        .kp-update-btn{width:100%;min-height:46px;padding:11px 18px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s;box-shadow:0 6px 20px rgba(37,99,235,.35)}
+        .kp-update-btn:hover{background:linear-gradient(135deg,#1e40af,#1d4ed8);box-shadow:0 8px 24px rgba(37,99,235,.45);transform:translateY(-1px)}
         .kp-update-btn:active{transform:scale(.98)}
         
-        .kp-update-loading-state{display:flex;flex-direction:column;align-items:center;gap:12px;padding:32px 14px}
-        .kp-update-spinner{width:46px;height:46px;border:4px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:kp-spin .75s linear infinite}
+        .kp-update-loading-state{display:flex;flex-direction:column;align-items:center;gap:12px;padding:28px 14px}
+        .kp-update-spinner{width:42px;height:42px;border:3.5px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:kp-spin .75s linear infinite}
         @keyframes kp-spin{to{transform:rotate(360deg)}}
         
-        .kp-update-footnote{margin-top:14px;font-size:11.5px;color:#94a3b8;line-height:1.4}
+        .kp-update-footnote{margin-top:12px;font-size:11px;color:#94a3b8;line-height:1.35;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
 
-        @media (max-width:640px){.kp-pwa-control{left:16px;right:16px;justify-content:center;max-width:none}.kp-pwa-toast{bottom:76px}.kp-update-card{padding:22px 18px 18px}}
+        @media (max-width:640px){.kp-pwa-control{left:14px;right:14px;justify-content:center;max-width:none}.kp-pwa-toast{bottom:76px}.kp-update-card{padding:20px 16px 16px}.kp-update-list li{font-size:11px}.kp-update-title{font-size:17px}}
         @media print{.kp-pwa-control,.kp-pwa-toast,.kp-update-modal{display:none!important}}
     `;
     document.head.append(style);
@@ -126,10 +128,10 @@
         }
 
         const changelogListHtml = (meta.changelog || [])
-            .map(item => `
+            .map((item, index) => `
                 <li>
-                    <svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/></svg>
-                    <span>${escapeHtml(item)}</span>
+                    <span class="kp-update-item-num">${String(index + 1).padStart(2, "0")}</span>
+                    <span class="kp-update-item-text">${escapeHtml(item)}</span>
                 </li>
             `).join("");
 

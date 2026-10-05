@@ -5,11 +5,11 @@
   "title": "Pembaruan Arsitektur Sistem KasirPro V2",
   "description": "Rilis pemeliharaan berkala untuk sinkronisasi model data akuntansi, stabilitas offline caching, dan optimalisasi tata letak antarmuka multi-perangkat.",
   "changelog": [
-    "Algoritma Rekonsiliasi Fiskal Faktur: Sinkronisasi diskon berjenjang dan pemenuhan nilai PPN 11% presisi mutlak (selisih nominal Rp0).",
-    "Optimasi Caching & Kuota Database: Penarikan delta bertahap (query cutoff) menghemat konsumsi operasi baca Firestore hingga <1% batas harian.",
-    "Otomasi Lifecycle Status Master Data: Transisi status produk berbasis ketersediaan fisik stok (Real-time Physical Stock Awareness).",
-    "Auto-Registration Relasional: Pendaftaran instan entitas supplier dan kategori baru pada transaksi input manual tanpa fragmentasi schema.",
-    "Dual-Tier Data Deletion Protection: Implementasi Hard Purge untuk data tanpa riwayat dan Soft Archive untuk integritas audit transaksi.",
-    "Responsive Grid Engine: Penyesuaian layout dinamis tabel data dengan touch horizontal scrolling pada perangkat mobile dan PWA."
+    "Algoritma Rekonsiliasi Fiskal Faktur",
+    "Optimasi Caching & Kuota Database",
+    "Otomasi Lifecycle Status Master Data",
+    "Auto-Registration Relasional",
+    "Dual-Tier Data Deletion Protection",
+    "Responsive Grid Engine"
   ]
 }
