@@ -1,20 +1,7 @@
 (function () {
     "use strict";
 
-    // PENGAMAN KHUSUS MODE PEMELIHARAAN:
-    // Cek status secara cepat apakah server Cloudflare sedang menyajikan mode maintenance
-    if (window.location.hostname.includes("pages.dev") && !window.location.pathname.endsWith("maintenance.html")) {
-        // Jika server mengembalikan maintenance (misal via redirect edge), browser otomatis membukanya.
-        // Jika ada Service Worker lama yang berusaha menyajikan cache index.html, kita sinkronkan dengan server:
-        fetch(new URL("maintenance.html", window.location.href), { method: "HEAD", cache: "no-store" })
-            .then(res => {
-                // Jika respon maintenance.html berstatus 200 OK dan rute utama mengarahkan ke sana, pastikan pindah ke maintenance.html
-                if (res.ok && res.redirected) {
-                    window.location.replace(new URL("maintenance.html", window.location.href).href);
-                }
-            })
-            .catch(() => {});
-    }
+    // Mode Produksi Aktif: Service worker dan update tracker berjalan normal
 
     const scriptUrl = new URL(document.currentScript.src);
     const appRoot = new URL("./", scriptUrl);
