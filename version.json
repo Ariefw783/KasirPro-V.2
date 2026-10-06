@@ -1,14 +1,14 @@
 {
-  "version": "2.2.14",
-  "build": "20261006.12",
+  "version": "2.2.15",
+  "build": "20261006.13",
   "releaseDate": "06 Oktober 2026",
-  "title": "Testing Purge & Operational Workflow",
-  "description": "Comprehensive testing purge covering opnames, stock reset, and operational filter enhancements.",
+  "title": "Cloud Purge Permission & Resilience",
+  "description": "Fix missing or insufficient permissions on testing purge by ensuring auth session, admin profile, and safe document deletion.",
   "changelog": [
-    "Purge test data completely",
-    "Clear stock opname sessions",
-    "Reset products to inactive",
-    "Enforce strict operational filters",
-    "Verify full test suite"
+    "Fix cloud purge auth validation",
+    "Ensure admin profile in cloud",
+    "Delete active stocks on purge",
+    "Handle permission denial gracefully",
+    "Sync PWA cache v63"
   ]
 }

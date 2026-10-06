@@ -11,7 +11,7 @@
  */
 
 import { firebaseApp, firebaseAuth, firebaseDb } from "./firebase-client.js";
-import { waitForFirebaseUser } from "./auth.js";
+import { waitForFirebaseUser, ensureInitialAdminProfile } from "./auth.js";
 import {
   collection,
   doc,
@@ -923,6 +923,23 @@ export async function deletePurchaseInvoice(invoiceIdOrNumber) {
  */
 export async function purgeTestingTransactions(options = {}) {
   requireOnline();
+
+  // 1. Pastikan sesi Firebase Auth aktif sebelum mengeksekusi operasi Cloud
+  let user = firebaseAuth.currentUser;
+  if (!user) {
+    user = await waitForFirebaseUser();
+  }
+  if (!user) {
+    throw new Error("Sesi Firebase belum aktif atau telah kedaluwarsa. Silakan muat ulang halaman atau login kembali sebagai Administrator.");
+  }
+
+  // 2. Pastikan profil Administrator terverifikasi di Cloud Firestore
+  try {
+    await ensureInitialAdminProfile(user, "admin");
+  } catch (profErr) {
+    console.warn("[DatabaseStore] Profil admin check:", profErr?.message || profErr);
+  }
+
   const {
     clearInvoices = true,
     clearMovements = true,
@@ -945,12 +962,12 @@ export async function purgeTestingTransactions(options = {}) {
     deletedOpnames: clearOpnames ? opnames.length : 0
   };
 
-  // 1. Eksekusi Batch Deletion di Firestore Cloud (maks 400 per commit)
+  // 3. Susun daftar operasi Firestore Cloud
   const ops = [];
   if (clearInvoices) {
     for (const inv of invoices) {
       const id = String(inv.id || inv.invoiceNumber).replace(/[\/\\]/g, "_").trim();
-      ops.push({ coll: "purchaseInvoices", id });
+      if (id) ops.push({ coll: "purchaseInvoices", id });
       if (inv.invoiceNumber && inv.invoiceNumber !== id) {
         ops.push({ coll: "purchaseInvoices", id: String(inv.invoiceNumber).replace(/[\/\\]/g, "_").trim() });
       }
@@ -958,18 +975,19 @@ export async function purgeTestingTransactions(options = {}) {
   }
   if (clearMovements) {
     for (const m of movements) {
-      if (m.id) ops.push({ coll: "stockMovements", id: String(m.id).replace(/[\/\\]/g, "_").trim() });
+      const id = String(m.id || "").replace(/[\/\\]/g, "_").trim();
+      if (id) ops.push({ coll: "stockMovements", id });
     }
   }
   if (clearSales) {
     for (const s of sales) {
-      const id = String(s.id || s.transactionNumber).replace(/[\/\\]/g, "_").trim();
-      ops.push({ coll: "sales", id });
+      const id = String(s.id || s.transactionNumber || "").replace(/[\/\\]/g, "_").trim();
+      if (id) ops.push({ coll: "sales", id });
     }
   }
   if (clearOpnames) {
     for (const op of opnames) {
-      const id = String(op.id || op.reference || op.sessionId).replace(/[\/\\]/g, "_").trim();
+      const id = String(op.id || op.reference || op.sessionId || "").replace(/[\/\\]/g, "_").trim();
       if (id) ops.push({ coll: "stockOpnames", id });
     }
   }
@@ -983,13 +1001,28 @@ export async function purgeTestingTransactions(options = {}) {
       p["Status Produk"] = "Tidak Aktif";
       activeStockIndex.set(code, 0);
       const pId = String(p.id || p["Kode Produk"]).replace(/[\/\\]/g, "_").trim();
-      ops.push({ coll: "products", id: pId, updateData: { "Stok Awal": 0, "Status": "Tidak Aktif", "Status Produk": "Tidak Aktif", updatedAt: new Date().toISOString() } });
-      ops.push({ coll: "activeStocks", id: readableDocumentId("stok", code), updateData: { quantity: 0, updatedAt: new Date().toISOString() } });
+      if (pId) {
+        ops.push({
+          coll: "products",
+          id: pId,
+          updateData: {
+            "Stok Awal": 0,
+            "Status": "Tidak Aktif",
+            "Status Produk": "Tidak Aktif",
+            updatedAt: new Date().toISOString()
+          }
+        });
+      }
+      // Hapus dokumen StokAktif di Cloud Firestore (JANGAN set parsial agar tidak melanggar validActiveStock)
+      const stockDocId = readableDocumentId("stok", code);
+      if (stockDocId) {
+        ops.push({ coll: "activeStocks", id: stockDocId });
+      }
     }
   }
 
-  // Commit deletion in chunks
-  const chunkSize = 350;
+  // Commit deletion in chunks (maks 200 per batch untuk stabilitas)
+  const chunkSize = 200;
   for (let i = 0; i < ops.length; i += chunkSize) {
     const chunk = ops.slice(i, i + chunkSize);
     const batch = writeBatch(firebaseDb);
@@ -1001,9 +1034,19 @@ export async function purgeTestingTransactions(options = {}) {
         } else {
           batch.delete(ref);
         }
-      } catch (_) {}
+      } catch (segErr) {
+        console.warn(`[DatabaseStore] Lewati dokumen [${item.coll}/${item.id}]:`, segErr);
+      }
     }
-    await batch.commit();
+    try {
+      await batch.commit();
+    } catch (commitErr) {
+      console.error(`[DatabaseStore] Gagal commit batch pembersihan ke Firestore (chunk ${Math.floor(i / chunkSize) + 1}):`, commitErr);
+      if (commitErr?.code === "permission-denied" || commitErr?.message?.toLowerCase().includes("permission")) {
+        throw new Error("Akses Cloud Ditolak (Missing or insufficient permissions). Pastikan akun login Anda adalah Administrator resmi (apotekdoaibu.v2@gmail.com) dengan status aktif di database Firestore.");
+      }
+      throw commitErr;
+    }
   }
 
   // 2. Bersihkan In-Memory

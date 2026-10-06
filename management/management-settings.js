@@ -104,6 +104,11 @@ async function handleSaveSettings(e) {
 }
 
 async function handlePurgeTestingData() {
+  if (!navigator.onLine) {
+    window.KasirProDialog?.error("Perangkat Offline", "Fitur pembersihan data cloud membutuhkan koneksi internet aktif.");
+    return;
+  }
+
   const confirm1 = await window.KasirProDialog?.confirm(
     "Pembersihan Data Uji Coba",
     "PERINGATAN TINGKAT TINGGI:\n\nApakah Anda yakin ingin menghapus seluruh data transaksi uji coba?\n\nHal ini akan menghapus:\n1. Seluruh Faktur Pembelian yang pernah diinput\n2. Seluruh Riwayat Mutasi Kartu Stok\n3. Seluruh Riwayat Penjualan Kasir POS\n4. Mereset saldo stok seluruh produk ke 0\n\nMaster data produk dan supplier TIDAK AKAN terhapus."

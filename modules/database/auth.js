@@ -67,7 +67,7 @@ function sessionFromProfile(user, profile) {
     };
 }
 
-async function ensureInitialAdminProfile(user, requestedUsername) {
+export async function ensureInitialAdminProfile(user, requestedUsername = "admin") {
     const profileRef = doc(firebaseDb, ...documentSegments("users", user.uid));
     const isInitialAdmin =
         String(user.email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase() &&

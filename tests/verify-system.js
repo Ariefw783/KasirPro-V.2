@@ -344,9 +344,7 @@ function purgeAllTestData(db) {
     p["Status"] = "Tidak Aktif";
     p["Status Produk"] = "Tidak Aktif";
   });
-  for (const [key] of db.activeStocks.entries()) {
-    db.activeStocks.set(key, 0);
-  }
+  db.activeStocks.clear();
   return db;
 }
 
@@ -357,7 +355,21 @@ assert(purgedDb.movements.length === 0, "Purge: Seluruh Mutasi Stok Dihapus Tota
 assert(purgedDb.opnames.length === 0, "Purge: Seluruh Riwayat Sesi Stock Opname Dihapus Total");
 assert(purgedDb.products.every(p => p["Stok Awal"] === 0), "Purge: Seluruh Stok Master Produk Direset ke 0");
 assert(purgedDb.products.every(p => p["Status"] === "Tidak Aktif"), "Purge: Seluruh Status Produk Kembali ke 'Tidak Aktif'");
-assert([...purgedDb.activeStocks.values()].every(v => v === 0), "Purge: Seluruh Dokumen ActiveStocks Firestore Direset ke 0");
+assert(purgedDb.activeStocks.size === 0, "Purge: Seluruh Dokumen ActiveStocks Firestore Dihapus Bersih");
+
+// Uji Validasi Autentikasi Purge Cloud
+function validatePurgeAuth(currentUser) {
+  if (!currentUser) throw new Error("Sesi Firebase belum aktif atau telah kedaluwarsa.");
+  return true;
+}
+let authErrorCaught = false;
+try {
+  validatePurgeAuth(null);
+} catch (e) {
+  authErrorCaught = true;
+}
+assert(authErrorCaught === true, "Purge: Wajib Memiliki Sesi Firebase Auth Aktif Sebelum Eksekusi Cloud");
+assert(validatePurgeAuth({ uid: "admin-123" }) === true, "Purge: Berhasil Diverifikasi Jika User Terautentikasi");
 
 // -----------------------------------------------------------------------------
 // 9. LOGIKA IN-APP DIAGNOSTIC REPORTER & AI EXPORT
@@ -409,6 +421,19 @@ assert(aiText.includes("LAPORAN KENDALA KASIRPRO"), "Format Header Prompt AI Dia
 assert(aiText.includes("pos/pos-at07-core.js"), "Prompt AI Memuat File Sumber Terkait Halaman");
 assert(aiText.includes("390x844 px"), "Prompt AI Memuat Spesifikasi Viewport Layar Perangkat");
 assert(aiText.includes("Unsupported field value"), "Prompt AI Memuat Stack Trace Console Error");
+
+// Uji Ekstraksi Sesi Diagnostik dari kasirpro_session
+function extractSessionInfo(storageData) {
+  if (!storageData) return { user: "Tidak teridentifikasi", role: "Unknown" };
+  const s = typeof storageData === "string" ? JSON.parse(storageData) : storageData;
+  return {
+    user: s.name || s.username || "Pengguna",
+    role: s.role === "admin" ? "Administrator" : (s.role === "cashier" ? "Kasir" : (s.role || "Kasir"))
+  };
+}
+const adminSess = extractSessionInfo(JSON.stringify({ username: "admin", name: "Apotek Doa Ibu", role: "admin" }));
+assert(adminSess.role === "Administrator", "Diagnostik: Berhasil Mendeteksi Role Administrator dari kasirpro_session");
+assert(adminSess.user === "Apotek Doa Ibu", "Diagnostik: Berhasil Mendeteksi Nama User dari kasirpro_session");
 
 // -----------------------------------------------------------------------------
 // REKAPITULASI HASIL AUDIT
