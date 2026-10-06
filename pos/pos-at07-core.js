@@ -114,7 +114,8 @@ function init(){
 function activeProduct(p){
     const s = norm(p["Status"] || p["Status Produk"] || "aktif");
     const sellPrice = num(p["Harga Jual"]);
-    return (s === "aktif" || !s) && sellPrice > 0;
+    const stock = num(p["Stok Awal"]);
+    return s !== "nonaktif" && stock > 0 && sellPrice > 0;
 }
 
 function searchableProducts(){

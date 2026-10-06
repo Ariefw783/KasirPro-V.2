@@ -205,12 +205,12 @@ const tier2 = computeTieredPricing(1000, 100, 10, 2, { basePrice: 1500, midPrice
 assert(tier2.basePrice === 1500 && tier2.midPrice === 14000, "Mode 2 Satuan: Harga Dasar & Sedang Sesuai Pilihan");
 assert(tier2.buyPrice === 140000, "Mode 2 Satuan: Harga Satuan Pembelian Terbesar Terisi Proporsional (Rp 140.000)");
 
-// Uji Filter Status Produk (Memastikan Aktif & Perlu Harga Jual Tidak Bertabrakan)
+// Uji Filter Status Produk (Sesuai Spesifikasi KasirPro: Belum Aktif, Aktif, Tidak Aktif)
 const sampleProductList = [
-  { code: "P1", name: "Paracetamol", stock: 10, sellPrice: 5000, status: "Aktif" },             // Aktif Siap Jual
-  { code: "P2", name: "Amoxicillin", stock: 20, sellPrice: 0, status: "Perlu Harga Jual" },       // Aktif Perlu Harga Jual
-  { code: "P3", name: "Vitamin C", stock: 0, sellPrice: 2000, status: "Belum Aktif" },            // Belum Aktif (Stok Kosong)
-  { code: "P4", name: "Obat Lama", stock: 5, sellPrice: 10000, status: "Nonaktif" }              // Nonaktif
+  { code: "P1", name: "Paracetamol", stock: 10, sellPrice: 5000, status: "Aktif" },             // Aktif (Stok > 0 & Harga > 0)
+  { code: "P2", name: "Amoxicillin", stock: 20, sellPrice: 0, status: "Belum Aktif" },          // Belum Aktif (Stok > 0 & Harga <= 0)
+  { code: "P3", name: "Vitamin C", stock: 0, sellPrice: 2000, status: "Tidak Aktif" },          // Tidak Aktif (Stok <= 0)
+  { code: "P4", name: "Obat Lama", stock: 5, sellPrice: 10000, status: "Nonaktif" }             // Nonaktif
 ];
 
 function filterByStatus(list, filterVal) {
@@ -219,23 +219,23 @@ function filterByStatus(list, filterVal) {
     const stock = p.stock || 0;
     const sellPrice = p.sellPrice || 0;
     if (filterVal === "aktif") return pStatus !== "nonaktif" && stock > 0 && sellPrice > 0;
-    if (filterVal === "perlu harga jual") return pStatus !== "nonaktif" && sellPrice <= 0;
-    if (filterVal === "belum aktif") return pStatus !== "nonaktif" && stock <= 0 && sellPrice > 0;
+    if (filterVal === "belum aktif" || filterVal === "perlu harga jual") return pStatus !== "nonaktif" && stock > 0 && sellPrice <= 0;
+    if (filterVal === "tidak aktif") return pStatus !== "nonaktif" && stock <= 0;
     if (filterVal === "nonaktif") return pStatus === "nonaktif";
     return true;
   });
 }
 
 const filteredAktif = filterByStatus(sampleProductList, "aktif");
-const filteredPerluHarga = filterByStatus(sampleProductList, "perlu harga jual");
 const filteredBelumAktif = filterByStatus(sampleProductList, "belum aktif");
+const filteredTidakAktif = filterByStatus(sampleProductList, "tidak aktif");
 const filteredNonaktif = filterByStatus(sampleProductList, "nonaktif");
 
-assert(filteredAktif.length === 1 && filteredAktif[0].code === "P1", "Filter 'Aktif': Hanya menampilkan produk siap jual (Stock > 0 & Harga > 0)");
-assert(filteredPerluHarga.length === 1 && filteredPerluHarga[0].code === "P2", "Filter 'Perlu Harga Jual': Hanya menampilkan produk yang harganya Rp0");
-assert(filteredBelumAktif.length === 1 && filteredBelumAktif[0].code === "P3", "Filter 'Belum Aktif': Menampilkan produk tanpa stok fisik");
+assert(filteredAktif.length === 1 && filteredAktif[0].code === "P1", "Filter 'Aktif': Memfilter produk yang ada stok & harga jual (Siap POS)");
+assert(filteredBelumAktif.length === 1 && filteredBelumAktif[0].code === "P2", "Filter 'Belum Aktif': Khusus produk ada stok via faktur tapi belum ada harga jual");
+assert(filteredTidakAktif.length === 1 && filteredTidakAktif[0].code === "P3", "Filter 'Tidak Aktif': Menampilkan produk yang belum mendapat stok via faktur");
 assert(filteredNonaktif.length === 1 && filteredNonaktif[0].code === "P4", "Filter 'Nonaktif': Menampilkan produk berstatus nonaktif");
-assert(!filteredAktif.some(p => p.code === "P2"), "Filter 'Aktif' dan 'Perlu Harga Jual' Terbukti Tidak Bertabrakan!");
+assert(!filteredAktif.some(p => p.code === "P2"), "Filter 'Aktif' dan 'Belum Aktif' Terbukti Tidak Bertabrakan!");
 
 // -----------------------------------------------------------------------------
 // 5. LOGIKA FAKTUR PEMBELIAN & KASIR FAKTUR FISIK (management-invoices.js)
