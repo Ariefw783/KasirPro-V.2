@@ -141,18 +141,17 @@ function populateFilterDropdowns(master) {
     supFilter.value = currentVal;
   }
 
-  // Pastikan status filter punya opsi resmi KasirPro
+  // Pastikan status filter punya 3 opsi resmi KasirPro (+ 1 Semua Status)
   const statusFilter = $("product-status-filter");
-  if (statusFilter && !statusFilter.querySelector('option[value="tidak aktif"]')) {
+  if (statusFilter && (!statusFilter.querySelector('option[value="tidak aktif"]') || statusFilter.querySelector('option[value="nonaktif"]'))) {
     const curVal = statusFilter.value;
     statusFilter.innerHTML = `
       <option value="">Semua Status</option>
       <option value="aktif">Aktif (Siap Jual)</option>
       <option value="belum aktif">Belum Aktif (Perlu Harga Jual)</option>
-      <option value="tidak aktif">Tidak Aktif (Belum Ada Stok)</option>
-      <option value="nonaktif">Nonaktif</option>
+      <option value="tidak aktif">Tidak Aktif</option>
     `;
-    if (curVal) statusFilter.value = curVal;
+    if (curVal && curVal !== "nonaktif") statusFilter.value = curVal;
   }
 }
 
@@ -208,24 +207,20 @@ function applyFilters() {
 
     const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
 
-    // Filter status khusus yang saling eksklusif sesuai alur operasional KasirPro:
-    // 1. Belum Aktif (Perlu Harga Jual): Mempunyai stok via faktur (> 0), tapi belum diisi harga jual (<= 0)
+    // Filter status mutlak KasirPro (3 Status):
+    // 1. Belum Aktif (Perlu Harga Jual): Sudah mempunyai stok via faktur (> 0), tapi belum diisi harga jual (<= 0)
     if (statusVal === "belum aktif" || statusVal === "perlu harga jual") {
-      return pStatus !== "nonaktif" && stock > 0 && sellPrice <= 0;
+      return stock > 0 && sellPrice <= 0;
     }
-    // 2. Aktif (Siap Jual): Mempunyai stok via faktur (> 0) DAN sudah diisi harga jual (> 0) -> Siap transaksi POS
+    // 2. Aktif (Siap Jual): Sudah mempunyai stok via faktur (> 0) DAN sudah diisi harga jual (> 0) -> Siap transaksi POS
     if (statusVal === "aktif") {
-      return pStatus !== "nonaktif" && stock > 0 && sellPrice > 0;
+      return stock > 0 && sellPrice > 0;
     }
-    // 3. Tidak Aktif: Belum mendapat stok fisik via input faktur (stock <= 0)
-    if (statusVal === "tidak aktif") {
-      return pStatus !== "nonaktif" && stock <= 0;
+    // 3. Tidak Aktif / Nonaktif: Belum mendapat stok via input faktur (stock <= 0)
+    if (statusVal === "tidak aktif" || statusVal === "nonaktif") {
+      return stock <= 0;
     }
-    // 4. Nonaktif: Dinonaktifkan manual oleh pengguna/manajer
-    if (statusVal === "nonaktif") {
-      return pStatus === "nonaktif";
-    }
-    if (statusVal && pStatus !== statusVal) {
+    if (statusVal) {
       return false;
     }
 
@@ -356,17 +351,13 @@ function renderTable() {
 }
 
 function getStatusBadge(rawStatus, sellPrice, stock = 0) {
-  const normStatus = norm(rawStatus);
-  if (normStatus === "nonaktif") {
-    return `<span class="badge badge-secondary" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;"><i class="fa-solid fa-ban"></i> Nonaktif</span>`;
-  }
   if (stock > 0) {
     if (sellPrice <= 0) {
       return `<span class="badge badge-warning" style="background:#fff7ed;color:#ea580c;border:1px solid #ffedd5;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Produk sudah mempunyai stok via faktur tetapi belum diatur harga jualnya"><i class="fa-solid fa-triangle-exclamation"></i> Belum Aktif (Perlu Harga Jual)</span>`;
     }
-    return `<span class="badge badge-success" style="background:#ecfdf5;color:#059669;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Produk memiliki stok dan harga jual, siap ditransaksikan di POS"><i class="fa-solid fa-circle-check"></i> Aktif</span>`;
+    return `<span class="badge badge-success" style="background:#ecfdf5;color:#059669;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Produk memiliki stok via faktur dan harga jual, siap ditransaksikan di POS"><i class="fa-solid fa-circle-check"></i> Aktif (Siap Jual)</span>`;
   }
-  return `<span class="badge badge-secondary" style="background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Belum mendapat stok via input faktur"><i class="fa-solid fa-clock"></i> Tidak Aktif</span>`;
+  return `<span class="badge badge-secondary" style="background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Belum mendapat stok via input faktur (belum disentuh dari master data)"><i class="fa-solid fa-clock"></i> Tidak Aktif</span>`;
 }
 
 /**

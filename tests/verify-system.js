@@ -205,23 +205,21 @@ const tier2 = computeTieredPricing(1000, 100, 10, 2, { basePrice: 1500, midPrice
 assert(tier2.basePrice === 1500 && tier2.midPrice === 14000, "Mode 2 Satuan: Harga Dasar & Sedang Sesuai Pilihan");
 assert(tier2.buyPrice === 140000, "Mode 2 Satuan: Harga Satuan Pembelian Terbesar Terisi Proporsional (Rp 140.000)");
 
-// Uji Filter Status Produk (Sesuai Spesifikasi KasirPro: Belum Aktif, Aktif, Tidak Aktif)
+// Uji Filter Status Produk (3 Status Mutlak: Belum Aktif, Aktif, Tidak Aktif)
 const sampleProductList = [
-  { code: "P1", name: "Paracetamol", stock: 10, sellPrice: 5000, status: "Aktif" },             // Aktif (Stok > 0 & Harga > 0)
-  { code: "P2", name: "Amoxicillin", stock: 20, sellPrice: 0, status: "Belum Aktif" },          // Belum Aktif (Stok > 0 & Harga <= 0)
-  { code: "P3", name: "Vitamin C", stock: 0, sellPrice: 2000, status: "Tidak Aktif" },          // Tidak Aktif (Stok <= 0)
-  { code: "P4", name: "Obat Lama", stock: 5, sellPrice: 10000, status: "Nonaktif" }             // Nonaktif
+  { code: "P1", name: "Paracetamol", stock: 10, sellPrice: 5000 },             // 2. Aktif (Siap Jual): Stok > 0 & Harga > 0
+  { code: "P2", name: "Amoxicillin", stock: 20, sellPrice: 0 },                // 1. Belum Aktif (Perlu Harga Jual): Stok > 0 & Harga <= 0
+  { code: "P3", name: "Vitamin C", stock: 0, sellPrice: 0 },                   // 3. Tidak Aktif: Belum disentuh dari master / stok <= 0
+  { code: "P4", name: "Antasida Draf", stock: 0, sellPrice: 3000 }             // 3. Tidak Aktif: Stok <= 0 belum ada faktur
 ];
 
 function filterByStatus(list, filterVal) {
   return list.filter(p => {
-    const pStatus = (p.status || "").toLowerCase();
     const stock = p.stock || 0;
     const sellPrice = p.sellPrice || 0;
-    if (filterVal === "aktif") return pStatus !== "nonaktif" && stock > 0 && sellPrice > 0;
-    if (filterVal === "belum aktif" || filterVal === "perlu harga jual") return pStatus !== "nonaktif" && stock > 0 && sellPrice <= 0;
-    if (filterVal === "tidak aktif") return pStatus !== "nonaktif" && stock <= 0;
-    if (filterVal === "nonaktif") return pStatus === "nonaktif";
+    if (filterVal === "aktif") return stock > 0 && sellPrice > 0;
+    if (filterVal === "belum aktif" || filterVal === "perlu harga jual") return stock > 0 && sellPrice <= 0;
+    if (filterVal === "tidak aktif" || filterVal === "nonaktif") return stock <= 0;
     return true;
   });
 }
@@ -229,13 +227,11 @@ function filterByStatus(list, filterVal) {
 const filteredAktif = filterByStatus(sampleProductList, "aktif");
 const filteredBelumAktif = filterByStatus(sampleProductList, "belum aktif");
 const filteredTidakAktif = filterByStatus(sampleProductList, "tidak aktif");
-const filteredNonaktif = filterByStatus(sampleProductList, "nonaktif");
 
-assert(filteredAktif.length === 1 && filteredAktif[0].code === "P1", "Filter 'Aktif': Memfilter produk yang ada stok & harga jual (Siap POS)");
-assert(filteredBelumAktif.length === 1 && filteredBelumAktif[0].code === "P2", "Filter 'Belum Aktif': Khusus produk ada stok via faktur tapi belum ada harga jual");
-assert(filteredTidakAktif.length === 1 && filteredTidakAktif[0].code === "P3", "Filter 'Tidak Aktif': Menampilkan produk yang belum mendapat stok via faktur");
-assert(filteredNonaktif.length === 1 && filteredNonaktif[0].code === "P4", "Filter 'Nonaktif': Menampilkan produk berstatus nonaktif");
-assert(!filteredAktif.some(p => p.code === "P2"), "Filter 'Aktif' dan 'Belum Aktif' Terbukti Tidak Bertabrakan!");
+assert(filteredAktif.length === 1 && filteredAktif[0].code === "P1", "Filter 'Aktif (Siap Jual)': Khusus produk yang ada stok via faktur & harga jual");
+assert(filteredBelumAktif.length === 1 && filteredBelumAktif[0].code === "P2", "Filter 'Belum Aktif (Perlu Harga Jual)': Khusus produk yang sudah ada stok via faktur tapi belum ada harga jual");
+assert(filteredTidakAktif.length === 2, "Filter 'Tidak Aktif': Khusus produk yang belum mendapat stok via faktur (stok <= 0)");
+assert(!filteredAktif.some(p => p.code === "P2" || p.code === "P3"), "Filter 'Aktif', 'Belum Aktif', dan 'Tidak Aktif' saling eksklusif dan tidak bertabrakan!");
 
 // -----------------------------------------------------------------------------
 // 5. LOGIKA FAKTUR PEMBELIAN & KASIR FAKTUR FISIK (management-invoices.js)
