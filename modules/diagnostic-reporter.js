@@ -5,7 +5,16 @@
  */
 
 const STORAGE_KEY = "kasirpro_diagnostic_reports_v1";
-const APP_VERSION = "v2.2.5";
+const FALLBACK_VERSION = "v2.2.9";
+
+function getEffectiveAppVersion() {
+  try {
+    const stored = localStorage.getItem("kasirpro_app_version");
+    if (stored) return stored.startsWith("v") ? stored : `v${stored}`;
+  } catch (_) {}
+  return FALLBACK_VERSION;
+}
+
 const MAX_ERROR_LOGS = 15;
 
 // Buffer error in-memory
@@ -52,7 +61,9 @@ console.error = function (...args) {
 };
 
 export const DiagnosticReporter = {
-  version: APP_VERSION,
+  get version() {
+    return getEffectiveAppVersion();
+  },
 
   /**
    * Mengambil riwayat laporan dari LocalStorage
@@ -177,7 +188,7 @@ export const DiagnosticReporter = {
       pageUrl: window.location.href,
       sourceFiles,
       environment: {
-        appVersion: APP_VERSION,
+        appVersion: getEffectiveAppVersion(),
         viewport: `${window.innerWidth}x${window.innerHeight} px`,
         screen: `${window.screen?.width || 0}x${window.screen?.height || 0} px`,
         dpr: window.devicePixelRatio || 1,

@@ -342,6 +342,7 @@
 
             // Cek update saat kembali membuka tab / aplikasi (window focus atau visible)
             window.addEventListener("focus", checkForAppUpdates);
+            window.addEventListener("pageshow", checkForAppUpdates);
             document.addEventListener("visibilitychange", () => {
                 if (document.visibilityState === "visible") checkForAppUpdates();
             });

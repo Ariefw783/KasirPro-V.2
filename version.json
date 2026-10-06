@@ -1,14 +1,14 @@
 {
-  "version": "2.2.8",
-  "build": "20261006.6",
+  "version": "2.2.9",
+  "build": "20261006.7",
   "releaseDate": "06 Oktober 2026",
-  "title": "Mobile Stock Sub-tabs & Concise English Changelog",
-  "description": "Responsiveness fix for stock navigation sub-tabs and standardizing changelog format to concise English items (max 5 words).",
+  "title": "Mobile Stock Header Layout & Containment Fix",
+  "description": "Fix header text clipping, full button action visibility on mobile stock page, and real-time app version syncing.",
   "changelog": [
-    "Fix mobile stock navigation layout",
-    "Prevent header action button clipping",
-    "Separate active product status filters",
-    "Sanitize Firestore recursive data payload",
-    "Add in-app diagnostic AI export"
+    "Fix mobile stock header layout",
+    "Enforce table horizontal scroll container",
+    "Refactor ops grid responsive tracks",
+    "Sync real-time PWA app version",
+    "Auto trigger service worker updates"
   ]
 }

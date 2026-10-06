@@ -771,6 +771,16 @@ button {
     border-radius: var(--radius-md);
 
     background: #ffffff;
+
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.module-header > div:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
 .module-header h2 {
@@ -788,6 +798,10 @@ button {
 
     font-size: 0.7rem;
     line-height: 1.5;
+
+    overflow-wrap: break-word;
+    word-break: normal;
+    white-space: normal;
 }
 
 .module-header-actions {
@@ -1924,7 +1938,7 @@ body.product-detail-open{overflow:hidden;}
 /* =========================================================
    OPERATIONAL MODULES
 ========================================================= */
-.ops-page { display:grid; gap:14px; }
+.ops-page { display:grid; grid-template-columns:minmax(0, 1fr); width:100%; max-width:100%; min-width:0; box-sizing:border-box; gap:14px; }
 .ops-card { padding:15px; border:1px solid var(--border); border-radius:var(--radius-md); background:#fff; box-shadow:var(--shadow-sm); }
 .ops-grid { display:grid; gap:10px; align-items:end; }
 .ops-grid.cols-3 { grid-template-columns:repeat(3,minmax(0,1fr)); }
