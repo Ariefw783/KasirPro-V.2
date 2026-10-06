@@ -1,14 +1,14 @@
 {
-  "version": "2.2.20",
-  "build": "20261006.18",
+  "version": "2.2.21",
+  "build": "20261006.19",
   "releaseDate": "06 Oktober 2026",
-  "title": "Factory Hard Reset & Anti-Freeze Purge",
-  "description": "Added full factory hard reset, anti-freeze batch timeout guards, and smart dirty pruning for stock resets.",
+  "title": "Migrasi Penuh ke Supabase PostgreSQL",
+  "description": "Integrasi database relasional PostgreSQL via Supabase tanpa batas kuota harian, didukung RPC Factory Hard Reset instan.",
   "changelog": [
-    "Add factory hard reset",
-    "Add batch timeout guards",
-    "Fix purge stuck at 62%",
-    "Smart dirty product pruning",
-    "Full local storage wipe"
+    "Migrasi database ke Supabase",
+    "Skema relasional PostgreSQL aktif",
+    "Factory reset via RPC",
+    "Sinkronisasi multi-tabel otomatis",
+    "Sesi login admin terjaga"
   ]
 }

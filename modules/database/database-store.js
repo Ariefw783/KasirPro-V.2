@@ -41,6 +41,7 @@ import {
 
 import { indexedDBStore, STORES } from "../local/indexeddb-store.js";
 import { masterSync } from "../local/master-sync.js";
+import { supabaseDb } from "./supabase-client.js";
 
 export const STORE_KEYS = Object.freeze({
   master: "kasirpro_master_store_v1",
@@ -348,6 +349,159 @@ async function syncFromFirestore(force = false) {
       fetchCollection("storeSettings")
     ]);
 
+    // 2b. Fetch data dari Supabase PostgreSQL
+    let supabaseProducts = [];
+    let supabaseCategories = [];
+    let supabaseSuppliers = [];
+    let supabaseInvoices = [];
+    let supabaseSales = [];
+    let supabaseMovements = [];
+    let supabaseOpnames = [];
+    let supabaseStocks = [];
+    let supabaseSettings = [];
+
+    try {
+      const [sbP, sbC, sbS, sbInv, sbSal, sbMov, sbOpn, sbStk, sbSet] = await Promise.all([
+        supabaseDb.select("products").catch(() => []),
+        supabaseDb.select("categories").catch(() => []),
+        supabaseDb.select("suppliers").catch(() => []),
+        supabaseDb.select("purchase_invoices").catch(() => []),
+        supabaseDb.select("sales").catch(() => []),
+        supabaseDb.select("stock_movements").catch(() => []),
+        supabaseDb.select("stock_opnames").catch(() => []),
+        supabaseDb.select("active_stocks").catch(() => []),
+        supabaseDb.select("store_settings").catch(() => [])
+      ]);
+
+      if (Array.isArray(sbP)) supabaseProducts = sbP.map(p => ({
+        id: p.id,
+        "Kode Produk": p.code,
+        "Kode Produk Internal": p.code,
+        "Nama Produk": p.name,
+        "Barcode": p.barcode || "",
+        "Kategori": p.category || "",
+        "Supplier": p.supplier || "",
+        "Harga Beli": Number(p.buy_price || 0),
+        "Harga Jual": Number(p.sell_price || 0),
+        "Satuan Beli": p.buy_unit || "Box",
+        "Satuan Terkecil": p.base_unit || "Pcs",
+        "Satuan Menengah": p.mid_unit || "",
+        "Isi Per Box": Number(p.conversion || 1),
+        "Isi Per Strip": Number(p.mid_conversion || 1),
+        "Harga Bertingkat": Array.isArray(p.tiered_prices) ? p.tiered_prices : [],
+        "Stok Awal": Number(p.stock || 0),
+        "Status": p.status || "Tidak Aktif",
+        "Status Produk": p.status || "Tidak Aktif",
+        "Stok Minimum": Number(p.min_stock || 0),
+        updatedAt: p.updated_at
+      }));
+
+      if (Array.isArray(sbC)) supabaseCategories = sbC.map(c => ({
+        id: c.id,
+        "Nama Kategori": c.name,
+        "Kode Kategori": c.id,
+        updatedAt: c.updated_at
+      }));
+
+      if (Array.isArray(sbS)) supabaseSuppliers = sbS.map(s => ({
+        id: s.id,
+        "Supplier": s.name,
+        "Nama Perusahaan": s.company_name || s.name,
+        "Nomor Telepon": s.phone || "",
+        "Alamat": s.address || "",
+        "Status": s.status || "Aktif",
+        updatedAt: s.updated_at
+      }));
+
+      if (Array.isArray(sbInv)) supabaseInvoices = sbInv.map(inv => ({
+        id: inv.id,
+        invoiceNumber: inv.invoice_number,
+        supplierName: inv.supplier_name,
+        date: inv.date,
+        dueDate: inv.due_date,
+        paymentType: inv.payment_type,
+        discountType: inv.discount_type,
+        globalDiscountRp: Number(inv.global_discount_rp || 0),
+        ppnRate: inv.ppn_rate,
+        customPpnRp: Number(inv.custom_ppn_rp || 0),
+        grossTotal: Number(inv.gross_total || 0),
+        totalDiscount: Number(inv.total_discount || 0),
+        dpp: Number(inv.dpp || 0),
+        ppn: Number(inv.ppn || 0),
+        calculatedTotal: Number(inv.calculated_total || 0),
+        printedTotal: Number(inv.printed_total || 0),
+        difference: Number(inv.difference || 0),
+        status: inv.status,
+        items: inv.items || [],
+        updatedAt: inv.updated_at
+      }));
+
+      if (Array.isArray(sbSal)) supabaseSales = sbSal.map(s => ({
+        id: s.id,
+        transactionNumber: s.transaction_number,
+        date: s.date,
+        cashierName: s.cashier_name,
+        cashierId: s.cashier_id,
+        paymentMethod: s.payment_method,
+        subtotal: Number(s.subtotal || 0),
+        discountPercent: Number(s.discount_percent || 0),
+        discountNominal: Number(s.discount_nominal || 0),
+        total: Number(s.total || 0),
+        cashPaid: Number(s.cash_paid || 0),
+        changeReturned: Number(s.change_returned || 0),
+        status: s.status,
+        voidReason: s.void_reason,
+        items: s.items || [],
+        createdAt: s.created_at
+      }));
+
+      if (Array.isArray(sbMov)) supabaseMovements = sbMov.map(m => ({
+        id: m.id,
+        productCode: m.product_code,
+        productName: m.product_name,
+        type: m.type,
+        referenceId: m.reference_id,
+        batch: m.batch,
+        expiryDate: m.expiry_date,
+        qtyIn: Number(m.qty_in || 0),
+        qtyOut: Number(m.qty_out || 0),
+        unit: m.unit,
+        notes: m.notes,
+        createdAt: m.created_at
+      }));
+
+      if (Array.isArray(sbOpn)) supabaseOpnames = sbOpn.map(o => ({
+        id: o.id,
+        reference: o.reference,
+        date: o.date,
+        notes: o.notes,
+        createdBy: o.created_by,
+        items: o.items || [],
+        createdAt: o.created_at
+      }));
+
+      if (Array.isArray(sbStk)) supabaseStocks = sbStk.map(st => ({
+        productCode: st.product_code,
+        quantity: Number(st.quantity || 0)
+      }));
+
+      if (Array.isArray(sbSet) && sbSet.length) supabaseSettings = sbSet.map(st => ({
+        key: "storeSettings",
+        store_name: st.store_name,
+        "Nama Toko": st.store_name,
+        address: st.address,
+        "Alamat Toko": st.address,
+        phone: st.phone,
+        "Nomor Telepon Toko": st.phone,
+        receipt_size: st.receipt_size,
+        "Ukuran Struk": st.receipt_size,
+        receipt_footer: st.receipt_footer,
+        "Pesan Penutup": st.receipt_footer
+      }));
+    } catch (sbErr) {
+      console.warn("[DatabaseStore] Supabase fetch sync:", sbErr.message);
+    }
+
     // Helper untuk merge array berdasarkan ID
     const mergeEntities = (existing = [], incoming = [], idExtractor) => {
       if (!incoming.length) return existing;
@@ -359,9 +513,20 @@ async function syncFromFirestore(force = false) {
       return Array.from(map.values());
     };
 
+    // Gabungkan data Firestore & Supabase (Supabase diutamakan)
+    const combinedProducts = mergeEntities(firestoreProducts, supabaseProducts, p => p["Kode Produk"] || p.id);
+    const combinedSuppliers = mergeEntities(firestoreSuppliers, supabaseSuppliers, s => s["Nama Perusahaan"] || s["Supplier"] || s.id);
+    const combinedCategories = mergeEntities(firestoreCategories, supabaseCategories, c => c["Kode Kategori"] || c["Nama Kategori"] || c.id);
+    const combinedInvoices = mergeEntities(firestoreInvoices, supabaseInvoices, i => i.id || i.invoiceNumber);
+    const combinedSales = mergeEntities(firestoreSales, supabaseSales, s => s.id || s.transactionNumber);
+    const combinedMovements = mergeEntities(firestoreMovements, supabaseMovements, m => m.id);
+    const combinedOpnames = mergeEntities(firestoreOpnames, supabaseOpnames, o => o.id);
+    const combinedStocks = mergeEntities(firestoreStocks, supabaseStocks, s => s.productCode || s.id);
+    const combinedSettings = supabaseSettings.length ? supabaseSettings : firestoreSettings;
+
     // Update stok aktif dari koleksi StokAktif
     const stockMap = new Map();
-    firestoreStocks.forEach(s => {
+    combinedStocks.forEach(s => {
       const code = norm(s.productCode || s.id);
       if (code) {
         stockMap.set(code, num(s.quantity));
@@ -372,7 +537,7 @@ async function syncFromFirestore(force = false) {
     const currentMaster = inMemory.get(STORE_KEYS.master) || { produk: [], supplier: [], kategori: [], pengguna: [], pengaturan_toko: [] };
 
     // Normalisasi produk baru/terubah (abaikan record yang ditandai terhapus)
-    const normalizedIncomingProducts = firestoreProducts
+    const normalizedIncomingProducts = combinedProducts
       .filter(p => !p._isDeleted)
       .map(p => {
         const normProd = normalizeProductRecord(p);
@@ -388,48 +553,48 @@ async function syncFromFirestore(force = false) {
     const mergedProducts = mergeEntities(currentMaster.produk, normalizedIncomingProducts, prodIdFn);
 
     const supIdFn = s => s["Nama Perusahaan"] || s["Supplier"] || s.id;
-    const mergedSuppliers = mergeEntities(currentMaster.supplier, firestoreSuppliers, supIdFn);
+    const mergedSuppliers = mergeEntities(currentMaster.supplier, combinedSuppliers, supIdFn);
 
     const katIdFn = k => k["Kode Kategori"] || k["Nama Kategori"] || k.id;
-    const mergedCategories = mergeEntities(currentMaster.kategori, firestoreCategories, katIdFn);
+    const mergedCategories = mergeEntities(currentMaster.kategori, combinedCategories, katIdFn);
 
     const masterObj = {
       produk: mergedProducts,
       supplier: mergedSuppliers,
       kategori: mergedCategories,
       pengguna: currentMaster.pengguna || [],
-      pengaturan_toko: firestoreSettings.length ? firestoreSettings : currentMaster.pengaturan_toko
+      pengaturan_toko: combinedSettings.length ? combinedSettings : currentMaster.pengaturan_toko
     };
 
     inMemory.set(STORE_KEYS.master, masterObj);
 
-    if (firestoreInvoices.length) {
-      const invs = mergeEntities(inMemory.get(STORE_KEYS.invoices) || [], firestoreInvoices, i => i.id || i.invoiceNumber);
+    if (combinedInvoices.length) {
+      const invs = mergeEntities(inMemory.get(STORE_KEYS.invoices) || [], combinedInvoices, i => i.id || i.invoiceNumber);
       inMemory.set(STORE_KEYS.invoices, invs);
-      await indexedDBStore.putMany(STORES.INVOICES, firestoreInvoices);
+      await indexedDBStore.putMany(STORES.INVOICES, combinedInvoices);
     }
-    if (firestoreSales.length) {
-      const sls = mergeEntities(inMemory.get(STORE_KEYS.sales) || [], firestoreSales, s => s.id || s.transactionNumber);
+    if (combinedSales.length) {
+      const sls = mergeEntities(inMemory.get(STORE_KEYS.sales) || [], combinedSales, s => s.id || s.transactionNumber);
       inMemory.set(STORE_KEYS.sales, sls);
-      await indexedDBStore.putMany(STORES.SALES, firestoreSales);
+      await indexedDBStore.putMany(STORES.SALES, combinedSales);
     }
-    if (firestoreMovements.length) {
-      const movs = mergeEntities(inMemory.get(STORE_KEYS.movements) || [], firestoreMovements, m => m.id);
+    if (combinedMovements.length) {
+      const movs = mergeEntities(inMemory.get(STORE_KEYS.movements) || [], combinedMovements, m => m.id);
       inMemory.set(STORE_KEYS.movements, movs);
-      await indexedDBStore.putMany(STORES.MOVEMENTS, firestoreMovements);
+      await indexedDBStore.putMany(STORES.MOVEMENTS, combinedMovements);
     }
-    if (firestoreOpnames.length) {
-      const opns = mergeEntities(inMemory.get(STORE_KEYS.opnames) || [], firestoreOpnames, o => o.id);
+    if (combinedOpnames.length) {
+      const opns = mergeEntities(inMemory.get(STORE_KEYS.opnames) || [], combinedOpnames, o => o.id);
       inMemory.set(STORE_KEYS.opnames, opns);
-      await indexedDBStore.putMany(STORES.OPNAMES, firestoreOpnames);
+      await indexedDBStore.putMany(STORES.OPNAMES, combinedOpnames);
     }
 
     // Simpan hanya rekaman yang berubah ke IndexedDB cache
     if (normalizedIncomingProducts.length) await indexedDBStore.putMany(STORES.PRODUCTS, normalizedIncomingProducts);
-    if (firestoreSuppliers.length) await indexedDBStore.putMany(STORES.SUPPLIERS, firestoreSuppliers);
-    if (firestoreCategories.length) await indexedDBStore.putMany(STORES.CATEGORIES, firestoreCategories);
-    if (firestoreSettings.length && firestoreSettings[0]) {
-      await indexedDBStore.put(STORES.CONFIGURATIONS, { key: "storeSettings", ...firestoreSettings[0] });
+    if (combinedSuppliers.length) await indexedDBStore.putMany(STORES.SUPPLIERS, combinedSuppliers);
+    if (combinedCategories.length) await indexedDBStore.putMany(STORES.CATEGORIES, combinedCategories);
+    if (combinedSettings.length && combinedSettings[0]) {
+      await indexedDBStore.put(STORES.CONFIGURATIONS, { key: "storeSettings", ...combinedSettings[0] });
     }
 
     await indexedDBStore.setLastUpdated("central_sync", Date.now());
@@ -734,6 +899,64 @@ export async function writeMasterDelta(changes = {}) {
     } catch (commitErr) {
       console.warn("[DatabaseStore] Peringatan commit writeMasterDelta:", commitErr.message || commitErr);
     }
+  // 3. SUPABASE SYNC: Tulis perubahan ke Supabase PostgreSQL
+  try {
+    for (const g of groups) {
+      if (g.field === "produk" && g.records.length) {
+        const rows = g.records.map(p => ({
+          id: p.id || sanitizeDocId(g.idOf(p), "prd"),
+          code: String(p["Kode Produk"] || p.id || "").trim(),
+          name: String(p["Nama Produk"] || "").trim(),
+          barcode: p["Barcode"] || null,
+          category: p["Kategori"] || null,
+          supplier: p["Supplier"] || null,
+          buy_price: Number(p["Harga Beli"] || 0),
+          sell_price: Number(p["Harga Jual"] || 0),
+          buy_unit: p["Satuan Beli"] || "Box",
+          base_unit: p["Satuan Terkecil"] || "Pcs",
+          mid_unit: p["Satuan Menengah"] || null,
+          conversion: Number(p["Isi Per Box"] || 1),
+          mid_conversion: Number(p["Isi Per Strip"] || 1),
+          tiered_prices: Array.isArray(p["Harga Bertingkat"]) ? p["Harga Bertingkat"] : [],
+          stock: Number(p["Stok Awal"] || 0),
+          status: p["Status"] || p["Status Produk"] || "Tidak Aktif",
+          min_stock: Number(p["Stok Minimum"] || 0),
+          updated_at: now
+        }));
+        await supabaseDb.upsert("products", rows, "id");
+      } else if (g.field === "supplier" && g.records.length) {
+        const rows = g.records.map(s => ({
+          id: s.id || sanitizeDocId(g.idOf(s), "sup"),
+          name: String(s["Supplier"] || s["Nama Perusahaan"] || s.name || "").trim(),
+          company_name: String(s["Nama Perusahaan"] || s["Supplier"] || s.company_name || "").trim(),
+          phone: s["Nomor Telepon"] || s.phone || null,
+          address: s["Alamat"] || s.address || null,
+          status: s["Status"] || "Aktif",
+          updated_at: now
+        }));
+        await supabaseDb.upsert("suppliers", rows, "id");
+      } else if (g.field === "kategori" && g.records.length) {
+        const rows = g.records.map(k => ({
+          id: k.id || sanitizeDocId(g.idOf(k), "kat"),
+          name: String(k["Nama Kategori"] || k["Kategori"] || k.name || "").trim(),
+          updated_at: now
+        }));
+        await supabaseDb.upsert("categories", rows, "id");
+      } else if (g.field === "pengaturan_toko" && g.records.length) {
+        const st = g.records[0];
+        await supabaseDb.upsert("store_settings", {
+          id: "toko_utama",
+          store_name: st.store_name || st["Nama Toko"] || "Apotek Doa Ibu",
+          address: st.address || st["Alamat Toko"] || "",
+          phone: st.phone || st["Nomor Telepon Toko"] || "",
+          receipt_size: st.receipt_size || st["Ukuran Struk"] || "58 mm",
+          receipt_footer: st.receipt_footer || st["Pesan Penutup"] || "",
+          updated_at: now
+        }, "id");
+      }
+    }
+  } catch (supErr) {
+    console.warn("[DatabaseStore] Supabase writeMasterDelta:", supErr.message);
   }
 
   return true;
@@ -806,6 +1029,17 @@ export async function deleteMasterProduct(codeOrId) {
     await Promise.allSettled(deleteOps);
   } catch (err) {
     console.error("[DatabaseStore] Gagal menghapus dokumen Firestore:", err);
+  }
+
+  // 4. Hapus dari Supabase PostgreSQL
+  try {
+    for (const id of docIds) {
+      await supabaseDb.delete("products", "id", id);
+      await supabaseDb.delete("products", "code", id);
+      await supabaseDb.delete("active_stocks", "product_code", id);
+    }
+  } catch (supErr) {
+    console.warn("[DatabaseStore] Supabase deleteMasterProduct:", supErr.message);
   }
 
   return true;
@@ -909,6 +1143,23 @@ export async function deletePurchaseInvoice(invoiceIdOrNumber) {
   if (nextMovements.length) await indexedDBStore.putMany(STORES.MOVEMENTS, nextMovements);
   if (touchedProducts.length) {
     await indexedDBStore.putMany(STORES.PRODUCTS, products);
+  }
+
+  // 7. Bersihkan dari Supabase PostgreSQL
+  try {
+    if (invId) await supabaseDb.delete("purchase_invoices", "id", invId);
+    if (invNumber) await supabaseDb.delete("purchase_invoices", "invoice_number", invNumber);
+    for (const m of relatedMovements) {
+      if (m.id) await supabaseDb.delete("stock_movements", "id", m.id);
+    }
+    for (const p of touchedProducts) {
+      const code = norm(p["Kode Produk"]);
+      if (code) {
+        await supabaseDb.update("products", { stock: num(p["Stok Awal"]) }, "code", code).catch(() => {});
+      }
+    }
+  } catch (supErr) {
+    console.warn("[DatabaseStore] Supabase deletePurchaseInvoice:", supErr.message);
   }
 
   return true;
@@ -1090,6 +1341,13 @@ export async function purgeTestingTransactions(options = {}) {
     }
   }
 
+  // 3b. Eksekusi pembersihan transaksi di Supabase PostgreSQL
+  try {
+    await supabaseDb.rpc("purge_testing_data");
+  } catch (supErr) {
+    console.warn("[DatabaseStore] Supabase purge_testing_data:", supErr.message);
+  }
+
   // 4. Bersihkan In-Memory
   if (typeof onProgress === "function") {
     onProgress({
@@ -1159,15 +1417,15 @@ export async function executeFactoryHardReset(options = {}) {
     }
   };
 
-  notify(5, "Memvalidasi kredensial Administrator...", "Memeriksa sesi login Firebase...");
+  notify(5, "Memvalidasi kredensial Administrator...", "Memeriksa sesi login Administrator...");
 
-  // 1. Pastikan sesi Firebase Auth aktif
+  // 1. Pastikan sesi Auth aktif (Firebase Auth atau Supabase Profile)
   let user = firebaseAuth.currentUser;
   if (!user) {
     user = await waitForFirebaseUser();
   }
   if (!user) {
-    throw new Error("Sesi Firebase belum aktif. Silakan muat ulang halaman atau login kembali sebagai Administrator.");
+    throw new Error("Sesi login belum aktif. Silakan muat ulang halaman atau login kembali sebagai Administrator.");
   }
 
   // 2. Pastikan profil Administrator terverifikasi
@@ -1175,6 +1433,15 @@ export async function executeFactoryHardReset(options = {}) {
     await ensureInitialAdminProfile(user, "admin");
   } catch (profErr) {
     console.warn("[FactoryReset] Profil check:", profErr?.message || profErr);
+  }
+
+  // 2b. Eksekusi Reset Total di Supabase PostgreSQL (0ms kuota tanpa batas)
+  try {
+    notify(10, "Mereset database Supabase Cloud...", "Mengosongkan seluruh tabel Supabase PostgreSQL...");
+    await supabaseDb.rpc("factory_hard_reset");
+    console.log("[FactoryReset] Supabase factory_hard_reset sukses.");
+  } catch (supErr) {
+    console.warn("[FactoryReset] Supabase factory_hard_reset galat/lewati:", supErr.message);
   }
 
   notify(15, "Menghimpun seluruh data dari Cloud Firestore...", "Mendeteksi koleksi produk, supplier, dan transaksi...");
@@ -1579,6 +1846,100 @@ export async function writeStockTransaction(entries = []) {
     });
     inMemory.set(STORE_KEYS.opnames, nextOps);
     await indexedDBStore.putMany(STORES.OPNAMES, opnames);
+  }
+
+  // Update Supabase PostgreSQL (Single Source of Truth)
+  try {
+    const nowIso = new Date().toISOString();
+    for (const [code, qty] of newStockValues.entries()) {
+      const prodName = movements.find(m => norm(m.productCode) === code)?.productName || code;
+      await supabaseDb.upsert("active_stocks", {
+        product_code: code,
+        product_name: prodName,
+        quantity: Math.max(0, qty),
+        updated_at: nowIso
+      }, "product_code").catch(() => {});
+      await supabaseDb.update("products", { stock: Math.max(0, qty), updated_at: nowIso }, "code", code).catch(() => {});
+    }
+
+    if (movements.length) {
+      const mRows = movements.map(m => ({
+        id: m.id || readableDocumentId("mut", `${m.productCode}-${Date.now()}`),
+        product_code: String(m.productCode || "").trim(),
+        product_name: String(m.productName || "").trim(),
+        type: String(m.type || "").trim(),
+        reference_id: m.referenceId || null,
+        batch: m.batch || null,
+        expiry_date: m.expiryDate || null,
+        qty_in: Number(m.qtyIn || 0),
+        qty_out: Number(m.qtyOut || 0),
+        unit: m.unit || "Pcs",
+        notes: m.notes || null,
+        created_at: m.createdAt || nowIso
+      }));
+      await supabaseDb.upsert("stock_movements", mRows, "id").catch(() => {});
+    }
+
+    if (sales.length) {
+      const sRows = sales.map(s => ({
+        id: s.id || s.transactionNumber || readableDocumentId("trx", Date.now()),
+        transaction_number: String(s.transactionNumber || s.id || "").trim(),
+        date: s.date || nowIso,
+        cashier_name: String(s.cashierName || s.cashier || "Kasir").trim(),
+        cashier_id: s.cashierId || null,
+        payment_method: s.paymentMethod || "Tunai",
+        subtotal: Number(s.subtotal || 0),
+        discount_percent: Number(s.discountPercent || 0),
+        discount_nominal: Number(s.discountNominal || 0),
+        total: Number(s.total || 0),
+        cash_paid: Number(s.cashPaid || 0),
+        change_returned: Number(s.changeReturned || 0),
+        status: s.status || "Selesai",
+        void_reason: s.voidReason || null,
+        items: Array.isArray(s.items) ? s.items : []
+      }));
+      await supabaseDb.upsert("sales", sRows, "id").catch(() => {});
+    }
+
+    if (invoices.length) {
+      const invRows = invoices.map(inv => ({
+        id: inv.id || inv.invoiceNumber || readableDocumentId("inv", Date.now()),
+        invoice_number: String(inv.invoiceNumber || inv.id || "").trim(),
+        supplier_name: String(inv.supplierName || "").trim(),
+        date: inv.date || nowIso.slice(0, 10),
+        due_date: inv.dueDate || null,
+        payment_type: inv.paymentType || "tempo",
+        discount_type: inv.discountType || "item",
+        global_discount_rp: Number(inv.globalDiscountRp || 0),
+        ppn_rate: String(inv.ppnRate || "11"),
+        custom_ppn_rp: Number(inv.customPpnRp || 0),
+        gross_total: Number(inv.grossTotal || 0),
+        total_discount: Number(inv.totalDiscount || 0),
+        dpp: Number(inv.dpp || 0),
+        ppn: Number(inv.ppn || 0),
+        calculated_total: Number(inv.calculatedTotal || 0),
+        printed_total: Number(inv.printedTotal || 0),
+        difference: Number(inv.difference || 0),
+        status: inv.status || "Terkonfirmasi",
+        items: Array.isArray(inv.items) ? inv.items : [],
+        updated_at: nowIso
+      }));
+      await supabaseDb.upsert("purchase_invoices", invRows, "id").catch(() => {});
+    }
+
+    if (opnames.length) {
+      const opRows = opnames.map(o => ({
+        id: o.id || o.reference || o.sessionId || readableDocumentId("opn", Date.now()),
+        reference: String(o.reference || o.sessionId || o.id || "").trim(),
+        date: o.date || nowIso,
+        notes: o.notes || null,
+        created_by: o.createdBy || null,
+        items: Array.isArray(o.items) ? o.items : []
+      }));
+      await supabaseDb.upsert("stock_opnames", opRows, "id").catch(() => {});
+    }
+  } catch (sbErr) {
+    console.warn("[DatabaseStore] Supabase writeStockTransaction:", sbErr.message);
   }
 
   window.dispatchEvent(new CustomEvent("kasirpro:stock-updated", { detail: { timestamp: Date.now() } }));

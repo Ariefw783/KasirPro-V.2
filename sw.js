@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v68-factory-reset";
+const CACHE_VERSION = "kasirpro-pwa-v69-supabase-integration";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
