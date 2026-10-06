@@ -172,14 +172,11 @@ export const DiagnosticReporter = {
     let sessionUser = "Tidak teridentifikasi";
     let sessionRole = "Unknown";
     try {
-      const sessRaw = sessionStorage.getItem("kasirpro_session") ||
-                      localStorage.getItem("kasirpro_session") ||
-                      localStorage.getItem("kasirpro_session_v1") ||
-                      sessionStorage.getItem("kasirpro_session_v1");
+      const sessRaw = localStorage.getItem("kasirpro_session_v1") || sessionStorage.getItem("kasirpro_session_v1");
       if (sessRaw) {
         const s = JSON.parse(sessRaw);
         sessionUser = s.name || s.username || "Pengguna";
-        sessionRole = s.role === "admin" ? "Administrator" : (s.role === "cashier" ? "Kasir" : (s.role || "Kasir"));
+        sessionRole = s.role || "Kasir";
       }
     } catch (_) {}
 

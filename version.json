@@ -2,13 +2,13 @@
   "version": "2.2.14",
   "build": "20261006.12",
   "releaseDate": "06 Oktober 2026",
-  "title": "Cloud Purge Permission & Session Resilience",
-  "description": "Fix cloud purge auth validation, delete active stock documents on purge, and improve diagnostic session detection.",
+  "title": "Testing Purge & Operational Workflow",
+  "description": "Comprehensive testing purge covering opnames, stock reset, and operational filter enhancements.",
   "changelog": [
-    "Fix cloud purge auth validation",
-    "Delete active stocks on purge",
-    "Handle cloud permissions error gracefully",
-    "Fix diagnostic session role detection",
-    "Verify full audit test suite"
+    "Purge test data completely",
+    "Clear stock opname sessions",
+    "Reset products to inactive",
+    "Enforce strict operational filters",
+    "Verify full test suite"
   ]
 }

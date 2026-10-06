@@ -923,36 +923,29 @@ export async function deletePurchaseInvoice(invoiceIdOrNumber) {
  */
 export async function purgeTestingTransactions(options = {}) {
   requireOnline();
-
-  // Pastikan sesi Firebase aktif sebelum mengeksekusi operasi cloud
-  let user = firebaseAuth.currentUser;
-  if (!user) {
-    user = await waitForFirebaseUser();
-  }
-  if (!user) {
-    throw new Error("Sesi Firebase belum aktif atau telah kedaluwarsa. Silakan muat ulang halaman atau login kembali sebagai Administrator.");
-  }
-
   const {
     clearInvoices = true,
     clearMovements = true,
     clearSales = true,
+    clearOpnames = true,
     resetProductStock = true
   } = options;
 
   const invoices = inMemory.get(STORE_KEYS.invoices) || [];
   const movements = inMemory.get(STORE_KEYS.movements) || [];
   const sales = inMemory.get(STORE_KEYS.sales) || [];
+  const opnames = inMemory.get(STORE_KEYS.opnames) || [];
   const master = inMemory.get(STORE_KEYS.master) || { produk: [] };
   const products = Array.isArray(master.produk) ? master.produk : [];
 
   const delCount = {
     deletedInvoices: clearInvoices ? invoices.length : 0,
     deletedMovements: clearMovements ? movements.length : 0,
-    deletedSales: clearSales ? sales.length : 0
+    deletedSales: clearSales ? sales.length : 0,
+    deletedOpnames: clearOpnames ? opnames.length : 0
   };
 
-  // 1. Eksekusi Batch Deletion di Firestore Cloud (maks 350 per commit)
+  // 1. Eksekusi Batch Deletion di Firestore Cloud (maks 400 per commit)
   const ops = [];
   if (clearInvoices) {
     for (const inv of invoices) {
@@ -974,23 +967,24 @@ export async function purgeTestingTransactions(options = {}) {
       ops.push({ coll: "sales", id });
     }
   }
+  if (clearOpnames) {
+    for (const op of opnames) {
+      const id = String(op.id || op.reference || op.sessionId).replace(/[\/\\]/g, "_").trim();
+      if (id) ops.push({ coll: "stockOpnames", id });
+    }
+  }
 
   // Reset stok produk di Firestore jika diminta
   if (resetProductStock) {
     for (const p of products) {
       const code = norm(p["Kode Produk"]);
-      const prevStock = num(p["Stok Awal"]);
       p["Stok Awal"] = 0;
+      p["Status"] = "Tidak Aktif";
+      p["Status Produk"] = "Tidak Aktif";
       activeStockIndex.set(code, 0);
       const pId = String(p.id || p["Kode Produk"]).replace(/[\/\\]/g, "_").trim();
-
-      // Update dokumen master produk jika memiliki saldo sebelumnya atau terindeks
-      if (prevStock !== 0 || activeStockIndex.has(code)) {
-        ops.push({ coll: "products", id: pId, updateData: { "Stok Awal": 0, updatedAt: new Date().toISOString() } });
-      }
-
-      // Hapus dokumen StokAktif di Firestore (bukan set parsial agar tidak melanggar validActiveStock)
-      ops.push({ coll: "activeStocks", id: readableDocumentId("stok", code) });
+      ops.push({ coll: "products", id: pId, updateData: { "Stok Awal": 0, "Status": "Tidak Aktif", "Status Produk": "Tidak Aktif", updatedAt: new Date().toISOString() } });
+      ops.push({ coll: "activeStocks", id: readableDocumentId("stok", code), updateData: { quantity: 0, updatedAt: new Date().toISOString() } });
     }
   }
 
@@ -1007,25 +1001,16 @@ export async function purgeTestingTransactions(options = {}) {
         } else {
           batch.delete(ref);
         }
-      } catch (err) {
-        console.warn(`[DatabaseStore] Lewati segmen dokumen [${item.coll}/${item.id}]:`, err);
-      }
+      } catch (_) {}
     }
-    try {
-      await batch.commit();
-    } catch (commitErr) {
-      console.error(`[DatabaseStore] Gagal commit batch pembersihan ke Firestore (chunk ${Math.floor(i / chunkSize) + 1}):`, commitErr);
-      if (commitErr?.code === "permission-denied" || commitErr?.message?.toLowerCase().includes("permission")) {
-        throw new Error("Akses Cloud Ditolak: Missing or insufficient permissions. Pastikan akun login Anda adalah Administrator resmi dengan hak akses tulis di database Firestore.");
-      }
-      throw commitErr;
-    }
+    await batch.commit();
   }
 
   // 2. Bersihkan In-Memory
   if (clearInvoices) inMemory.set(STORE_KEYS.invoices, []);
   if (clearMovements) inMemory.set(STORE_KEYS.movements, []);
   if (clearSales) inMemory.set(STORE_KEYS.sales, []);
+  if (clearOpnames) inMemory.set(STORE_KEYS.opnames, []);
   if (resetProductStock) inMemory.set(STORE_KEYS.master, master);
 
   // 3. Bersihkan IndexedDB
@@ -1033,6 +1018,7 @@ export async function purgeTestingTransactions(options = {}) {
   if (clearInvoices) clearPromises.push(indexedDBStore.clearStore(STORES.INVOICES));
   if (clearMovements) clearPromises.push(indexedDBStore.clearStore(STORES.MOVEMENTS));
   if (clearSales) clearPromises.push(indexedDBStore.clearStore(STORES.SALES));
+  if (clearOpnames) clearPromises.push(indexedDBStore.clearStore(STORES.OPNAMES));
   if (resetProductStock) {
     clearPromises.push(indexedDBStore.clearStore(STORES.PRODUCTS));
     clearPromises.push(indexedDBStore.clearStore(STORES.STOCK_SUMMARIES));

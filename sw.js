@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v62-cloud-purge-resilience";
+const CACHE_VERSION = "kasirpro-pwa-v62-comprehensive-testing-purge";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

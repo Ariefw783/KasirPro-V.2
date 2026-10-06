@@ -104,11 +104,6 @@ async function handleSaveSettings(e) {
 }
 
 async function handlePurgeTestingData() {
-  if (!navigator.onLine) {
-    window.KasirProDialog?.error("Perangkat Offline", "Fitur pembersihan database cloud membutuhkan koneksi internet yang aktif.");
-    return;
-  }
-
   const confirm1 = await window.KasirProDialog?.confirm(
     "Pembersihan Data Uji Coba",
     "PERINGATAN TINGKAT TINGGI:\n\nApakah Anda yakin ingin menghapus seluruh data transaksi uji coba?\n\nHal ini akan menghapus:\n1. Seluruh Faktur Pembelian yang pernah diinput\n2. Seluruh Riwayat Mutasi Kartu Stok\n3. Seluruh Riwayat Penjualan Kasir POS\n4. Mereset saldo stok seluruh produk ke 0\n\nMaster data produk dan supplier TIDAK AKAN terhapus."
@@ -132,12 +127,13 @@ async function handlePurgeTestingData() {
       clearInvoices: true,
       clearMovements: true,
       clearSales: true,
+      clearOpnames: true,
       resetProductStock: true
     });
 
     window.KasirProDialog?.success(
       "Pembersihan Berhasil",
-      `Database berhasil dibersihkan hingga ke akar Firestore!\n\n• ${res.deletedInvoices} Faktur dihapus\n• ${res.deletedMovements} Mutasi stok dibersihkan\n• ${res.deletedSales} Transaksi penjualan dihapus\n• Saldo stok produk telah direset ke 0.`
+      `Database berhasil dibersihkan hingga ke akar Firestore!\n\n• ${res.deletedInvoices} Faktur dihapus\n• ${res.deletedMovements} Mutasi stok dibersihkan\n• ${res.deletedSales} Transaksi penjualan dihapus\n• ${res.deletedOpnames || 0} Sesi opname dibersihkan\n• Saldo stok produk telah direset ke 0 (Status kembali Tidak Aktif).`
     );
 
     // Refresh halaman agar seluruh cache dan tampilan bersih seketika
