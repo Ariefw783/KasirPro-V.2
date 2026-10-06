@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v68-dual-db-environment";
+const CACHE_VERSION = "kasirpro-pwa-v68-factory-reset";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

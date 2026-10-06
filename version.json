@@ -2,13 +2,13 @@
   "version": "2.2.20",
   "build": "20261006.18",
   "releaseDate": "06 Oktober 2026",
-  "title": "Dual Database Environment & Smart Purge",
-  "description": "Implement separate Production and Sandbox database pathways, smart dirty stock reset with timeout protection, and instant clone to sandbox.",
+  "title": "Factory Hard Reset & Anti-Freeze Purge",
+  "description": "Added full factory hard reset, anti-freeze batch timeout guards, and smart dirty pruning for stock resets.",
   "changelog": [
-    "Add Sandbox database environment",
-    "Isolate testing from production",
-    "Fix purge hang with timeout",
-    "Smart dirty stock reset",
-    "Add clone master to sandbox"
+    "Add factory hard reset",
+    "Add batch timeout guards",
+    "Fix purge stuck at 62%",
+    "Smart dirty product pruning",
+    "Full local storage wipe"
   ]
 }

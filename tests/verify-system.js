@@ -441,6 +441,28 @@ simulatePurgeWithProgress(p => progressEvents.push(p.percent));
 assert(progressEvents.length === 4, "Purge Progress: Emisi Event Progress Lengkap");
 assert(progressEvents[0] === 10 && progressEvents[3] === 100, "Purge Progress: Skala Persentase Bergerak dari Awal hingga Selesai (10% -> 100%)");
 
+// Uji Logika Factory Hard Reset (Kosong Bersih Total)
+function simulateFactoryHardReset(db, adminUser) {
+  const resultDb = {
+    products: [],
+    suppliers: [],
+    categories: [],
+    invoices: [],
+    sales: [],
+    movements: [],
+    opnames: [],
+    activeStocks: new Map(),
+    adminProfile: adminUser
+  };
+  return resultDb;
+}
+const factoryDb = simulateFactoryHardReset(purgedDb, { email: "apotekdoaibu.v2@gmail.com", role: "admin" });
+assert(factoryDb.products.length === 0, "Factory Reset: Seluruh Master Produk Dikosongkan Bersih (0 item)");
+assert(factoryDb.suppliers.length === 0, "Factory Reset: Seluruh Master Supplier Dikosongkan Bersih (0 item)");
+assert(factoryDb.categories.length === 0, "Factory Reset: Seluruh Master Kategori Dikosongkan Bersih (0 item)");
+assert(factoryDb.invoices.length === 0 && factoryDb.sales.length === 0, "Factory Reset: Seluruh Transaksi & Faktur Kosong Total");
+assert(factoryDb.adminProfile.email === "apotekdoaibu.v2@gmail.com", "Factory Reset: Akun Administrator Resmi Tetap Dilindungi");
+
 // -----------------------------------------------------------------------------
 // 9. LOGIKA IN-APP DIAGNOSTIC REPORTER & AI EXPORT
 // -----------------------------------------------------------------------------

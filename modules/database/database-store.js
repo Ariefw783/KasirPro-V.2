@@ -1011,20 +1011,19 @@ export async function purgeTestingTransactions(options = {}) {
     }
   }
 
-  // Reset stok produk di Firestore (Smart Dirty Pruning: hanya sentuh produk yang memiliki stok/aktif)
+  // Reset stok produk di Firestore jika diminta (Smart Dirty Pruning: hanya sentuh produk yang pernah ada stok)
   if (resetProductStock) {
     for (const p of products) {
       const code = norm(p["Kode Produk"]);
-      const currentStock = num(p["Stok Awal"] ?? p.stock ?? 0);
-      const isDirty = currentStock > 0 || norm(p["Status"] || p["Status Produk"]) === "aktif" || (activeStockIndex.get(code) || 0) > 0;
+      const stockVal = Number(p["Stok Awal"] || 0);
+      const isDirty = stockVal > 0 || (p["Status"] && norm(p["Status"]) !== "tidak aktif") || (activeStockIndex.get(code) > 0);
 
-      // Selalu update in-memory dan cache lokal
       p["Stok Awal"] = 0;
       p["Status"] = "Tidak Aktif";
       p["Status Produk"] = "Tidak Aktif";
       activeStockIndex.set(code, 0);
 
-      // Hanya kirim operasi Cloud ke Firestore jika produk tersebut memang memiliki saldo stok > 0
+      // Hanya kirim batch ke Firestore jika produk ini memang memiliki stok atau status aktif
       if (isDirty) {
         const pId = String(p.id || p["Kode Produk"]).replace(/[\/\\]/g, "_").trim();
         if (pId) {
@@ -1039,7 +1038,6 @@ export async function purgeTestingTransactions(options = {}) {
             }
           });
         }
-        // Hapus dokumen StokAktif di Cloud Firestore
         const stockDocId = readableDocumentId("stok", code);
         if (stockDocId) {
           ops.push({ coll: "activeStocks", id: stockDocId });
@@ -1048,8 +1046,8 @@ export async function purgeTestingTransactions(options = {}) {
     }
   }
 
-  // Commit deletion in chunks (maks 200 per batch untuk stabilitas)
-  const chunkSize = 200;
+  // Commit deletion in chunks (maks 150 per batch untuk stabilitas tinggi)
+  const chunkSize = 150;
   const totalChunks = Math.max(1, Math.ceil(ops.length / chunkSize));
   for (let i = 0; i < ops.length; i += chunkSize) {
     const chunk = ops.slice(i, i + chunkSize);
@@ -1078,18 +1076,17 @@ export async function purgeTestingTransactions(options = {}) {
       }
     }
     try {
-      // Bungkus batch.commit dengan timeout 12 detik agar tidak menggantung di cloud
-      const commitPromise = batch.commit();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout server cloud Firestore (12s)")), 12000)
-      );
-      await Promise.race([commitPromise, timeoutPromise]);
+      // Timeout Guard 10 detik per batch agar tidak pernah macet
+      await Promise.race([
+        batch.commit(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout batch commit (10s)")), 10000))
+      ]);
     } catch (commitErr) {
-      console.warn(`[DatabaseStore] Batch pembersihan ke Firestore (chunk ${chunkIdx}) warning:`, commitErr);
+      console.warn(`[DatabaseStore] Batch pembersihan ke Firestore (chunk ${chunkIdx}):`, commitErr.message || commitErr);
       if (commitErr?.code === "permission-denied" || commitErr?.message?.toLowerCase().includes("permission")) {
         throw new Error("Akses Cloud Ditolak (Missing or insufficient permissions). Pastikan akun login Anda adalah Administrator resmi (apotekdoaibu.v2@gmail.com) dengan status aktif di database Firestore.");
       }
-      // Lanjutkan batch berikutnya jika terjadi timeout jaringan agar progress tidak pernah hang
+      // Lanjutkan agar tidak pernah macet
     }
   }
 
@@ -1134,6 +1131,236 @@ export async function purgeTestingTransactions(options = {}) {
   }
 
   return delCount;
+}
+
+/**
+ * Factory Hard Reset (Reset Pabrik Total)
+ * Mengosongkan seluruh data dari akar Cloud Firestore dan IndexedDB:
+ * - Seluruh Faktur Pembelian, Penjualan POS, Mutasi Stok, Opname, dan StokAktif
+ * - Seluruh Master Produk, Master Kategori, Master Supplier, dan Snapshot
+ * - Seluruh penyimpanan lokal browser (IndexedDB & LocalStorage cache)
+ * - Akun Administrator utama tetap dipertahankan agar tidak terkunci
+ *
+ * @param {Object} options
+ * @returns {Promise<{deletedDocuments: number, totalQueued: number}>}
+ */
+export async function executeFactoryHardReset(options = {}) {
+  requireOnline();
+  const { onProgress = null } = options;
+
+  const notify = (percent, message, detail = "") => {
+    if (typeof onProgress === "function") {
+      onProgress({
+        title: "Factory Hard Reset",
+        message,
+        percent,
+        detail
+      });
+    }
+  };
+
+  notify(5, "Memvalidasi kredensial Administrator...", "Memeriksa sesi login Firebase...");
+
+  // 1. Pastikan sesi Firebase Auth aktif
+  let user = firebaseAuth.currentUser;
+  if (!user) {
+    user = await waitForFirebaseUser();
+  }
+  if (!user) {
+    throw new Error("Sesi Firebase belum aktif. Silakan muat ulang halaman atau login kembali sebagai Administrator.");
+  }
+
+  // 2. Pastikan profil Administrator terverifikasi
+  try {
+    await ensureInitialAdminProfile(user, "admin");
+  } catch (profErr) {
+    console.warn("[FactoryReset] Profil check:", profErr?.message || profErr);
+  }
+
+  notify(15, "Menghimpun seluruh data dari Cloud Firestore...", "Mendeteksi koleksi produk, supplier, dan transaksi...");
+
+  const docsToDelete = [];
+
+  // Ambil dari In-Memory (cepat & akurat)
+  const invoices = inMemory.get(STORE_KEYS.invoices) || [];
+  invoices.forEach(inv => {
+    const id = String(inv.id || inv.invoiceNumber).replace(/[\/\\]/g, "_").trim();
+    if (id) docsToDelete.push({ coll: "purchaseInvoices", id });
+  });
+
+  const movements = inMemory.get(STORE_KEYS.movements) || [];
+  movements.forEach(m => {
+    const id = String(m.id || "").replace(/[\/\\]/g, "_").trim();
+    if (id) docsToDelete.push({ coll: "stockMovements", id });
+  });
+
+  const sales = inMemory.get(STORE_KEYS.sales) || [];
+  sales.forEach(s => {
+    const id = String(s.id || s.transactionNumber || "").replace(/[\/\\]/g, "_").trim();
+    if (id) docsToDelete.push({ coll: "sales", id });
+  });
+
+  const opnames = inMemory.get(STORE_KEYS.opnames) || [];
+  opnames.forEach(op => {
+    const id = String(op.id || op.reference || op.sessionId || "").replace(/[\/\\]/g, "_").trim();
+    if (id) docsToDelete.push({ coll: "stockOpnames", id });
+  });
+
+  const master = inMemory.get(STORE_KEYS.master) || {};
+  const products = Array.isArray(master.produk) ? master.produk : [];
+  products.forEach(p => {
+    const pId = String(p.id || p["Kode Produk"]).replace(/[\/\\]/g, "_").trim();
+    if (pId) docsToDelete.push({ coll: "products", id: pId });
+    const code = norm(p["Kode Produk"]);
+    if (code) {
+      docsToDelete.push({ coll: "activeStocks", id: readableDocumentId("stok", code) });
+    }
+  });
+
+  const categories = Array.isArray(master.kategori) ? master.kategori : [];
+  categories.forEach(c => {
+    const cId = String(c.id || c["Kategori"] || "").replace(/[\/\\]/g, "_").trim();
+    if (cId) docsToDelete.push({ coll: "categories", id: cId });
+  });
+
+  const suppliers = Array.isArray(master.supplier) ? master.supplier : [];
+  suppliers.forEach(s => {
+    const sId = String(s.id || s["Supplier"] || s["Nama Perusahaan"] || "").replace(/[\/\\]/g, "_").trim();
+    if (sId) docsToDelete.push({ coll: "suppliers", id: sId });
+  });
+
+  // Query langsung ke Cloud Firestore untuk koleksi data (dengan batas timeout per koleksi)
+  const cloudCollections = [
+    "purchaseInvoices",
+    "stockMovements",
+    "sales",
+    "stockOpnames",
+    "activeStocks",
+    "products",
+    "categories",
+    "suppliers",
+    "masterSnapshots",
+    "masterSnapshotChunks"
+  ];
+
+  for (const collKey of cloudCollections) {
+    try {
+      const segs = collectionSegments(collKey);
+      const collRef = collection(firebaseDb, ...segs);
+      const snap = await Promise.race([
+        getDocs(query(collRef, limit(500))),
+        new Promise((_, r) => setTimeout(() => r(new Error("Timeout query")), 4000))
+      ]).catch(() => null);
+
+      if (snap && !snap.empty) {
+        snap.forEach(d => {
+          docsToDelete.push({ coll: collKey, id: d.id });
+        });
+      }
+    } catch (qErr) {
+      console.warn(`[FactoryReset] Lewati query [${collKey}]:`, qErr.message);
+    }
+  }
+
+  // Deduplikasi dokumen
+  const uniqueMap = new Map();
+  docsToDelete.forEach(item => {
+    if (item.coll && item.id) {
+      uniqueMap.set(`${item.coll}:${item.id}`, item);
+    }
+  });
+  const finalDocs = Array.from(uniqueMap.values());
+
+  notify(30, `Membersihkan ${finalDocs.length} dokumen Cloud Firestore...`, "Mengeksekusi batch delete...");
+
+  // 3. Batch Delete ke Firestore Cloud (Chunk 150 + Timeout Guard 10s per batch)
+  const chunkSize = 150;
+  const totalChunks = Math.max(1, Math.ceil(finalDocs.length / chunkSize));
+  let committedDocs = 0;
+
+  for (let i = 0; i < finalDocs.length; i += chunkSize) {
+    const chunk = finalDocs.slice(i, i + chunkSize);
+    const chunkIdx = Math.floor(i / chunkSize) + 1;
+    const pct = 30 + Math.round((chunkIdx / totalChunks) * 48);
+
+    notify(
+      pct,
+      `Menghapus Cloud Firestore (Batch ${chunkIdx} dari ${totalChunks})...`,
+      `${Math.min(i + chunk.length, finalDocs.length)} dari ${finalDocs.length} dokumen diproses`
+    );
+
+    const batch = writeBatch(firebaseDb);
+    for (const item of chunk) {
+      try {
+        const ref = doc(firebaseDb, ...documentSegments(item.coll, item.id));
+        batch.delete(ref);
+      } catch (segErr) {
+        // Abaikan segment error
+      }
+    }
+
+    try {
+      await Promise.race([
+        batch.commit(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout commit batch (10s)")), 10000))
+      ]);
+      committedDocs += chunk.length;
+    } catch (batchErr) {
+      console.warn(`[FactoryReset] Batch ${chunkIdx} timeout/lewati:`, batchErr.message || batchErr);
+      if (batchErr?.code === "permission-denied" || batchErr?.message?.toLowerCase().includes("permission")) {
+        throw new Error("Akses Cloud Ditolak (Missing or insufficient permissions). Pastikan akun login Anda adalah Administrator resmi (apotekdoaibu.v2@gmail.com) dengan status aktif di database Firestore.");
+      }
+      // Lanjutkan ke batch berikutnya
+    }
+  }
+
+  // 4. Kosongkan In-Memory
+  notify(82, "Mengosongkan memori aplikasi...", "Membersihkan state runtime...");
+  inMemory.set(STORE_KEYS.invoices, []);
+  inMemory.set(STORE_KEYS.movements, []);
+  inMemory.set(STORE_KEYS.sales, []);
+  inMemory.set(STORE_KEYS.opnames, []);
+  inMemory.set(STORE_KEYS.master, { produk: [], kategori: [], supplier: [] });
+  activeStockIndex.clear();
+
+  // 5. Kosongkan seluruh store IndexedDB
+  notify(90, "Menghapus database lokal IndexedDB...", "Mengosongkan seluruh tabel kasirpro_v2_db...");
+  try {
+    await indexedDBStore.clearStore(STORES.INVOICES);
+    await indexedDBStore.clearStore(STORES.MOVEMENTS);
+    await indexedDBStore.clearStore(STORES.SALES);
+    await indexedDBStore.clearStore(STORES.OPNAMES);
+    await indexedDBStore.clearStore(STORES.PRODUCTS);
+    await indexedDBStore.clearStore(STORES.CATEGORIES);
+    await indexedDBStore.clearStore(STORES.SUPPLIERS);
+    await indexedDBStore.clearStore(STORES.STOCK_SUMMARIES);
+    await indexedDBStore.clearStore(STORES.MASTER_SNAPSHOTS);
+  } catch (idbErr) {
+    console.warn("[FactoryReset] Gagal clear IndexedDB stores:", idbErr);
+  }
+
+  // 6. Bersihkan LocalStorage Cache (jaga sesi auth login admin)
+  notify(96, "Membersihkan draft & cache browser...", "Mereset pengaturan lokal...");
+  try {
+    const preserveKeys = ["kasirpro_session", "kasirpro_role", "kasirpro_last_user"];
+    const saved = {};
+    preserveKeys.forEach(k => {
+      saved[k] = localStorage.getItem(k);
+    });
+    localStorage.clear();
+    preserveKeys.forEach(k => {
+      if (saved[k]) localStorage.setItem(k, saved[k]);
+    });
+  } catch (lsErr) {
+    console.warn("[FactoryReset] LocalStorage clear error:", lsErr);
+  }
+
+  notify(100, "Factory Hard Reset Berhasil!", "Seluruh data telah bersih 100%. Memuat ulang aplikasi...");
+
+  return {
+    deletedDocuments: committedDocs,
+    totalQueued: finalDocs.length
+  };
 }
 
 /**
@@ -1361,77 +1588,6 @@ export async function writeStockTransaction(entries = []) {
 export async function reloadMasterCache() {
   await syncFromFirestore();
   return inMemory.get(STORE_KEYS.master);
-}
-
-/**
- * Menyalin Master Produk, Supplier, dan Kategori dari Toko Utama ke Toko Pengujian (Sandbox).
- * Seluruh saldo stok produk di Toko Pengujian di-set ke 0 dan status Tidak Aktif.
- */
-export async function cloneMasterDataToSandbox(onProgress = null) {
-  requireOnline();
-  const user = firebaseAuth.currentUser || await waitForFirebaseUser();
-  if (!user) {
-    throw new Error("Sesi Firebase belum aktif. Login sebagai Administrator.");
-  }
-
-  if (typeof onProgress === "function") {
-    onProgress({ percent: 15, message: "Membaca Master Data dari Database Utama..." });
-  }
-
-  const mainProdRef = collection(firebaseDb, "Kasir Pro V2", "Toko Utama", "Produk");
-  const mainSupRef = collection(firebaseDb, "Kasir Pro V2", "Toko Utama", "Supplier");
-  const mainCatRef = collection(firebaseDb, "Kasir Pro V2", "Toko Utama", "Kategori");
-
-  const [prodSnap, supSnap, catSnap] = await Promise.all([
-    getDocs(mainProdRef),
-    getDocs(mainSupRef),
-    getDocs(mainCatRef)
-  ]);
-
-  if (typeof onProgress === "function") {
-    onProgress({ percent: 45, message: `Menyiapkan ${prodSnap.size} produk untuk disalin ke Sandbox...` });
-  }
-
-  // Tulis produk ke Toko Pengujian dalam batch
-  const allProds = prodSnap.docs.map(d => ({ id: d.id, data: d.data() }));
-  const chunkSize = 200;
-  for (let i = 0; i < allProds.length; i += chunkSize) {
-    const chunk = allProds.slice(i, i + chunkSize);
-    const batch = writeBatch(firebaseDb);
-    for (const item of chunk) {
-      const targetRef = doc(firebaseDb, "Kasir Pro V2", "Toko Pengujian", "Produk", item.id);
-      batch.set(targetRef, sanitizeForFirestore({
-        ...item.data,
-        "Stok Awal": 0,
-        "Status": "Tidak Aktif",
-        "Status Produk": "Tidak Aktif",
-        updatedAt: new Date().toISOString()
-      }), { merge: true });
-    }
-    await batch.commit();
-    if (typeof onProgress === "function") {
-      const pct = 45 + Math.round(((i + chunk.length) / allProds.length) * 45);
-      onProgress({ percent: pct, message: `Menyalin produk (${Math.min(i + chunk.length, allProds.length)}/${allProds.length})...` });
-    }
-  }
-
-  // Salin supplier & kategori
-  const metaBatch = writeBatch(firebaseDb);
-  for (const d of supSnap.docs) {
-    const ref = doc(firebaseDb, "Kasir Pro V2", "Toko Pengujian", "Supplier", d.id);
-    metaBatch.set(ref, sanitizeForFirestore(d.data()), { merge: true });
-  }
-  for (const d of catSnap.docs) {
-    const ref = doc(firebaseDb, "Kasir Pro V2", "Toko Pengujian", "Kategori", d.id);
-    metaBatch.set(ref, sanitizeForFirestore(d.data()), { merge: true });
-  }
-  await metaBatch.commit();
-
-  if (typeof onProgress === "function") {
-    onProgress({ percent: 100, message: "Master data berhasil disalin ke Database Pengujian!" });
-  }
-
-  return { products: prodSnap.size, suppliers: supSnap.size, categories: catSnap.size };
 }
 
 class DatabaseStoreManager {

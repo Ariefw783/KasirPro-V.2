@@ -9,13 +9,11 @@
  */
 
 import { $, text } from "../modules/core/utils.js";
-import { STORE_KEYS, readStore, writeStore, writeMasterDelta, purgeTestingTransactions, cloneMasterDataToSandbox } from "../modules/database/database-store.js";
-import { getDatabaseEnvironment, setDatabaseEnvironment, DB_ENVIRONMENTS } from "../modules/database/database-paths.js";
+import { STORE_KEYS, readStore, writeStore, writeMasterDelta, purgeTestingTransactions, executeFactoryHardReset } from "../modules/database/database-store.js";
 
 export function initSettingsModule() {
   bindEvents();
   renderSettings();
-  renderEnvironmentUI();
 }
 
 function bindEvents() {
@@ -26,23 +24,16 @@ function bindEvents() {
 
   $("store-settings-form")?.addEventListener("submit", handleSaveSettings);
   $("btn-purge-testing-data")?.addEventListener("click", handlePurgeTestingData);
+  $("btn-factory-hard-reset")?.addEventListener("click", handleFactoryHardReset);
+
   document.addEventListener("click", (e) => {
     if (e.target.closest("#btn-purge-testing-data")) {
       handlePurgeTestingData();
     }
-    if (e.target.closest("#btn-banner-switch-prod")) {
-      handleSwitchEnvironment("production");
+    if (e.target.closest("#btn-factory-hard-reset")) {
+      handleFactoryHardReset();
     }
   });
-
-  // Switcher Jalur Database
-  document.querySelectorAll("input[name='db-environment-radio']").forEach(radio => {
-    radio.addEventListener("change", (e) => {
-      handleSwitchEnvironment(e.target.value);
-    });
-  });
-
-  $("btn-clone-master-to-sandbox")?.addEventListener("click", handleCloneMasterToSandbox);
 }
 
 export function renderSettings() {
@@ -188,107 +179,62 @@ async function handlePurgeTestingData() {
   }
 }
 
-export function renderEnvironmentUI() {
-  const currentEnv = getDatabaseEnvironment();
-  const isSandbox = currentEnv === DB_ENVIRONMENTS.SANDBOX;
-
-  const rProd = $("radio-env-prod");
-  const rSand = $("radio-env-sand");
-  const lProd = $("lbl-env-prod");
-  const lSand = $("lbl-env-sand");
-  const banner = $("banner-sandbox-mode");
-
-  if (rProd) rProd.checked = !isSandbox;
-  if (rSand) rSand.checked = isSandbox;
-
-  if (lProd) {
-    lProd.style.borderColor = !isSandbox ? "#10b981" : "#e2e8f0";
-    lProd.style.background = !isSandbox ? "#f0fdf4" : "#fff";
-  }
-  if (lSand) {
-    lSand.style.borderColor = isSandbox ? "#f59e0b" : "#e2e8f0";
-    lSand.style.background = isSandbox ? "#fffbeb" : "#fff";
-  }
-
-  if (banner) {
-    banner.style.display = isSandbox ? "flex" : "none";
-  }
-}
-
-async function handleSwitchEnvironment(newEnv) {
-  const currentEnv = getDatabaseEnvironment();
-  if (newEnv === currentEnv) return;
-
-  const isSwitchingToSandbox = newEnv === DB_ENVIRONMENTS.SANDBOX;
-  const targetLabel = isSwitchingToSandbox ? "Database Pengujian (Sandbox)" : "Database Utama (Produksi)";
-  const desc = isSwitchingToSandbox
-    ? "Aplikasi akan beralih ke jalur 'Kasir Pro V2 / Toko Pengujian'. Seluruh transaksi, mutasi stok, dan faktur yang diinput tidak akan mempengaruhi database utama apotek.\n\nHalaman akan dimuat ulang untuk memuat database ini."
-    : "Aplikasi akan kembali ke jalur 'Kasir Pro V2 / Toko Utama' untuk operasional riil apotek.\n\nHalaman akan dimuat ulang untuk memuat database ini.";
-
-  const confirmed = await window.KasirProDialog?.confirm(
-    `Beralih ke ${targetLabel}?`,
-    desc
-  );
-
-  if (!confirmed) {
-    renderEnvironmentUI();
-    return;
-  }
-
-  setDatabaseEnvironment(newEnv);
-  window.KasirProDialog?.success(
-    "Lingkungan Diubah",
-    `Berhasil beralih ke ${targetLabel}. Memuat ulang sistem...`
-  );
-
-  setTimeout(() => {
-    window.location.reload();
-  }, 900);
-}
-
-async function handleCloneMasterToSandbox() {
+async function handleFactoryHardReset() {
   if (!navigator.onLine) {
-    window.KasirProDialog?.error("Perangkat Offline", "Koneksi internet aktif diperlukan untuk menyalin data ke Cloud Firestore.");
+    window.KasirProDialog?.error("Perangkat Offline", "Fitur Factory Reset membutuhkan koneksi internet aktif untuk membersihkan Cloud Firestore.");
     return;
   }
 
-  const goAhead = await window.KasirProDialog?.confirm(
-    "Salin Master Data ke Sandbox",
-    "Sistem akan menyalin seluruh Produk, Kategori, dan Supplier dari Database Utama ke Database Pengujian (Toko Pengujian).\n\nSaldo stok produk di Sandbox akan di-set ke 0 agar siap diuji coba dengan faktur pembelian.\n\nLanjutkan proses kloning sekarang?"
+  const confirm1 = await window.KasirProDialog?.confirm(
+    "⚠️ FACTORY HARD RESET (RESET TOTAL PABRIK)",
+    "PERINGATAN TINGKAT TINGGI:\n\nTindakan ini akan mengosongkan SELURUH DATA SISTEM seperti pertama kali aplikasi dibuat:\n\n1. Seluruh Master Produk / Obat DIHAPUS TOTAL\n2. Seluruh Kategori & Supplier DIHAPUS TOTAL\n3. Seluruh Faktur Pembelian & Penjualan POS DIHAPUS TOTAL\n4. Seluruh Kartu Stok & Saldo Stok DIHAPUS TOTAL\n5. Database lokal IndexedDB & Cache peramban DIKOSONGKAN TOTAL\n\nAkun Administrator utama tetap aman agar Anda dapat login kembali.\n\nApakah Anda benar-benar yakin ingin melakukan Factory Reset sekarang?"
   );
-  if (!goAhead) return;
+  if (!confirm1) return;
 
-  const btn = $("btn-clone-master-to-sandbox");
+  const confirm2 = await window.KasirProDialog?.confirm(
+    "🔴 KONFIRMASI AKHIR - TIDAK DAPAT DIBATALKAN",
+    "Semua master obat, supplier, faktur, dan transaksi akan LENYAP PERMANEN dari Cloud Firestore dan IndexedDB.\n\nApakah Anda yakin ingin mengeksekusi Factory Hard Reset sekarang?"
+  );
+  if (!confirm2) return;
+
+  const btn = $("btn-factory-hard-reset");
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyalin Master Data...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengeksekusi Factory Reset...';
   }
 
   try {
     window.KasirProDialog?.showProgress(
-      "Salin Master ke Sandbox",
-      "Mempersiapkan penyalinan data...",
-      { percent: 10, detail: "Menghubungkan ke Database Utama..." }
+      "Factory Hard Reset",
+      "Memulai pembersihan total database...",
+      { percent: 5, detail: "Menghubungkan ke Cloud Firestore..." }
     );
 
-    const res = await cloneMasterDataToSandbox((p) => {
-      window.KasirProDialog?.updateProgress(p);
+    const res = await executeFactoryHardReset({
+      onProgress: (p) => {
+        window.KasirProDialog?.updateProgress(p);
+      }
     });
 
     window.KasirProDialog?.closeProgress();
+
     window.KasirProDialog?.success(
-      "Kloning Berhasil",
-      `Berhasil menyalin ke Database Pengujian:\n\n• ${res.products} Master Produk\n• ${res.suppliers} Supplier\n• ${res.categories} Kategori\n\nStok produk di Sandbox berstatus 0 dan siap digunakan untuk uji coba faktur!`
+      "Factory Reset Berhasil!",
+      `Seluruh data sistem berhasil dikosongkan secara permanen!\n\n• ${res.deletedDocuments} Dokumen Cloud Firestore dibersihkan\n• Database lokal IndexedDB & Cache browser telah dikosongkan total\n• Akun Administrator tetap aktif\n\nHalaman akan memuat ulang seketika ke kondisi awal bersih.`
     );
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
   } catch (err) {
     window.KasirProDialog?.closeProgress();
-    console.error("[Settings] Gagal kloning master ke sandbox:", err);
-    window.KasirProDialog?.error("Gagal Menyalin", err.message || "Terjadi kesalahan saat menyalin master data.");
+    console.error("[Settings] Gagal Factory Hard Reset:", err);
+    window.KasirProDialog?.error("Gagal Factory Reset", err.message || "Terjadi kesalahan saat mengeksekusi Factory Reset.");
   } finally {
     window.KasirProDialog?.closeProgress();
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-copy"></i> Salin Master ke Sandbox';
+      btn.innerHTML = '<i class="fa-solid fa-bomb"></i> Factory Hard Reset (Kosongkan Semua Data)';
     }
   }
 }
