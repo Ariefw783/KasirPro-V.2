@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v54-product-status-filter-fix";
+const CACHE_VERSION = "kasirpro-pwa-v55-mobile-header-buttons";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

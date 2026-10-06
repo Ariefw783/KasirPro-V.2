@@ -99,15 +99,37 @@
     max-width: 100% !important;
     min-width: 0 !important;
     gap: 8px !important;
+    box-sizing: border-box !important;
   }
 
   .module-header-actions > *,
-  .panel-actions > * {
+  .panel-actions > *,
+  .module-header-actions .button,
+  .module-header-actions button,
+  .module-header-actions a,
+  #opname-export-button,
+  #go-import-opname,
+  #btn-new-opname-session,
+  #export-master-button,
+  #btn-goto-import-master,
+  #btn-add-product,
+  #refresh-products,
+  #refresh-stock,
+  #btn-open-manual-invoice {
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
     flex: 1 1 100% !important;
+    min-height: 42px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: normal !important;
+    word-break: break-word !important;
     box-sizing: border-box !important;
+    padding: 10px 14px !important;
+    font-size: 0.78rem !important;
   }
 
   /* Grid Layouts Stacked Full Width */

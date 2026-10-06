@@ -1,14 +1,14 @@
 {
-  "version": "2.2.6",
-  "build": "20261006.4",
+  "version": "2.2.7",
+  "build": "20261006.5",
   "releaseDate": "06 Oktober 2026",
-  "title": "Optimasi Filter Status Produk & Isolasi Kategori Mutually Exclusive",
-  "description": "Rilis perbaikan filter status produk, menghilangkan tumpang tindih antara filter Aktif dan Perlu Harga Jual, serta penyesuaian badge tabel produk.",
+  "title": "Optimasi Responsivitas Tombol Header & Aksi Tabel Mobile",
+  "description": "Rilis perbaikan layout tombol aksi atas tabel (Stock Opname, Produk, Faktur) di perangkat mobile/PWA sehingga seluruh tombol tampil penuh tanpa terpotong.",
   "changelog": [
-    "Pemisahan Tegas Logika Filter Aktif vs Perlu Harga Jual",
-    "Filter Aktif Khusus Produk Siap Jual (Stok > 0 & Harga Jual > 0)",
-    "Filter Perlu Harga Jual Menangkap Seluruh Produk Berharga Rp0",
-    "Sinkronisasi Badge Tabel Produk dengan Opsi Dropdown Filter",
-    "Penambahan Unit Test Filter Status pada Test Suite Sistem"
+    "Perbaikan Layout Tombol Header Aksi Atas Tabel di Ponsel & PWA",
+    "Restrukturisasi Module Header Menjadi Vertikal Full-Width pada Layar Mobile",
+    "Pencegahan Pemotongan Tombol Import Hasil Opname & Sesi Opname Manual",
+    "Penyelarasan Media Query Mobile hingga Breakpoint 820px",
+    "Peningkatan Area Sentuh Tombol Aksi Mobile Menjadi Minimal 42px"
   ]
 }
