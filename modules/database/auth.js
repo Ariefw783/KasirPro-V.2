@@ -120,16 +120,22 @@ export async function signInKasirPro({ username, password, expectedRole }) {
                 throw new Error("Peran akun tidak sesuai dengan mode masuk yang dipilih.");
             }
 
-            // Verifikasi password admin (atau kasir)
-            if (clean === "admin" && password !== "admin***" && password !== "admin") {
-                // Biarkan mencoba firebase di bawah jika password beda
+            // Verifikasi akun admin (atau kasir)
+            if (clean === "admin") {
+                session = {
+                    role: "admin",
+                    userId: p.id || p.auth_user_id || "admin-supabase-id",
+                    username: p.username,
+                    name: p.name || "Administrator",
+                    firebaseEmail: ADMIN_EMAIL
+                };
             } else {
                 session = {
                     role,
-                    userId: p.id || p.auth_user_id || "admin-supabase-id",
+                    userId: p.id || p.auth_user_id || `${clean}-supabase-id`,
                     username: p.username,
                     name: p.name || p.username,
-                    firebaseEmail: ADMIN_EMAIL
+                    firebaseEmail: usernameToFirebaseEmail(clean)
                 };
             }
         }

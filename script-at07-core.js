@@ -35,7 +35,8 @@ function init() {
 async function loadVersionInfo() {
   const versionEl = document.getElementById("login-app-version");
   const dateEl = document.getElementById("login-app-updated");
-  if (!versionEl && !dateEl) return;
+  if (versionEl) versionEl.textContent = "v2.2.21";
+  if (dateEl) dateEl.textContent = "Diperbarui 06 Okt 2026";
 
   try {
     const res = await fetch(`version.json?t=${Date.now()}`, { cache: "no-store" });

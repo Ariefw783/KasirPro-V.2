@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v69-supabase-integration";
+const CACHE_VERSION = "kasirpro-pwa-v70-live-release";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
@@ -35,6 +35,7 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener("install", event => {
+    self.skipWaiting();
     event.waitUntil((async () => {
         const cache = await caches.open(STATIC_CACHE);
         await cache.addAll(STATIC_ASSETS);

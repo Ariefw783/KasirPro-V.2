@@ -94,18 +94,17 @@
             if (res.ok) return await res.json();
         } catch (_) {}
         return {
-            version: "2.2.3",
-            build: "20261006.1",
+            version: "2.2.21",
+            build: "20261006.19",
             releaseDate: "06 Oktober 2026",
-            title: "Pembaruan Arsitektur Sistem KasirPro V2",
-            description: "Pembaruan ini wajib diterapkan agar seluruh data transaksi antar perangkat tetap selaras dan akurat.",
+            title: "Migrasi Penuh ke Supabase PostgreSQL",
+            description: "Pembaruan arsitektur database relasional Supabase PostgreSQL tanpa batas kuota harian.",
             changelog: [
-                "Live Auto-Separator Ribuan Input Harga Faktur",
-                "Fleksibilitas Multi-Tingkat Satuan (1, 2, atau 3 Satuan)",
-                "Penyederhanaan Smart Action Pembatalan & Hapus Faktur",
-                "Dual-Method Pembayaran Faktur (Tunai & Tempo)",
-                "Filter Pintar Produk: Aktif (Perlu Harga Jual)",
-                "Isolasi Kontainer & Viewport Fit Ponsel/PWA"
+                "Migrasi database ke Supabase",
+                "Skema relasional PostgreSQL aktif",
+                "Factory reset via RPC",
+                "Sinkronisasi multi-tabel otomatis",
+                "Sesi login admin terjaga"
             ]
         };
     }
