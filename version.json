@@ -1,14 +1,14 @@
 {
-  "version": "2.2.16",
-  "build": "20261006.14",
+  "version": "2.2.17",
+  "build": "20261006.17",
   "releaseDate": "06 Oktober 2026",
-  "title": "Purge Progress Overlay Modal",
-  "description": "Add real-time progress loading overlay during testing purge to prevent accidental interruptions.",
+  "title": "One-Click TSV Paste & Smart Product Matching",
+  "description": "Fitur tempel data TSV Grid Mode langsung dari clipboard dengan algoritma Smart Product Matching untuk mencegah duplikasi obat.",
   "changelog": [
-    "Add real-time purge progress modal",
-    "Lock UI during cloud purge",
-    "Report chunked batch progress visually",
-    "Verify 50 system audit tests",
-    "Sync PWA cache v64"
+    "Tambah tombol 'Tempel Data TSV' pada modal input faktur manual Grid Mode",
+    "Implementasi algoritma Smart Product Matching (normalisasi nama farmasi & fuzzy similarity)",
+    "Indikator visual badge status pencocokan di baris tabel (Tersambung, Mirip, Produk Baru)",
+    "Dukungan shortcut keyboard Ctrl+V langsung pada tabel grid faktur",
+    "Perbarui cache PWA Service Worker ke v65"
   ]
 }

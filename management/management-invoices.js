@@ -36,6 +36,7 @@ function bindEvents() {
   $("close-manual-invoice-modal")?.addEventListener("click", closeManualInvoiceModal);
   $("btn-cancel-manual-inv")?.addEventListener("click", closeManualInvoiceModal);
   $("btn-manual-add-row")?.addEventListener("click", () => addManualInvoiceRow());
+  $("btn-paste-tsv")?.addEventListener("click", handlePasteTsvClick);
   $("btn-quick-add-supplier-inv")?.addEventListener("click", handleQuickAddSupplierInv);
   $("manual-inv-supplier")?.addEventListener("change", handleSupplierChange);
   $("manual-inv-payment-type")?.addEventListener("change", handlePaymentTypeChange);
@@ -73,13 +74,27 @@ function bindEvents() {
 
   document.querySelector(".manual-invoice-body")?.addEventListener("scroll", hideGlobalAc);
 
+  // Shortcut Ctrl+V langsung pada tabel grid saat tidak sedang mengetik di input
+  document.addEventListener("keydown", (e) => {
+    const manualModal = $("modal-manual-invoice");
+    if (!manualModal || manualModal.hidden) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v") {
+      const activeEl = document.activeElement;
+      if (!activeEl || (activeEl.tagName !== "INPUT" && activeEl.tagName !== "TEXTAREA")) {
+        e.preventDefault();
+        handlePasteTsvClick();
+      }
+    }
+  });
+
   // Search & Filter di daftar faktur
   $("invoice-search")?.addEventListener("input", renderInvoicesTable);
   $("invoice-status-filter")?.addEventListener("change", renderInvoicesTable);
 
-  // Detail Modal Actions
+  // Detail & Paste Modal Actions
   installInvoiceDetailModal();
   installInvoiceCorrectionModal();
+  installPasteTsvModal();
 }
 
 export function renderInvoices() {
@@ -387,6 +402,244 @@ export async function executeConfirmInvoice(inv) {
 }
 
 /* ==========================================================================
+   SMART PHARMACY PRODUCT MATCHING & TSV IMPORT CONTROLLER
+   ========================================================================== */
+
+function cleanPharmacyDrugName(str) {
+  return String(str || "")
+    .toUpperCase()
+    .replace(/\((PRE|PREKUSOR|PREKURSOR|B|OOT|HJ|KPT|KAP|TAB|OBAT|SYR|SIRUP|MEDIKA|OTSUKA|TRIFA|ERELA)\)/gi, "")
+    .replace(/\b(KAPLET|TABLET|KAPSUL|SIRUP|SYRUP|KPT|TAB|SYR|DROP|DROPS|CREAM|KRIM|INJEKSI|INJ|INFUS|SUSPENSI|SUSP)\b/gi, "")
+    .replace(/[^A-Z0-9]/g, "")
+    .trim();
+}
+
+function computeDrugSimilarity(s1, s2) {
+  const str1 = cleanPharmacyDrugName(s1);
+  const str2 = cleanPharmacyDrugName(s2);
+  if (!str1 || !str2) return 0;
+  if (str1 === str2) return 1.0;
+  if (str1.includes(str2) || str2.includes(str1)) return 0.92;
+
+  const getBigrams = s => {
+    const bg = new Set();
+    for (let i = 0; i < s.length - 1; i++) bg.add(s.slice(i, i + 2));
+    return bg;
+  };
+  const bg1 = getBigrams(str1);
+  const bg2 = getBigrams(str2);
+  let intersect = 0;
+  for (const b of bg1) {
+    if (bg2.has(b)) intersect++;
+  }
+  return (2.0 * intersect) / (bg1.size + bg2.size || 1);
+}
+
+function findBestMatchingPharmacyProduct(rawName, prods) {
+  if (!rawName || !Array.isArray(prods) || prods.length === 0) return null;
+  const cleanRaw = cleanPharmacyDrugName(rawName);
+
+  // 1. Exact match (case-insensitive atau normalisasi nama bersih)
+  for (const p of prods) {
+    const pName = p["Nama Produk"] || p.name || "";
+    if (norm(pName) === norm(rawName) || (cleanPharmacyDrugName(pName) === cleanRaw && cleanRaw.length >= 3)) {
+      return { product: p, score: 1.0, type: "exact" };
+    }
+  }
+
+  // 2. Substring match
+  for (const p of prods) {
+    const pName = p["Nama Produk"] || p.name || "";
+    const cleanP = cleanPharmacyDrugName(pName);
+    if (cleanP.length >= 4 && cleanRaw.length >= 4) {
+      if (cleanRaw.startsWith(cleanP) || cleanP.startsWith(cleanRaw)) {
+        return { product: p, score: 0.92, type: "fuzzy" };
+      }
+    }
+  }
+
+  // 3. Dice Bigram Similarity (toleransi typo)
+  let best = null;
+  let maxScore = 0;
+  for (const p of prods) {
+    const pName = p["Nama Produk"] || p.name || "";
+    const score = computeDrugSimilarity(rawName, pName);
+    if (score > maxScore && score >= 0.72) {
+      maxScore = score;
+      best = p;
+    }
+  }
+
+  if (best) {
+    return { product: best, score: maxScore, type: maxScore >= 0.85 ? "fuzzy" : "weak" };
+  }
+
+  return null;
+}
+
+function parseTsvToItems(tsvText) {
+  if (!tsvText || typeof tsvText !== "string") return [];
+  const lines = tsvText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return [];
+
+  let startIndex = 0;
+  if (/nama|batch|satuan|subtotal/i.test(lines[0])) {
+    startIndex = 1;
+  }
+
+  const master = readStore(STORE_KEYS.master, {});
+  const allProds = Array.isArray(master.produk) ? master.produk : [];
+
+  const items = [];
+  for (let i = startIndex; i < lines.length; i++) {
+    const line = lines[i];
+    const cols = line.split("\t").map(c => c.trim());
+    if (cols.length < 3) continue;
+
+    const rawName = cols[0] || "";
+    if (!rawName) continue;
+
+    const batch = cols[1] || "";
+    const expDate = cols[2] || "";
+    const purchaseUnit = cols[3] || "BOX";
+    const intermediateUnit = (cols[4] && cols[4] !== "-") ? cols[4] : "";
+    const baseUnit = cols[5] || "TABLET";
+    const conv = num(cols[6]) || 1;
+    const qty = num(cols[7]) || 1;
+    // cols[8] is Total Masuk
+    const buyPrice = num(cols[9]) || 0;
+    const discPct = num(cols[10]) || 0;
+    const discRp = num(cols[11]) || (discPct ? Math.round((qty * buyPrice) * (discPct / 100)) : 0);
+    const subtotal = num(cols[12]) || Math.max(0, (qty * buyPrice) - discRp);
+
+    // Smart Matching ke database
+    const match = findBestMatchingPharmacyProduct(rawName, allProds);
+    let prodCode = "";
+    let matchType = "new";
+    let matchNote = "";
+
+    if (match && match.product) {
+      prodCode = match.product["Kode Produk"] || match.product["Kode Produk Internal"] || "";
+      matchType = match.type;
+      matchNote = match.product["Nama Produk"] || "";
+    }
+
+    items.push({
+      productCode: prodCode,
+      name: rawName,
+      barcode: match?.product?.Barcode || "",
+      batch,
+      expiryDate: expDate,
+      purchaseUnit,
+      intermediateUnit,
+      intermediateQty: intermediateUnit ? (num(match?.product?.["Isi Satuan Antara"]) || 1) : 1,
+      baseUnit,
+      conversionRatio: conv,
+      qty,
+      buyPrice,
+      discountPercent: discPct,
+      discountRp: discRp,
+      subtotal,
+      matchType,
+      matchNote
+    });
+  }
+
+  return items;
+}
+
+function installPasteTsvModal() {
+  const modal = $("modal-paste-tsv");
+  if (!modal) return;
+
+  $("close-modal-paste-tsv")?.addEventListener("click", closePasteTsvModal);
+  $("cancel-modal-paste-tsv")?.addEventListener("click", closePasteTsvModal);
+
+  const textarea = $("tsv-paste-textarea");
+  textarea?.addEventListener("input", (e) => {
+    const lines = e.target.value.split(/\r?\n/).filter(l => l.trim()).length;
+    const countEl = $("tsv-line-count-preview");
+    if (countEl) countEl.textContent = `${lines} baris terdeteksi`;
+  });
+
+  $("btn-process-paste-tsv")?.addEventListener("click", () => {
+    const raw = textarea?.value || "";
+    if (!raw.trim()) {
+      window.KasirProDialog?.warning("Teks Kosong", "Silakan tempelkan (Ctrl+V) teks TSV ke dalam kotak terlebih dahulu.");
+      return;
+    }
+    const replaceRows = $("tsv-replace-rows")?.checked !== false;
+    processTsvDataIntoGrid(raw, replaceRows);
+    closePasteTsvModal();
+  });
+}
+
+function openPasteTsvModal() {
+  const modal = $("modal-paste-tsv");
+  if (!modal) return;
+  const textarea = $("tsv-paste-textarea");
+  if (textarea) textarea.value = "";
+  const countEl = $("tsv-line-count-preview");
+  if (countEl) countEl.textContent = "0 baris terdeteksi";
+  modal.hidden = false;
+  setTimeout(() => textarea?.focus(), 50);
+}
+
+function closePasteTsvModal() {
+  const modal = $("modal-paste-tsv");
+  if (modal) modal.hidden = true;
+}
+
+async function handlePasteTsvClick() {
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.readText === "function") {
+      const clipText = await navigator.clipboard.readText();
+      if (clipText && clipText.includes("\t") && clipText.split(/\r?\n/).filter(l => l.trim()).length >= 1) {
+        const lineCount = clipText.split(/\r?\n/).filter(l => l.trim()).length;
+        const confirmPaste = await window.KasirProDialog?.confirm(
+          "Tempel Data Clipboard Langsung",
+          `Terdeteksi data TSV (${lineCount} baris) di clipboard komputer Anda.\n\nLangsung masukkan seluruh baris obat ke tabel Grid Mode?`
+        );
+        if (confirmPaste) {
+          processTsvDataIntoGrid(clipText, true);
+          return;
+        }
+      }
+    }
+  } catch (_) {}
+
+  openPasteTsvModal();
+}
+
+function processTsvDataIntoGrid(rawTsv, replaceRows = true) {
+  const items = parseTsvToItems(rawTsv);
+  if (!items.length) {
+    window.KasirProDialog?.error("Format Tidak Dikenal", "Gagal memproses data TSV. Pastikan data dipisahkan dengan karakter TAB.");
+    return;
+  }
+
+  if (replaceRows) {
+    manualInvoiceItems = items;
+  } else {
+    manualInvoiceItems.push(...items);
+  }
+
+  renderManualInvoiceItems();
+  calculateManualInvoiceTotals();
+
+  const matchedCount = items.filter(i => i.productCode).length;
+  const newCount = items.length - matchedCount;
+
+  window.KasirProDialog?.success(
+    "Data TSV Berhasil Ditempel",
+    `Berhasil memuat ${items.length} item obat ke Grid Mode!\n\n` +
+    `• ${matchedCount} produk otomatis tersambung ke database\n` +
+    `• ${newCount} terdeteksi sebagai produk baru\n\n` +
+    `Silakan periksa nominal dan banner rekonsiliasi sebelum konfirmasi.`
+  );
+}
+
+/* ==========================================================================
    KONTROLLER INPUT FAKTUR MANUAL (GRID MODE DENGAN REKONSILIASI MATEMATIKA)
    ========================================================================== */
 
@@ -628,7 +881,19 @@ function renderManualInvoiceItems() {
               placeholder="${supSelected ? 'Ketik nama obat / scan barcode...' : 'Pilih Supplier terlebih dahulu...'}" 
               ${supSelected ? '' : 'disabled'} autocomplete="off" 
               style="font-weight:700;${supSelected ? 'color:#0f172a;background:#fff;' : 'background:#f8fafc;color:#94a3b8;cursor:not-allowed;'}">
-            ${item.productCode ? `<div style="font-size:10.5px;color:#0284c7;display:flex;gap:6px;"><span>Kode: ${escapeHtml(item.productCode)}</span></div>` : ''}
+            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:2px;">
+              ${item.productCode ? `
+                <span class="badge" style="background:${item.matchType === 'fuzzy' ? '#fefce8' : '#ecfdf5'};color:${item.matchType === 'fuzzy' ? '#a16207' : '#059669'};font-size:10px;padding:1.5px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;font-weight:700;" title="Kode Produk: ${escapeHtml(item.productCode)}">
+                  <i class="fa-solid ${item.matchType === 'fuzzy' ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i> 
+                  ${item.matchType === 'fuzzy' ? 'Tersambung (Mirip)' : 'Tersambung'}: ${escapeHtml(item.productCode)}
+                </span>
+                ${item.matchNote && item.matchType === 'fuzzy' ? `<small style="font-size:9.5px;color:#64748b;" title="Nama di Master Data">(${escapeHtml(item.matchNote)})</small>` : ''}
+              ` : `
+                <span class="badge" style="background:#eff6ff;color:#0284c7;font-size:10px;padding:1.5px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;font-weight:600;">
+                  <i class="fa-solid fa-plus-circle"></i> Produk Baru
+                </span>
+              `}
+            </div>
           </div>
         </td>
         <td>
@@ -984,6 +1249,8 @@ function selectProductForRow(idx, prod) {
   item.productCode = prod["Kode Produk"] || prod["Kode Produk Internal"] || "";
   item.name = prod["Nama Produk"] || prod.name || "";
   item.barcode = prod["Barcode"] || "";
+  item.matchType = "exact";
+  item.matchNote = prod["Nama Produk"] || prod.name || "";
   item.purchaseUnit = prod["Kemasan Beli"] || prod["Satuan Pembelian"] || "BOX";
 
   const baseU = prod["Satuan Dasar"] || prod["Satuan"] || "TABLET";

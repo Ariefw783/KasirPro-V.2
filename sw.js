@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v64-purge-progress-modal";
+const CACHE_VERSION = "kasirpro-pwa-v65-invoice-tsv-paste";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
