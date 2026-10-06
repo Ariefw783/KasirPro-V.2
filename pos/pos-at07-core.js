@@ -538,26 +538,31 @@ async function completeSale(){
     }
 
     const customNote = text($("payment-custom-note")?.value);
-    const recordedPaymentMethod = (method === "Lainnya" && customNote) ? `Lainnya (${customNote})` : method;
+    const recordedPaymentMethod = (method === "Lainnya" && customNote) ? `Lainnya (${customNote})` : (method || "Cash");
 
     lastSale={
         id:`SALE-${Date.now()}-${String(session.username||"kasir").toLowerCase()}`,
         number,
         at:saleAt,
         cashier:session.name||session.username||"Kasir",
-        role:session.role,
+        role:session.role||"kasir",
         status:"SELESAI",
         items:cart.map(x=>({
-            ...x,
-            unitName: x.selectedUnit?.name || x.baseUnit || "item",
-            unitMultiplier: x.selectedUnit?.multiplier || 1
+            code:String(x.code||""),
+            name:String(x.name||""),
+            price:num(x.price),
+            buyPrice:num(x.buyPrice),
+            qty:num(x.qty),
+            unitName:String(x.selectedUnit?.name || x.baseUnit || "item"),
+            unitMultiplier:num(x.selectedUnit?.multiplier || 1),
+            subtotal:num(x.subtotal || (num(x.price) * num(x.qty)))
         })),
-        discountMode:$("cart-discount-mode").value,
-        discountValue:num($("cart-discount-value").value),
+        discountMode:$("cart-discount-mode")?.value || "percent",
+        discountValue:num($("cart-discount-value")?.value),
         ...c,
         paymentMethod:recordedPaymentMethod,
-        paid,
-        change:Math.max(0,paid-c.total)
+        paid:num(paid),
+        change:Math.max(0,num(paid)-c.total)
     };
 
     const ss=sales();
@@ -573,7 +578,8 @@ async function completeSale(){
         lastSale._localSyncStatus=saveResult.mode==="firebase-pending"?"menunggu-sinkron":"tersinkron";
     }catch(error){
         console.error("Transaksi gagal disimpan ke Firebase:",error);
-        return window.KasirProDialog?.error("Gagal Menyimpan", "Transaksi belum dapat disimpan ke server database. Periksa koneksi internet Anda lalu coba kembali.");
+        const errMsg = error?.message || "Periksa koneksi internet Anda lalu coba kembali.";
+        return window.KasirProDialog?.error("Gagal Menyimpan Transaksi", `Transaksi belum dapat disimpan ke server:\n${errMsg}`);
     }finally{
         saleInProgress=false;
         completeButton.disabled=false;

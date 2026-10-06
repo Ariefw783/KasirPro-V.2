@@ -59,6 +59,27 @@ function norm(val) {
   return String(val ?? "").trim().toLowerCase();
 }
 
+/**
+ * Sanitasi rekursif payload Firestore agar bebas dari nilai undefined
+ */
+export function sanitizeForFirestore(val) {
+  if (val === undefined) return null;
+  if (val === null || typeof val !== "object") return val;
+  if (val instanceof Date) return val.toISOString();
+  if (Array.isArray(val)) {
+    return val
+      .filter(item => item !== undefined)
+      .map(item => sanitizeForFirestore(item));
+  }
+  const clean = {};
+  for (const [k, v] of Object.entries(val)) {
+    if (v !== undefined) {
+      clean[k] = sanitizeForFirestore(v);
+    }
+  }
+  return clean;
+}
+
 function num(val) {
   return Number(String(val ?? 0).replace(/[^0-9.-]/g, "")) || 0;
 }
@@ -947,10 +968,12 @@ export async function purgeTestingTransactions(options = {}) {
   // Reset stok produk di Firestore jika diminta
   if (resetProductStock) {
     for (const p of products) {
+      const code = norm(p["Kode Produk"]);
       p["Stok Awal"] = 0;
-      activeStockIndex.set(norm(p["Kode Produk"]), 0);
+      activeStockIndex.set(code, 0);
       const pId = String(p.id || p["Kode Produk"]).replace(/[\/\\]/g, "_").trim();
       ops.push({ coll: "products", id: pId, updateData: { "Stok Awal": 0, updatedAt: new Date().toISOString() } });
+      ops.push({ coll: "activeStocks", id: readableDocumentId("stok", code), updateData: { quantity: 0, updatedAt: new Date().toISOString() } });
     }
   }
 
@@ -963,7 +986,7 @@ export async function purgeTestingTransactions(options = {}) {
       try {
         const ref = doc(firebaseDb, ...documentSegments(item.coll, item.id));
         if (item.updateData) {
-          batch.set(ref, item.updateData, { merge: true });
+          batch.set(ref, sanitizeForFirestore(item.updateData), { merge: true });
         } else {
           batch.delete(ref);
         }
@@ -1099,6 +1122,10 @@ export async function writeStockTransaction(entries = []) {
       // Jika jenis mutasi adalah penjualan, delta memotong stok
       if (type === "sale" || type === "penjualan") {
         if (delta > 0) delta = -delta;
+        // Rekonsiliasi fallback: jika remote stok belum sinkron / bernilai 0 tapi master/m.stockBefore cukup
+        if (currentQty < Math.abs(delta) && num(m.stockBefore) >= Math.abs(delta)) {
+          currentQty = num(m.stockBefore);
+        }
       }
 
       const nextQty = type === "opname" ? num(m.stockAfter) : currentQty + delta;
@@ -1116,40 +1143,40 @@ export async function writeStockTransaction(entries = []) {
     for (const [code, qty] of newStockValues.entries()) {
       const stockInfo = stockDocs.get(code);
       const prodName = movements.find(m => norm(m.productCode) === code)?.productName || code;
-      transaction.set(stockInfo.ref, {
+      transaction.set(stockInfo.ref, sanitizeForFirestore({
         productCode: code,
         productName: prodName,
         quantity: Math.max(0, qty),
         updatedAt: now
-      }, { merge: true });
+      }), { merge: true });
     }
 
     // 4. Tulis MutasiStok
     for (const m of movements) {
       const mId = m.id || readableDocumentId("mut", `${m.productCode}-${Date.now()}`);
       const mRef = doc(firebaseDb, ...documentSegments("stockMovements", mId));
-      transaction.set(mRef, { ...m, id: mId, createdAt: m.createdAt || now }, { merge: true });
+      transaction.set(mRef, sanitizeForFirestore({ ...m, id: mId, createdAt: m.createdAt || now }), { merge: true });
     }
 
     // 5. Tulis Transaksi Penjualan jika ada
     for (const s of sales) {
       const sId = s.id || s.transactionNumber || readableDocumentId("trx", Date.now());
       const sRef = doc(firebaseDb, ...documentSegments("sales", sId));
-      transaction.set(sRef, { ...s, id: sId, updatedAt: now }, { merge: true });
+      transaction.set(sRef, sanitizeForFirestore({ ...s, id: sId, updatedAt: now }), { merge: true });
     }
 
     // 6. Tulis Faktur Pembelian jika ada
     for (const inv of invoices) {
       const invId = inv.id || inv.invoiceNumber || readableDocumentId("inv", Date.now());
       const invRef = doc(firebaseDb, ...documentSegments("purchaseInvoices", invId));
-      transaction.set(invRef, { ...inv, id: invId, updatedAt: now }, { merge: true });
+      transaction.set(invRef, sanitizeForFirestore({ ...inv, id: invId, updatedAt: now }), { merge: true });
     }
 
     // 7. Tulis Stock Opname jika ada
     for (const op of opnames) {
       const opId = op.id || readableDocumentId("opn", Date.now());
       const opRef = doc(firebaseDb, ...documentSegments("stockOpnames", opId));
-      transaction.set(opRef, { ...op, id: opId, updatedAt: now }, { merge: true });
+      transaction.set(opRef, sanitizeForFirestore({ ...op, id: opId, updatedAt: now }), { merge: true });
     }
   });
 

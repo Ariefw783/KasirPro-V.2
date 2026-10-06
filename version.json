@@ -1,15 +1,15 @@
 {
-  "version": "2.2.4",
-  "build": "20261006.2",
+  "version": "2.2.5",
+  "build": "20261006.3",
   "releaseDate": "06 Oktober 2026",
-  "title": "Pembaruan Arsitektur Sistem KasirPro V2",
-  "description": "Rilis perbaikan transaksi faktur manual, pembersihan data uji coba hingga akar cloud database, dan fleksibilitas harga jual bertingkat multi-satuan.",
+  "title": "Pembaruan POS Final Payment & In-App AI Diagnostic Reporter",
+  "description": "Rilis perbaikan transaksi konfirmasi akhir pembayaran POS dan implementasi pusat pelaporan kendala terintegrasi ekspor diagnostik AI.",
   "changelog": [
-    "Perbaikan Transaksi Konfirmasi Faktur Manual",
-    "Pembersihan Data Uji Coba Hingga Akar Firestore",
-    "Opsi Fleksibel Harga Jual Bertingkat (1, 2, 3 Satuan)",
-    "Penempatan Titik Nominal Otomatis Terintegrasi",
-    "Optimasi Performa Input Faktur Grid Mode",
-    "Sinkronisasi Unit Penjualan Kasir POS"
+    "Perbaikan Transaksi Konfirmasi Akhir Bayar POS",
+    "Sanitasi Rekursif Payload Firestore & Safeguard Stok",
+    "Fitur Pusat Diagnostik & Pelaporan Kendala In-App",
+    "Ekspor Otomatis Format Prompt Antigravity / AI IDE",
+    "Unduh Laporan Diagnostik Sistem File .txt",
+    "Pembersihan Menyeluruh Dokumen ActiveStocks Firestore"
   ]
 }

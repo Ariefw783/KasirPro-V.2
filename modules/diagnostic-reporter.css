@@ -1,0 +1,450 @@
+/* ==========================================================================
+   KasirPro Diagnostic & Issue Reporter UI Stylesheet
+   Modern, responsive, and seamless with KasirPro design language
+   ========================================================================== */
+
+/* Reporter Trigger Button in Topbar / Header */
+.kp-report-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  user-select: none;
+}
+
+.kp-report-trigger-btn:hover {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: #ef4444;
+  color: #dc2626;
+  transform: translateY(-1px);
+}
+
+.kp-report-trigger-btn .kp-report-badge {
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+/* Modal Backdrop */
+.kp-diag-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.kp-diag-backdrop.kp-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Modal Dialog Card */
+.kp-diag-modal {
+  background: #ffffff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  overflow: hidden;
+  animation: kpModalPop 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes kpModalPop {
+  0% { transform: scale(0.94) translateY(8px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Modal Header */
+.kp-diag-header {
+  padding: 18px 22px;
+  background: linear-gradient(135deg, #0f2a43 0%, #1e3a8a 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kp-diag-header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.kp-diag-header-title i {
+  color: #38bdf8;
+  font-size: 1.15rem;
+}
+
+.kp-diag-close-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  font-size: 0.95rem;
+}
+
+.kp-diag-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Tabs Bar */
+.kp-diag-tabs {
+  display: flex;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 16px;
+}
+
+.kp-diag-tab-btn {
+  padding: 12px 18px;
+  border: none;
+  background: transparent;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kp-diag-tab-btn:hover {
+  color: #0284c7;
+}
+
+.kp-diag-tab-btn.active {
+  color: #0284c7;
+  border-bottom-color: #0284c7;
+  background: #ffffff;
+}
+
+.kp-diag-tab-badge {
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.72rem;
+  padding: 1px 7px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.kp-diag-tab-btn.active .kp-diag-tab-badge {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+/* Modal Body */
+.kp-diag-body {
+  padding: 20px 22px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Info Box */
+.kp-diag-context-banner {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: #166534;
+}
+
+.kp-diag-context-banner.has-errors {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.kp-diag-context-banner i {
+  font-size: 1.2rem;
+  margin-top: 1px;
+}
+
+.kp-diag-context-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Form Controls */
+.kp-diag-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kp-diag-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.kp-diag-select,
+.kp-diag-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: #0f172a;
+  background: #ffffff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.kp-diag-select:focus,
+.kp-diag-textarea:focus {
+  outline: none;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.kp-diag-textarea {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.5;
+}
+
+/* History List */
+.kp-diag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kp-diag-empty {
+  text-align: center;
+  padding: 36px 20px;
+  color: #94a3b8;
+}
+
+.kp-diag-empty i {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.kp-diag-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.2s ease;
+}
+
+.kp-diag-card:hover {
+  border-color: #cbd5e1;
+}
+
+.kp-diag-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kp-diag-badge-category {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.kp-diag-time {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.kp-diag-notes {
+  font-size: 0.88rem;
+  color: #334155;
+  line-height: 1.5;
+  background: #f8fafc;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border-left: 3px solid #0284c7;
+}
+
+.kp-diag-meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-size: 0.76rem;
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.kp-diag-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+/* Action Buttons */
+.kp-diag-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.kp-diag-btn-primary {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.kp-diag-btn-primary:hover {
+  background: #0369a1;
+}
+
+.kp-diag-btn-ai {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: #ffffff;
+}
+
+.kp-diag-btn-ai:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.kp-diag-btn-secondary {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.kp-diag-btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+.kp-diag-btn-danger {
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.kp-diag-btn-danger:hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+}
+
+/* Modal Footer */
+.kp-diag-footer {
+  padding: 14px 22px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Toast Notification */
+.kp-diag-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100000;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 12px 18px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  animation: kpToastFade 0.25s ease;
+}
+
+@keyframes kpToastFade {
+  0% { transform: translateY(15px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .kp-diag-modal {
+    max-height: 94vh;
+    border-radius: 16px;
+  }
+  .kp-diag-body {
+    padding: 16px 14px;
+  }
+  .kp-diag-header {
+    padding: 14px 16px;
+  }
+  .kp-diag-card-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .kp-diag-card-actions .kp-diag-btn {
+    justify-content: center;
+  }
+  .kp-report-trigger-btn .report-btn-text {
+    display: none;
+  }
+}

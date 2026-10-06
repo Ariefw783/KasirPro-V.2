@@ -12,8 +12,9 @@
     <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32.png">
     <link rel="icon" type="image/png" sizes="192x192" href="../assets/icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="../assets/apple-touch-icon-180.png">
-    <link rel="stylesheet" href="pos.css">
+    <link rel="stylesheet" href="pos.css?v=20261006-v53">
     <link rel="stylesheet" href="../ui-modal.css">
+    <link rel="stylesheet" href="../modules/diagnostic-reporter.css?v=20261006-v53">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 </head>
 
@@ -37,6 +38,11 @@
 
         <div class="pos-header-actions">
             <div class="pos-user"><i class="fa-solid fa-user"></i><span id="pos-user-name">Kasir</span></div>
+
+            <button class="pos-icon kp-report-trigger-btn" type="button" title="Laporkan Masalah / AI Diagnostic" aria-label="Laporkan Masalah" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: #ef4444; width: 40px; height: 40px; border-radius: 10px; display: inline-flex; justify-content: center; align-items: center; padding: 0;">
+                <i class="fa-solid fa-bug"></i>
+                <span class="kp-report-badge" style="display:none; position: absolute; top: -4px; right: -4px;">!</span>
+            </button>
 
             <button id="transaction-history" class="pos-icon" type="button" title="Riwayat Transaksi" aria-label="Riwayat Transaksi">
                 <i class="fa-solid fa-clock-rotate-left"></i>
@@ -295,6 +301,7 @@
 </div>
 
 <script src="../pwa.js" defer></script>
+<script type="module" src="../modules/diagnostic-reporter.js"></script>
 <script type="module" src="pos.js"></script>
 </body>
 </html>

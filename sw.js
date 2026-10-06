@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v52-invoice-tiered-pricing-fix";
+const CACHE_VERSION = "kasirpro-pwa-v53-pos-reporter-ai";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
@@ -29,7 +29,9 @@ const STATIC_ASSETS = [
     "./management/management.css",
     "./management/management-mobile.css",
     "./pos/index.html",
-    "./pos/pos.css"
+    "./pos/pos.css",
+    "./modules/diagnostic-reporter.js",
+    "./modules/diagnostic-reporter.css"
 ];
 
 self.addEventListener("install", event => {

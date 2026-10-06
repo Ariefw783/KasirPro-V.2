@@ -14,9 +14,10 @@
     <link rel="icon" type="image/png" sizes="192x192" href="../assets/icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="../assets/apple-touch-icon-180.png">
 
-    <link rel="stylesheet" href="management.css?v=20261006-v52">
-    <link rel="stylesheet" href="management-mobile.css?v=20261006-v52">
+    <link rel="stylesheet" href="management.css?v=20261006-v53">
+    <link rel="stylesheet" href="management-mobile.css?v=20261006-v53">
     <link rel="stylesheet" href="../ui-modal.css">
+    <link rel="stylesheet" href="../modules/diagnostic-reporter.css?v=20261006-v53">
 
     <link
         rel="stylesheet"
@@ -209,6 +210,16 @@
 
 
             <div class="topbar-right">
+
+                <button
+                    type="button"
+                    class="kp-report-trigger-btn"
+                    title="Laporkan Kendala Sistem & Ekspor Prompt Diagnostik AI"
+                >
+                    <i class="fa-solid fa-bug"></i>
+                    <span class="report-btn-text">Laporkan Bug</span>
+                    <span class="kp-report-badge" style="display:none;">!</span>
+                </button>
 
                 <a href="../pos/index.html" class="button button-secondary topbar-pos-link"><i class="fa-solid fa-cash-register"></i> Buka POS</a>
 
@@ -2487,6 +2498,11 @@
 
 <script
     src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"
+></script>
+
+<script
+    type="module"
+    src="../modules/diagnostic-reporter.js"
 ></script>
 
 <script
