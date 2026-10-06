@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v72-boot-fix";
+const CACHE_VERSION = "kasirpro-pwa-v73-supabase-full";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

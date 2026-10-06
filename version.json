@@ -1,14 +1,14 @@
 {
-  "version": "2.2.22",
-  "build": "20261006.22",
-  "releaseDate": "06 Oktober 2026",
-  "title": "Optimasi Boot Dashboard & Anti-Freeze Overlay",
-  "description": "Perbaikan instan overlay loading, inisialisasi database berkecepatan tinggi tanpa hambatan kuota, dan sinkronisasi real-time Supabase.",
+  "version": "2.2.23",
+  "build": "20261007.01",
+  "releaseDate": "07 Oktober 2026",
+  "title": "Migrasi Penuh & Total ke Supabase PostgreSQL",
+  "description": "Supabase PostgreSQL resmi menjadi Single Source of Truth Utama 100%. Bebas total dari batas kuota Firebase.",
   "changelog": [
-    "Perbaikan permanen overlay loading menggantung",
-    "Inisialisasi dashboard instan tanpa hambatan Firestore",
-    "Sinkronisasi aman ke database Supabase PostgreSQL",
-    "Pembersihan otomatis cache usang pada browser & PWA",
-    "Semua indikator metrik KPI beroperasi normal seketika"
+    "Supabase PostgreSQL 100% Single Source of Truth",
+    "Bebas dari hambatan batas kuota harian Firestore",
+    "Penyimpanan master dan transaksi instan ke Supabase",
+    "Kinerja POS dan faktur mulus tanpa delay",
+    "Dashboard dan metrik tersinkronisasi cepat"
   ]
 }

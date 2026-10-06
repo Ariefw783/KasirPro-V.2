@@ -293,64 +293,17 @@ async function syncFromFirestore(force = false) {
     // Buffer toleransi 60 detik untuk variasi jam server/klien
     const cutoffIso = isIncremental ? new Date(Math.max(0, lastSyncTime - 60000)).toISOString() : null;
 
-    console.log(`[DatabaseStore] Menjalankan sync Firestore (${isIncremental ? `Delta sejak ${cutoffIso}` : 'Full initial sync'})...`);
+    console.log(`[DatabaseStore] Sinkronisasi Supabase PostgreSQL Cloud (${isIncremental ? 'Delta' : 'Full sync'})...`);
 
-    const fetchCollection = async (collKey, options = {}) => {
-      try {
-        const segs = collectionSegments(collKey);
-        const colRef = collection(firebaseDb, ...segs);
-        let q;
-
-        if (isIncremental && cutoffIso) {
-          // Hanya ambil dokumen yang updatedAt lebih baru dari cutoff
-          q = query(colRef, where("updatedAt", ">", cutoffIso));
-        } else if (options.limitCount) {
-          // Batasi dokumen historis pada initial sync agar tidak jebol kuota
-          q = query(colRef, limit(options.limitCount));
-        } else {
-          q = colRef;
-        }
-
-        const timeoutGuard = (prom, ms = 2500) => Promise.race([
-          prom,
-          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Firestore query")), ms))
-        ]);
-
-        let snap;
-        try {
-          snap = await timeoutGuard(getDocs(q), 2500);
-        } catch (queryErr) {
-          // Jika kuota habis atau timeout, jangan ulangi lagi agar UI tidak freeze
-          return [];
-        }
-
-        return snap.docs.map(d => ({ ...d.data(), id: d.id, _firestoreDocumentId: d.id }));
-      } catch (e) {
-        return [];
-      }
-    };
-
-    const [
-      firestoreProducts,
-      firestoreCategories,
-      firestoreSuppliers,
-      firestoreInvoices,
-      firestoreSales,
-      firestoreMovements,
-      firestoreOpnames,
-      firestoreStocks,
-      firestoreSettings
-    ] = await Promise.all([
-      fetchCollection("products"),
-      fetchCollection("categories"),
-      fetchCollection("suppliers"),
-      fetchCollection("purchaseInvoices", { limitCount: 150 }),
-      fetchCollection("sales", { limitCount: 200 }),
-      fetchCollection("stockMovements", { limitCount: 300 }),
-      fetchCollection("stockOpnames", { limitCount: 50 }),
-      fetchCollection("activeStocks"),
-      fetchCollection("storeSettings")
-    ]);
+    const firestoreProducts = [];
+    const firestoreCategories = [];
+    const firestoreSuppliers = [];
+    const firestoreInvoices = [];
+    const firestoreSales = [];
+    const firestoreMovements = [];
+    const firestoreOpnames = [];
+    const firestoreStocks = [];
+    const firestoreSettings = [];
 
     // 2b. Fetch data dari Supabase PostgreSQL
     let supabaseProducts = [];
@@ -759,36 +712,78 @@ export async function writeStore(key, value, onProgress) {
       operations.push({ ref, data: sanitizeFirestorePayload({ ...value.pengaturan_toko[0], updatedAt: now }) });
     }
 
-    // Commit dalam chunk 400 operasi dengan timeout perlindungan agar UI tidak hang
-    const CHUNK_SIZE = 400;
-    const totalChunks = Math.ceil(operations.length / CHUNK_SIZE);
+    // Simpan ke Supabase PostgreSQL
+    try {
+      if (Array.isArray(value?.produk) && value.produk.length) {
+        const pRows = value.produk.map(p => ({
+          id: p.id || p["Kode Produk"] || p["Kode Produk Internal"],
+          code: String(p["Kode Produk"] || p.id || "").trim(),
+          name: String(p["Nama Produk"] || "").trim(),
+          barcode: p["Barcode"] || null,
+          category: p["Kategori"] || null,
+          supplier: p["Supplier"] || null,
+          buy_price: Number(p["Harga Beli"] || 0),
+          sell_price: Number(p["Harga Jual"] || 0),
+          buy_unit: p["Satuan Beli"] || "Box",
+          base_unit: p["Satuan Terkecil"] || "Pcs",
+          mid_unit: p["Satuan Menengah"] || null,
+          conversion: Number(p["Isi Per Box"] || 1),
+          mid_conversion: Number(p["Isi Per Strip"] || 1),
+          tiered_prices: Array.isArray(p["Harga Bertingkat"]) ? p["Harga Bertingkat"] : [],
+          stock: Number(p["Stok Awal"] || 0),
+          status: p["Status"] || p["Status Produk"] || "Tidak Aktif",
+          min_stock: Number(p["Stok Minimum"] || 0),
+          updated_at: now
+        }));
+        await supabaseDb.upsert("products", pRows, "id");
+      }
+      if (Array.isArray(value?.supplier) && value.supplier.length) {
+        const sRows = value.supplier.map(s => ({
+          id: s.id || s["Supplier"] || s["Nama Perusahaan"],
+          name: String(s["Supplier"] || s["Nama Perusahaan"] || s.name || "").trim(),
+          company_name: String(s["Nama Perusahaan"] || s["Supplier"] || "").trim(),
+          phone: s["Nomor Telepon"] || s.phone || null,
+          address: s["Alamat"] || s.address || null,
+          status: s["Status"] || "Aktif",
+          updated_at: now
+        }));
+        await supabaseDb.upsert("suppliers", sRows, "id");
+      }
+      if (Array.isArray(value?.kategori) && value.kategori.length) {
+        const cRows = value.kategori.map(k => ({
+          id: k.id || k["Kode Kategori"] || k["Nama Kategori"],
+          name: String(k["Nama Kategori"] || k["Kategori"] || k.name || "").trim(),
+          updated_at: now
+        }));
+        await supabaseDb.upsert("categories", cRows, "id");
+      }
+      if (Array.isArray(value?.pengaturan_toko) && value.pengaturan_toko[0]) {
+        const st = value.pengaturan_toko[0];
+        await supabaseDb.upsert("store_settings", {
+          id: "toko_utama",
+          store_name: st.store_name || st["Nama Toko"] || "Apotek Doa Ibu",
+          address: st.address || st["Alamat Toko"] || "",
+          phone: st.phone || st["Nomor Telepon Toko"] || "",
+          receipt_size: st.receipt_size || st["Ukuran Struk"] || "58 mm",
+          receipt_footer: st.receipt_footer || st["Pesan Penutup"] || "",
+          updated_at: now
+        }, "id");
+      }
+    } catch (supErr) {
+      console.warn("[DatabaseStore] Supabase writeStore master:", supErr.message);
+    }
 
+    // Commit Firestore non-blocking
+    const CHUNK_SIZE = 400;
     for (let i = 0; i < operations.length; i += CHUNK_SIZE) {
       const chunk = operations.slice(i, i + CHUNK_SIZE);
-      const chunkIdx = Math.floor(i / CHUNK_SIZE) + 1;
-
-      if (typeof onProgress === "function") {
-        const pct = 40 + Math.round((chunkIdx / totalChunks) * 55);
-        onProgress({
-          step: "firestore",
-          message: `Menyinkronkan ke Cloud Firestore (Batch ${chunkIdx} dari ${totalChunks})...`,
-          detail: `${Math.min(i + chunk.length, operations.length)} dari ${operations.length} data tersinkron`,
-          percent: pct,
-          currentChunk: chunkIdx,
-          totalChunks: totalChunks
-        });
-      }
-
       const b = writeBatch(firebaseDb);
-      for (const op of chunk) {
-        b.set(op.ref, op.data, { merge: true });
-      }
+      for (const op of chunk) b.set(op.ref, op.data, { merge: true });
       try {
-        const commitPromise = b.commit();
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout sync Firestore master (10 detik)")), 10000)
-        );
-        await Promise.race([commitPromise, timeoutPromise]);
+        await Promise.race([
+          b.commit(),
+          new Promise((_, rej) => setTimeout(() => rej(new Error("Timeout Firestore")), 3000))
+        ]);
       } catch (commitErr) {
         console.warn("[DatabaseStore] Peringatan commit batch master:", commitErr.message || commitErr);
       }
@@ -1654,6 +1649,7 @@ export async function writeOperationalDelta(entries = []) {
   const batch = writeBatch(firebaseDb);
   const now = new Date().toISOString();
 
+  // 1. Simpan ke IndexedDB lokal & Supabase PostgreSQL
   for (const entry of entries) {
     const key = entry.key;
     const records = entry.records || entry.value || [];
@@ -1669,7 +1665,89 @@ export async function writeOperationalDelta(entries = []) {
     }
     inMemory.set(key, updated);
 
-    // Queue Firestore batch
+    // Update IndexedDB
+    if (key === STORE_KEYS.invoices) await indexedDBStore.putMany(STORES.INVOICES, records);
+    else if (key === STORE_KEYS.sales) await indexedDBStore.putMany(STORES.SALES, records);
+    else if (key === STORE_KEYS.movements) await indexedDBStore.putMany(STORES.MOVEMENTS, records);
+    else if (key === STORE_KEYS.opnames) await indexedDBStore.putMany(STORES.OPNAMES, records);
+
+    // Update Supabase PostgreSQL
+    try {
+      if (key === STORE_KEYS.invoices) {
+        const rows = records.map(inv => ({
+          id: String(inv.id || inv.invoiceNumber || Date.now()),
+          invoice_number: String(inv.invoiceNumber || inv.invoice_number || "").trim(),
+          supplier_name: String(inv.supplierName || inv.supplier_name || "").trim(),
+          date: inv.date || null,
+          due_date: inv.dueDate || inv.due_date || null,
+          payment_type: inv.paymentType || "tunai",
+          discount_type: inv.discountType || "nominal",
+          global_discount_rp: Number(inv.globalDiscountRp || 0),
+          ppn_rate: Number(inv.ppnRate || 0),
+          custom_ppn_rp: Number(inv.customPpnRp || 0),
+          gross_total: Number(inv.grossTotal || 0),
+          total_discount: Number(inv.totalDiscount || 0),
+          dpp: Number(inv.dpp || 0),
+          ppn: Number(inv.ppn || 0),
+          calculated_total: Number(inv.calculatedTotal || 0),
+          printed_total: Number(inv.printedTotal || 0),
+          difference: Number(inv.difference || 0),
+          status: inv.status || "draft",
+          items: Array.isArray(inv.items) ? inv.items : [],
+          updated_at: now
+        }));
+        await supabaseDb.upsert("purchase_invoices", rows, "id");
+      } else if (key === STORE_KEYS.sales) {
+        const rows = records.map(s => ({
+          id: String(s.id || s.transactionNumber || Date.now()),
+          transaction_number: String(s.transactionNumber || s.id || "").trim(),
+          date: s.date || now,
+          cashier_name: String(s.cashierName || "Kasir").trim(),
+          cashier_id: s.cashierId || null,
+          payment_method: s.paymentMethod || "Tunai",
+          subtotal: Number(s.subtotal || 0),
+          discount_percent: Number(s.discountPercent || 0),
+          discount_nominal: Number(s.discountNominal || 0),
+          total: Number(s.total || 0),
+          cash_paid: Number(s.cashPaid || 0),
+          change_returned: Number(s.changeReturned || 0),
+          status: s.status || "Selesai",
+          void_reason: s.voidReason || null,
+          items: Array.isArray(s.items) ? s.items : []
+        }));
+        await supabaseDb.upsert("sales", rows, "id");
+      } else if (key === STORE_KEYS.movements) {
+        const rows = records.map(m => ({
+          id: String(m.id || Date.now() + Math.random().toString(36).slice(2, 6)),
+          product_code: String(m.productCode || "").trim(),
+          product_name: String(m.productName || "").trim(),
+          type: String(m.type || "").trim(),
+          reference_id: m.referenceId || null,
+          batch: m.batch || null,
+          expiry_date: m.expiryDate || null,
+          qty_in: Number(m.qtyIn || 0),
+          qty_out: Number(m.qtyOut || 0),
+          unit: m.unit || "Pcs",
+          notes: m.notes || null,
+          created_at: m.createdAt || now
+        }));
+        await supabaseDb.upsert("stock_movements", rows, "id");
+      } else if (key === STORE_KEYS.opnames) {
+        const rows = records.map(o => ({
+          id: String(o.id || o.reference || Date.now()),
+          reference: String(o.reference || "").trim(),
+          date: o.date || now,
+          notes: o.notes || null,
+          created_by: o.createdBy || null,
+          items: Array.isArray(o.items) ? o.items : []
+        }));
+        await supabaseDb.upsert("stock_opnames", rows, "id");
+      }
+    } catch (supErr) {
+      console.warn("[DatabaseStore] Supabase writeOperationalDelta:", supErr.message);
+    }
+
+    // Queue Firestore batch non-blocking
     let collName = "sales";
     if (key === STORE_KEYS.invoices) collName = "purchaseInvoices";
     else if (key === STORE_KEYS.movements) collName = "stockMovements";
@@ -1682,7 +1760,14 @@ export async function writeOperationalDelta(entries = []) {
     }
   }
 
-  await batch.commit();
+  try {
+    await Promise.race([
+      batch.commit(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("Timeout Firestore")), 3000))
+    ]);
+  } catch (fsErr) {
+    console.warn("[DatabaseStore] Firestore writeOperationalDelta dilewati:", fsErr.message);
+  }
   return true;
 }
 
@@ -1707,92 +1792,75 @@ export async function writeStockTransaction(entries = []) {
 
   const newStockValues = new Map();
 
-  // Eksekusi Atomic Transaction di Firestore
-  await runTransaction(firebaseDb, async (transaction) => {
-    const now = new Date().toISOString();
-    newStockValues.clear();
+  const now = new Date().toISOString();
+  newStockValues.clear();
 
-    // 1. Baca StokAktif terkini untuk semua kode produk terkait
-    const stockDocs = new Map();
-    for (const code of affectedCodes) {
-      const ref = doc(firebaseDb, ...documentSegments("activeStocks", readableDocumentId("stok", code)));
-      const snap = await transaction.get(ref);
-      stockDocs.set(code, { ref, exists: snap.exists(), data: snap.exists() ? snap.data() : null });
+  // 1. Hitung dan verifikasi kuantitas stok baru secara lokal & aman
+  for (const m of movements) {
+    const code = norm(m.productCode || m["Kode Produk"]);
+    if (!code) continue;
+
+    let currentQty = newStockValues.has(code)
+      ? newStockValues.get(code)
+      : (activeStockIndex.get(code) ?? num(m.stockBefore));
+
+    let delta = num(m.delta ?? m.quantity ?? m.qty);
+    const type = norm(m.type);
+
+    // Jika jenis mutasi adalah penjualan, delta memotong stok
+    if (type === "sale" || type === "penjualan") {
+      if (delta > 0) delta = -delta;
+      if (currentQty < Math.abs(delta) && num(m.stockBefore) >= Math.abs(delta)) {
+        currentQty = num(m.stockBefore);
+      }
     }
 
-    // 2. Hitung dan verifikasi kuantitas stok baru
-    for (const m of movements) {
-      const code = norm(m.productCode || m["Kode Produk"]);
-      if (!code) continue;
+    const nextQty = type === "opname" ? num(m.stockAfter) : currentQty + delta;
 
-      const currentRemote = stockDocs.get(code);
-      const currentQty = newStockValues.has(code)
-        ? newStockValues.get(code)
-        : (currentRemote?.exists ? num(currentRemote.data?.quantity) : (activeStockIndex.get(code) ?? num(m.stockBefore)));
-
-      let delta = num(m.delta ?? m.quantity ?? m.qty);
-      const type = norm(m.type);
-
-      // Jika jenis mutasi adalah penjualan, delta memotong stok
-      if (type === "sale" || type === "penjualan") {
-        if (delta > 0) delta = -delta;
-        // Rekonsiliasi fallback: jika remote stok belum sinkron / bernilai 0 tapi master/m.stockBefore cukup
-        if (currentQty < Math.abs(delta) && num(m.stockBefore) >= Math.abs(delta)) {
-          currentQty = num(m.stockBefore);
-        }
-      }
-
-      const nextQty = type === "opname" ? num(m.stockAfter) : currentQty + delta;
-
-      if (nextQty < 0 && (type === "sale" || type === "penjualan")) {
-        throw new Error(`Stok produk [${m.productName || code}] tidak mencukupi (sisa: ${currentQty}, dibutuhkan: ${Math.abs(delta)}).`);
-      }
-
-      m.stockBefore = currentQty;
-      m.stockAfter = nextQty;
-      newStockValues.set(code, nextQty);
+    if (nextQty < 0 && (type === "sale" || type === "penjualan")) {
+      throw new Error(`Stok produk [${m.productName || code}] tidak mencukupi (sisa: ${currentQty}, dibutuhkan: ${Math.abs(delta)}).`);
     }
 
-    // 3. Tulis StokAktif yang baru
+    m.stockBefore = currentQty;
+    m.stockAfter = nextQty;
+    newStockValues.set(code, nextQty);
+  }
+
+  // 2. Eksekusi Sinkronisasi Firestore Non-blocking (agar tidak mengganggu kasir jika kuota habis)
+  try {
+    const b = writeBatch(firebaseDb);
     for (const [code, qty] of newStockValues.entries()) {
-      const stockInfo = stockDocs.get(code);
       const prodName = movements.find(m => norm(m.productCode) === code)?.productName || code;
-      transaction.set(stockInfo.ref, sanitizeForFirestore({
-        productCode: code,
-        productName: prodName,
-        quantity: Math.max(0, qty),
-        updatedAt: now
-      }), { merge: true });
+      const ref = doc(firebaseDb, ...documentSegments("activeStocks", readableDocumentId("stok", code)));
+      b.set(ref, sanitizeForFirestore({ productCode: code, productName: prodName, quantity: Math.max(0, qty), updatedAt: now }), { merge: true });
     }
-
-    // 4. Tulis MutasiStok
     for (const m of movements) {
       const mId = m.id || readableDocumentId("mut", `${m.productCode}-${Date.now()}`);
       const mRef = doc(firebaseDb, ...documentSegments("stockMovements", mId));
-      transaction.set(mRef, sanitizeForFirestore({ ...m, id: mId, createdAt: m.createdAt || now }), { merge: true });
+      b.set(mRef, sanitizeForFirestore({ ...m, id: mId, createdAt: m.createdAt || now }), { merge: true });
     }
-
-    // 5. Tulis Transaksi Penjualan jika ada
     for (const s of sales) {
       const sId = s.id || s.transactionNumber || readableDocumentId("trx", Date.now());
       const sRef = doc(firebaseDb, ...documentSegments("sales", sId));
-      transaction.set(sRef, sanitizeForFirestore({ ...s, id: sId, updatedAt: now }), { merge: true });
+      b.set(sRef, sanitizeForFirestore({ ...s, id: sId, updatedAt: now }), { merge: true });
     }
-
-    // 6. Tulis Faktur Pembelian jika ada
     for (const inv of invoices) {
       const invId = inv.id || inv.invoiceNumber || readableDocumentId("inv", Date.now());
       const invRef = doc(firebaseDb, ...documentSegments("purchaseInvoices", invId));
-      transaction.set(invRef, sanitizeForFirestore({ ...inv, id: invId, updatedAt: now }), { merge: true });
+      b.set(invRef, sanitizeForFirestore({ ...inv, id: invId, updatedAt: now }), { merge: true });
     }
-
-    // 7. Tulis Stock Opname jika ada
     for (const op of opnames) {
       const opId = op.id || readableDocumentId("opn", Date.now());
       const opRef = doc(firebaseDb, ...documentSegments("stockOpnames", opId));
-      transaction.set(opRef, sanitizeForFirestore({ ...op, id: opId, updatedAt: now }), { merge: true });
+      b.set(opRef, sanitizeForFirestore({ ...op, id: opId, updatedAt: now }), { merge: true });
     }
-  });
+    await Promise.race([
+      b.commit(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("Timeout Firestore")), 3000))
+    ]);
+  } catch (fsErr) {
+    console.warn("[DatabaseStore] Sinkronisasi Firestore dilewati:", fsErr.message);
+  }
 
   // Setelah Transaksi Cloud Berhasil, update cache lokal segera
   for (const [code, qty] of newStockValues.entries()) {
