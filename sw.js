@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v53-pos-reporter-ai";
+const CACHE_VERSION = "kasirpro-pwa-v54-product-status-filter-fix";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

@@ -124,16 +124,18 @@ function populateFilterDropdowns(master) {
     supFilter.value = currentVal;
   }
 
-  // Pastikan status filter punya opsi lengkap dan rapi (tanpa duplikasi filter harga jual)
+  // Pastikan status filter punya opsi lengkap dan rapi (tanpa tumpang tindih)
   const statusFilter = $("product-status-filter");
-  if (statusFilter && (!statusFilter.querySelector('option[value="perlu harga jual"]') || statusFilter.querySelector('option[value="perlu harga jual"]')?.textContent.trim() !== "Aktif (Perlu harga jual)")) {
+  if (statusFilter && (!statusFilter.querySelector('option[value="perlu harga jual"]') || statusFilter.querySelector('option[value="perlu harga jual"]')?.textContent.trim() !== "Aktif (Perlu Harga Jual)")) {
+    const curVal = statusFilter.value;
     statusFilter.innerHTML = `
       <option value="">Semua Status</option>
-      <option value="aktif">Aktif</option>
-      <option value="perlu harga jual">Aktif (Perlu harga jual)</option>
-      <option value="belum aktif">Belum Aktif</option>
+      <option value="aktif">Aktif (Siap Jual)</option>
+      <option value="perlu harga jual">Aktif (Perlu Harga Jual)</option>
+      <option value="belum aktif">Belum Aktif (Stok Kosong)</option>
       <option value="nonaktif">Nonaktif</option>
     `;
+    if (curVal) statusFilter.value = curVal;
   }
 }
 
@@ -187,18 +189,19 @@ function applyFilters() {
     if (sup && pSup !== sup) return false;
 
     const stock = readCurrentStock(code);
-    const isAutoActive = stock > 0;
 
-    // Filter status khusus
+    // Filter status khusus yang saling eksklusif (tidak tumpang tindih)
     if (statusVal === "aktif") {
-      return isAutoActive;
-    }
-    if (statusVal === "belum aktif") {
-      return !isAutoActive;
+      // Aktif Siap Jual: Bukan nonaktif, memiliki stok fisik > 0, DAN sudah memiliki harga jual > 0
+      return pStatus !== "nonaktif" && stock > 0 && sellPrice > 0;
     }
     if (statusVal === "perlu harga jual") {
-      // Produk yang aktif (memiliki stok > 0 atau tidak nonaktif) tetapi belum memiliki harga jual (> 0)
-      return sellPrice <= 0 && (stock > 0 || pStatus === "aktif" || pStatus === "perlu harga jual");
+      // Perlu Harga Jual: Bukan nonaktif, dan belum memiliki harga jual (sellPrice <= 0)
+      return pStatus !== "nonaktif" && sellPrice <= 0;
+    }
+    if (statusVal === "belum aktif") {
+      // Belum Aktif: Bukan nonaktif, stok <= 0, dan sudah diatur harga jual > 0
+      return pStatus !== "nonaktif" && stock <= 0 && sellPrice > 0;
     }
     if (statusVal === "nonaktif") {
       return pStatus === "nonaktif";
@@ -262,10 +265,8 @@ function renderTable() {
         ? `<strong>${escapeHtml(buyUnit)}</strong> <small class="text-muted">(1 ${escapeHtml(buyUnit)} = ${formatNumber(conv)} ${escapeHtml(unit)})</small>`
         : `<strong>${escapeHtml(unit)}</strong>`;
       const minStock = num(p["Stok Minimum"]);
-      // Status Otomatis Berdasarkan Stok (Input Faktur / Stock Opname):
-      // "Aktif" jika sudah memiliki stok fisik > 0, "Belum Aktif" jika belum memiliki stok (stok <= 0)
-      const autoStatus = stock > 0 ? "Aktif" : "Belum Aktif";
-      const statusBadge = getStatusBadge(autoStatus, sellPrice, stock);
+      const rawStatus = p["Status"] || p["Status Produk"];
+      const statusBadge = getStatusBadge(rawStatus, sellPrice, stock);
 
       return `
         <tr data-code="${escapeHtml(code)}">
@@ -330,12 +331,19 @@ function renderTable() {
   if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
 }
 
-function getStatusBadge(status, sellPrice, stock = 0) {
+function getStatusBadge(rawStatus, sellPrice, stock = 0) {
+  const normStatus = norm(rawStatus);
+  if (normStatus === "nonaktif") {
+    return `<span class="badge badge-secondary" style="background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;"><i class="fa-solid fa-ban"></i> Nonaktif</span>`;
+  }
   if (stock > 0) {
     if (sellPrice <= 0) {
-      return `<span class="badge badge-warning" style="background:#fff7ed;color:#ea580c;border:1px solid #ffedd5;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Produk memiliki stok fisik tetapi belum diatur harga jualnya"><i class="fa-solid fa-triangle-exclamation"></i> Aktif (Perlu Harga)</span>`;
+      return `<span class="badge badge-warning" style="background:#fff7ed;color:#ea580c;border:1px solid #ffedd5;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Produk memiliki stok fisik tetapi belum diatur harga jualnya"><i class="fa-solid fa-triangle-exclamation"></i> Aktif (Perlu Harga Jual)</span>`;
     }
     return `<span class="badge badge-success" style="background:#ecfdf5;color:#059669;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;"><i class="fa-solid fa-circle-check"></i> Aktif</span>`;
+  }
+  if (sellPrice <= 0) {
+    return `<span class="badge badge-warning" style="background:#fff7ed;color:#ea580c;border:1px solid #ffedd5;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Belum diatur harga jual"><i class="fa-solid fa-triangle-exclamation"></i> Perlu Harga Jual</span>`;
   }
   return `<span class="badge badge-info" style="background:#eff6ff;color:#2563eb;border:1px solid #dbeafe;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Belum memiliki stok fisik dari faktur atau stock opname"><i class="fa-solid fa-clock"></i> Belum Aktif</span>`;
 }

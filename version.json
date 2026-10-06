@@ -1,15 +1,14 @@
 {
-  "version": "2.2.5",
-  "build": "20261006.3",
+  "version": "2.2.6",
+  "build": "20261006.4",
   "releaseDate": "06 Oktober 2026",
-  "title": "Pembaruan POS Final Payment & In-App AI Diagnostic Reporter",
-  "description": "Rilis perbaikan transaksi konfirmasi akhir pembayaran POS dan implementasi pusat pelaporan kendala terintegrasi ekspor diagnostik AI.",
+  "title": "Optimasi Filter Status Produk & Isolasi Kategori Mutually Exclusive",
+  "description": "Rilis perbaikan filter status produk, menghilangkan tumpang tindih antara filter Aktif dan Perlu Harga Jual, serta penyesuaian badge tabel produk.",
   "changelog": [
-    "Perbaikan Transaksi Konfirmasi Akhir Bayar POS",
-    "Sanitasi Rekursif Payload Firestore & Safeguard Stok",
-    "Fitur Pusat Diagnostik & Pelaporan Kendala In-App",
-    "Ekspor Otomatis Format Prompt Antigravity / AI IDE",
-    "Unduh Laporan Diagnostik Sistem File .txt",
-    "Pembersihan Menyeluruh Dokumen ActiveStocks Firestore"
+    "Pemisahan Tegas Logika Filter Aktif vs Perlu Harga Jual",
+    "Filter Aktif Khusus Produk Siap Jual (Stok > 0 & Harga Jual > 0)",
+    "Filter Perlu Harga Jual Menangkap Seluruh Produk Berharga Rp0",
+    "Sinkronisasi Badge Tabel Produk dengan Opsi Dropdown Filter",
+    "Penambahan Unit Test Filter Status pada Test Suite Sistem"
   ]
 }
