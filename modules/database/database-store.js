@@ -311,18 +311,21 @@ async function syncFromFirestore(force = false) {
           q = colRef;
         }
 
+        const timeoutGuard = (prom, ms = 2500) => Promise.race([
+          prom,
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout Firestore query")), ms))
+        ]);
+
         let snap;
         try {
-          snap = await getDocs(q);
+          snap = await timeoutGuard(getDocs(q), 2500);
         } catch (queryErr) {
-          // Fallback jika query index bermasalah
-          console.warn(`[DatabaseStore] Fallback getDocs [${collKey}]:`, queryErr.message || queryErr);
-          snap = await getDocs(colRef);
+          // Jika kuota habis atau timeout, jangan ulangi lagi agar UI tidak freeze
+          return [];
         }
 
         return snap.docs.map(d => ({ ...d.data(), id: d.id, _firestoreDocumentId: d.id }));
       } catch (e) {
-        console.warn(`[DatabaseStore] Gagal mengambil koleksi [${collKey}]:`, e);
         return [];
       }
     };

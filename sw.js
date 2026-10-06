@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v71-live-auth";
+const CACHE_VERSION = "kasirpro-pwa-v72-boot-fix";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

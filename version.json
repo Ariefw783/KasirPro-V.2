@@ -1,14 +1,14 @@
 {
-  "version": "2.2.21",
-  "build": "20261006.21",
+  "version": "2.2.22",
+  "build": "20261006.22",
   "releaseDate": "06 Oktober 2026",
-  "title": "Migrasi Penuh ke Supabase PostgreSQL",
-  "description": "Integrasi database relasional PostgreSQL via Supabase tanpa batas kuota harian, didukung RPC Factory Hard Reset instan.",
+  "title": "Optimasi Boot Dashboard & Anti-Freeze Overlay",
+  "description": "Perbaikan instan overlay loading, inisialisasi database berkecepatan tinggi tanpa hambatan kuota, dan sinkronisasi real-time Supabase.",
   "changelog": [
-    "Migrasi database ke Supabase",
-    "Skema relasional PostgreSQL aktif",
-    "Factory reset via RPC",
-    "Sinkronisasi multi-tabel otomatis",
-    "Sesi login admin terjaga"
+    "Perbaikan permanen overlay loading menggantung",
+    "Inisialisasi dashboard instan tanpa hambatan Firestore",
+    "Sinkronisasi aman ke database Supabase PostgreSQL",
+    "Pembersihan otomatis cache usang pada browser & PWA",
+    "Semua indikator metrik KPI beroperasi normal seketika"
   ]
 }

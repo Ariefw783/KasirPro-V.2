@@ -29,6 +29,9 @@ const $ = (id) => document.getElementById(id);
 let currentActiveView = "dashboard";
 
 async function bootManagement() {
+  // Sembunyikan loader sesegera mungkin
+  hideInitialLoader();
+
   // 1. Verifikasi Sesi Pengguna
   if (!validateAdminSession()) return;
 
@@ -37,24 +40,23 @@ async function bootManagement() {
   setupMobileSidebar();
   setupLogout();
 
-  // 3. Sembunyikan loader awal & periksa banner sandbox
-  hideInitialLoader();
   const currentDbEnv = getDatabaseEnvironment();
   const sandboxBanner = $("banner-sandbox-mode");
   if (sandboxBanner) {
     sandboxBanner.style.display = currentDbEnv === DB_ENVIRONMENTS.SANDBOX ? "flex" : "none";
   }
 
-  // 4. Inisialisasi Database (IndexedDB Cache + Firestore Source of Truth)
+  // 3. Inisialisasi Database (IndexedDB Cache + Supabase/Firestore Source of Truth)
   try {
     await initializeDatabase();
     console.log("[Management] Database siap, menginisialisasi controller modul...");
   } catch (err) {
-    console.error("[Management] Gagal inisialisasi database:", err);
-    window.KasirProDialog?.error("Koneksi Database", "Gagal memuat data utama. Aplikasi berjalan dengan cache lokal.");
+    console.warn("[Management] Menggunakan cache lokal:", err);
+  } finally {
+    hideInitialLoader();
   }
 
-  // 5. Inisialisasi Seluruh Domain Controller secara aman & terisolasi
+  // 4. Inisialisasi Seluruh Domain Controller secara aman & terisolasi
   const modulesToInit = [
     { name: "Dashboard", fn: initDashboardModule },
     { name: "Products", fn: initProductsModule },
@@ -78,7 +80,7 @@ async function bootManagement() {
     }
   });
 
-  // 6. Setup Event Listener Sinkronisasi Database
+  // 5. Setup Event Listener Sinkronisasi Database
   window.addEventListener("kasirpro:database-synced", () => {
     console.log("[Management] Event kasirpro:database-synced diterima, menyegarkan tampilan:", currentActiveView);
     refreshCurrentView();
@@ -88,11 +90,14 @@ async function bootManagement() {
     refreshCurrentView();
   });
 
-  // 7. Setup Navigasi Sub-proses Khusus
+  // 6. Setup Navigasi Sub-proses Khusus
   setupSubProcessNavigation();
 
-  // 8. Set active view
+  // 7. Set active view & render dashboard langsung
   switchView("dashboard");
+  try {
+    renderDashboard();
+  } catch (_) {}
 }
 
 function setupSubProcessNavigation() {
@@ -294,6 +299,9 @@ function setupLogout() {
     location.replace("../index.html");
   });
 }
+
+// Tutup loader seawal mungkin
+hideInitialLoader();
 
 // Jalankan saat dokumen siap
 if (document.readyState === "loading") {
