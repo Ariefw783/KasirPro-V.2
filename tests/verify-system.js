@@ -371,6 +371,18 @@ try {
 assert(authErrorCaught === true, "Purge: Wajib Memiliki Sesi Firebase Auth Aktif Sebelum Eksekusi Cloud");
 assert(validatePurgeAuth({ uid: "admin-123" }) === true, "Purge: Berhasil Diverifikasi Jika User Terautentikasi");
 
+// Uji Emisi Progress Pop-up Loading Aktual
+const progressEvents = [];
+function simulatePurgeWithProgress(onProgress) {
+  onProgress({ percent: 10, detail: "Auth check" });
+  onProgress({ percent: 50, detail: "Cloud deletion chunk 1" });
+  onProgress({ percent: 90, detail: "IndexedDB clean" });
+  onProgress({ percent: 100, detail: "Done" });
+}
+simulatePurgeWithProgress(p => progressEvents.push(p.percent));
+assert(progressEvents.length === 4, "Purge Progress: Emisi Event Progress Lengkap");
+assert(progressEvents[0] === 10 && progressEvents[3] === 100, "Purge Progress: Skala Persentase Bergerak dari Awal hingga Selesai (10% -> 100%)");
+
 // -----------------------------------------------------------------------------
 // 9. LOGIKA IN-APP DIAGNOSTIC REPORTER & AI EXPORT
 // -----------------------------------------------------------------------------

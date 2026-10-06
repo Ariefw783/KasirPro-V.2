@@ -924,6 +924,24 @@ export async function deletePurchaseInvoice(invoiceIdOrNumber) {
 export async function purgeTestingTransactions(options = {}) {
   requireOnline();
 
+  const {
+    clearInvoices = true,
+    clearMovements = true,
+    clearSales = true,
+    clearOpnames = true,
+    resetProductStock = true,
+    onProgress = null
+  } = options;
+
+  if (typeof onProgress === "function") {
+    onProgress({
+      title: "Pembersihan Data Uji Coba",
+      message: "Memvalidasi sesi Administrator cloud...",
+      percent: 8,
+      detail: "Otentikasi kredensial Firebase..."
+    });
+  }
+
   // 1. Pastikan sesi Firebase Auth aktif sebelum mengeksekusi operasi Cloud
   let user = firebaseAuth.currentUser;
   if (!user) {
@@ -940,13 +958,14 @@ export async function purgeTestingTransactions(options = {}) {
     console.warn("[DatabaseStore] Profil admin check:", profErr?.message || profErr);
   }
 
-  const {
-    clearInvoices = true,
-    clearMovements = true,
-    clearSales = true,
-    clearOpnames = true,
-    resetProductStock = true
-  } = options;
+  if (typeof onProgress === "function") {
+    onProgress({
+      title: "Pembersihan Data Uji Coba",
+      message: "Menyiapkan daftar dokumen cloud...",
+      percent: 20,
+      detail: "Menghitung dokumen transaksi & stok..."
+    });
+  }
 
   const invoices = inMemory.get(STORE_KEYS.invoices) || [];
   const movements = inMemory.get(STORE_KEYS.movements) || [];
@@ -1023,8 +1042,20 @@ export async function purgeTestingTransactions(options = {}) {
 
   // Commit deletion in chunks (maks 200 per batch untuk stabilitas)
   const chunkSize = 200;
+  const totalChunks = Math.max(1, Math.ceil(ops.length / chunkSize));
   for (let i = 0; i < ops.length; i += chunkSize) {
     const chunk = ops.slice(i, i + chunkSize);
+    const chunkIdx = Math.floor(i / chunkSize) + 1;
+    if (typeof onProgress === "function") {
+      const pct = 20 + Math.round((chunkIdx / totalChunks) * 60);
+      onProgress({
+        title: "Pembersihan Data Uji Coba",
+        message: `Membersihkan Cloud Firestore (Batch ${chunkIdx} dari ${totalChunks})...`,
+        percent: pct,
+        detail: `${Math.min(i + chunk.length, ops.length)} dari ${ops.length} dokumen diproses`
+      });
+    }
+
     const batch = writeBatch(firebaseDb);
     for (const item of chunk) {
       try {
@@ -1041,7 +1072,7 @@ export async function purgeTestingTransactions(options = {}) {
     try {
       await batch.commit();
     } catch (commitErr) {
-      console.error(`[DatabaseStore] Gagal commit batch pembersihan ke Firestore (chunk ${Math.floor(i / chunkSize) + 1}):`, commitErr);
+      console.error(`[DatabaseStore] Gagal commit batch pembersihan ke Firestore (chunk ${chunkIdx}):`, commitErr);
       if (commitErr?.code === "permission-denied" || commitErr?.message?.toLowerCase().includes("permission")) {
         throw new Error("Akses Cloud Ditolak (Missing or insufficient permissions). Pastikan akun login Anda adalah Administrator resmi (apotekdoaibu.v2@gmail.com) dengan status aktif di database Firestore.");
       }
@@ -1049,14 +1080,22 @@ export async function purgeTestingTransactions(options = {}) {
     }
   }
 
-  // 2. Bersihkan In-Memory
+  // 4. Bersihkan In-Memory
+  if (typeof onProgress === "function") {
+    onProgress({
+      title: "Pembersihan Data Uji Coba",
+      message: "Mengosongkan cache lokal & IndexedDB...",
+      percent: 88,
+      detail: "Menyinkronkan penyimpanan perangkat..."
+    });
+  }
   if (clearInvoices) inMemory.set(STORE_KEYS.invoices, []);
   if (clearMovements) inMemory.set(STORE_KEYS.movements, []);
   if (clearSales) inMemory.set(STORE_KEYS.sales, []);
   if (clearOpnames) inMemory.set(STORE_KEYS.opnames, []);
   if (resetProductStock) inMemory.set(STORE_KEYS.master, master);
 
-  // 3. Bersihkan IndexedDB
+  // 5. Bersihkan IndexedDB
   const clearPromises = [];
   if (clearInvoices) clearPromises.push(indexedDBStore.clearStore(STORES.INVOICES));
   if (clearMovements) clearPromises.push(indexedDBStore.clearStore(STORES.MOVEMENTS));
@@ -1070,6 +1109,15 @@ export async function purgeTestingTransactions(options = {}) {
 
   if (resetProductStock && products.length) {
     await indexedDBStore.putMany(STORES.PRODUCTS, products);
+  }
+
+  if (typeof onProgress === "function") {
+    onProgress({
+      title: "Pembersihan Selesai",
+      message: "Seluruh database berhasil dibersihkan!",
+      percent: 100,
+      detail: "Menyelesaikan proses..."
+    });
   }
 
   return delCount;

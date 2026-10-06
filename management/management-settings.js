@@ -128,13 +128,24 @@ async function handlePurgeTestingData() {
   }
 
   try {
+    window.KasirProDialog?.showProgress(
+      "Pembersihan Data Uji Coba",
+      "Memulai pembersihan data transaksi...",
+      { percent: 5, detail: "Menghubungkan ke server database..." }
+    );
+
     const res = await purgeTestingTransactions({
       clearInvoices: true,
       clearMovements: true,
       clearSales: true,
       clearOpnames: true,
-      resetProductStock: true
+      resetProductStock: true,
+      onProgress: (p) => {
+        window.KasirProDialog?.updateProgress(p);
+      }
     });
+
+    window.KasirProDialog?.closeProgress();
 
     window.KasirProDialog?.success(
       "Pembersihan Berhasil",
@@ -146,9 +157,11 @@ async function handlePurgeTestingData() {
       window.location.reload();
     }, 1200);
   } catch (err) {
+    window.KasirProDialog?.closeProgress();
     console.error("[Settings] Gagal membersihkan data uji coba:", err);
     window.KasirProDialog?.error("Gagal Membersihkan", err.message || "Terjadi kesalahan saat membersihkan data.");
   } finally {
+    window.KasirProDialog?.closeProgress();
     if (btn) {
       btn.disabled = false;
       btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Bersihkan Semua Data Uji Coba';

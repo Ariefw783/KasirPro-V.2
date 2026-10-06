@@ -1,14 +1,14 @@
 {
-  "version": "2.2.15",
-  "build": "20261006.13",
+  "version": "2.2.16",
+  "build": "20261006.14",
   "releaseDate": "06 Oktober 2026",
-  "title": "Cloud Purge Permission & Resilience",
-  "description": "Fix missing or insufficient permissions on testing purge by ensuring auth session, admin profile, and safe document deletion.",
+  "title": "Purge Progress Overlay Modal",
+  "description": "Add real-time progress loading overlay during testing purge to prevent accidental interruptions.",
   "changelog": [
-    "Fix cloud purge auth validation",
-    "Ensure admin profile in cloud",
-    "Delete active stocks on purge",
-    "Handle permission denial gracefully",
-    "Sync PWA cache v63"
+    "Add real-time purge progress modal",
+    "Lock UI during cloud purge",
+    "Report chunked batch progress visually",
+    "Verify 50 system audit tests",
+    "Sync PWA cache v64"
   ]
 }
