@@ -1505,7 +1505,7 @@ body.product-detail-open{overflow:hidden;}
 .product-row:focus{outline:2px solid rgba(37,99,235,.35);outline-offset:-2px;}
 .product-row:hover{background:#f8fbff!important;}
 .product-detail-overlay{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(15,23,42,.48);}
-.product-detail-overlay[hidden]{display:none;}
+.product-detail-overlay[hidden]{display:none!important;}
 .product-detail-panel{width:min(760px,100%);max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border);border-radius:14px;background:#fff;box-shadow:0 24px 70px rgba(15,23,42,.2);}
 .product-detail-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px;border-bottom:1px solid var(--border);}
 .product-detail-label{display:block;margin-bottom:4px;color:var(--primary);font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;}

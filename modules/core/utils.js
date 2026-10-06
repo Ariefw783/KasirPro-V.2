@@ -156,21 +156,37 @@ export function stringSimilarity(s1, s2) {
   if (!str1 || !str2) return 0;
   if (str1 === str2) return 1;
 
+  const len1 = str1.length;
+  const len2 = str2.length;
+  const maxLen = Math.max(len1, len2);
+  const minLen = Math.min(len1, len2);
+
+  // Fast length pruning: jika selisih panjang terlalu besar, skor similarity tidak mungkin tinggi
+  if (maxLen > 0 && (minLen / maxLen) < 0.45) {
+    return Math.max(0, minLen / maxLen * 0.5);
+  }
+
   // 1. Karakter Levenshtein Ratio
-  const maxLen = Math.max(str1.length, str2.length);
   const levDist = levenshteinDistance(str1, str2);
   const charScore = Math.max(0, 1 - (levDist / maxLen));
 
-  // 2. Token-level Alignment Score
+  // 2. Token-level Alignment Score (dioptimasi dengan Set $O(1)$)
   const tokens1 = str1.split(/\s+/).filter(Boolean);
   const tokens2 = str2.split(/\s+/).filter(Boolean);
   if (!tokens1.length || !tokens2.length) return charScore;
 
+  const set2 = new Set(tokens2);
+  const set1 = new Set(tokens1);
+
   let sumScore1 = 0;
   for (const t1 of tokens1) {
+    if (set2.has(t1)) {
+      sumScore1 += 1;
+      continue;
+    }
     let maxTScore = 0;
     for (const t2 of tokens2) {
-      if (t1 === t2) { maxTScore = 1; break; }
+      if (Math.abs(t1.length - t2.length) > 3) continue;
       const dist = levenshteinDistance(t1, t2);
       const score = Math.max(0, 1 - dist / Math.max(t1.length, t2.length));
       if (score > maxTScore) maxTScore = score;
@@ -181,9 +197,13 @@ export function stringSimilarity(s1, s2) {
 
   let sumScore2 = 0;
   for (const t2 of tokens2) {
+    if (set1.has(t2)) {
+      sumScore2 += 1;
+      continue;
+    }
     let maxTScore = 0;
     for (const t1 of tokens1) {
-      if (t1 === t2) { maxTScore = 1; break; }
+      if (Math.abs(t1.length - t2.length) > 3) continue;
       const dist = levenshteinDistance(t1, t2);
       const score = Math.max(0, 1 - dist / Math.max(t1.length, t2.length));
       if (score > maxTScore) maxTScore = score;
@@ -212,6 +232,7 @@ export function findBestProductMatch(searchName, masterProducts = [], threshold 
     return { matchType: "none", score: 0, product: null };
   }
 
+  const queryTokens = new Set(normQuery.split(/\s+/).filter(Boolean));
   let bestMatch = null;
   let bestScore = 0;
 
@@ -230,9 +251,16 @@ export function findBestProductMatch(searchName, masterProducts = [], threshold 
     }
 
     // 2. Exact match pada Nama Ternormalisasi
-    const normMaster = normalizeProductName(pName);
+    const normMaster = p._normName || normalizeProductName(pName);
     if (normQuery === normMaster) {
       return { matchType: "exact", score: 1, product: p };
+    }
+
+    // Fast heuristic pruning: jika selisih panjang > 40%, lewati perhitungan berat
+    const lenQ = normQuery.length;
+    const lenM = normMaster.length;
+    if (Math.min(lenQ, lenM) / Math.max(lenQ, lenM) < 0.55) {
+      continue;
     }
 
     // 3. Fuzzy similarity

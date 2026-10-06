@@ -1,14 +1,14 @@
 {
-  "version": "2.2.18",
-  "build": "20261006.16",
+  "version": "2.2.19",
+  "build": "20261006.17",
   "releaseDate": "06 Oktober 2026",
-  "title": "Runtime Stability & Multi-Tier Pricing Fix",
-  "description": "Resolved invoice and settings purge runtime handler issues, aligned multi-tier pricing calculation strictly with invoice units, and enforced live currency dot formatting.",
+  "title": "TSV Modal Close & Ultra-Fast Matching",
+  "description": "Fix TSV import modal close/cancel buttons, remove heavy CSS backdrop blur, and optimize TSV product matching with pre-indexed lookups.",
   "changelog": [
-    "Fix manual invoice modal crash",
-    "Fix testing purge button listener",
-    "Restore tiered price conversion logic",
-    "Add live dots to prices",
-    "Isolate module initialization errors"
+    "Fix TSV modal close buttons",
+    "Support backdrop click and Escape",
+    "Remove heavy CSS backdrop blur",
+    "Optimize TSV matching speed",
+    "Add pre-indexed product lookups"
   ]
 }

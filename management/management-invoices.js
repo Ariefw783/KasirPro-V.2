@@ -42,8 +42,30 @@ function bindEvents() {
   $("btn-cancel-manual-inv")?.addEventListener("click", closeManualInvoiceModal);
   $("btn-manual-add-row")?.addEventListener("click", () => addManualInvoiceRow());
   $("btn-paste-tsv-inv")?.addEventListener("click", handleTriggerPasteTsv);
-  $("btn-close-paste-tsv-modal")?.addEventListener("click", closePasteTsvModal);
-  $("btn-cancel-paste-tsv")?.addEventListener("click", closePasteTsvModal);
+  $("btn-close-paste-tsv-modal")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closePasteTsvModal();
+  });
+  $("btn-cancel-paste-tsv")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    closePasteTsvModal();
+  });
+  $("modal-paste-tsv")?.addEventListener("click", (e) => {
+    if (e.target === $("modal-paste-tsv")) {
+      closePasteTsvModal();
+    }
+  });
+
+  // Delegasi klik fallback untuk menutup modal paste TSV jika event langsung terlewat
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("#btn-close-paste-tsv-modal") || e.target.closest("#btn-cancel-paste-tsv")) {
+      e.preventDefault();
+      closePasteTsvModal();
+    }
+  });
+
   $("btn-do-paste-tsv")?.addEventListener("click", () => {
     const textVal = $("tsv-paste-textarea")?.value;
     closePasteTsvModal();
@@ -52,8 +74,18 @@ function bindEvents() {
     }
   });
 
-  // Shortcut Paste (Ctrl + V / Cmd + V) saat modal faktur aktif
+  // Shortcut Paste (Ctrl + V / Cmd + V) & Escape saat modal faktur aktif
   document.addEventListener("keydown", (e) => {
+    // Escape untuk menutup modal paste TSV jika terbuka
+    if (e.key === "Escape") {
+      const pasteModal = $("modal-paste-tsv");
+      if (pasteModal && !pasteModal.hidden) {
+        e.preventDefault();
+        closePasteTsvModal();
+        return;
+      }
+    }
+
     const modalInv = $("modal-manual-invoice");
     if (!modalInv || modalInv.hidden) return;
 
@@ -620,11 +652,15 @@ function openPasteTsvModal(prefill = "") {
     setTimeout(() => ta.focus(), 60);
   }
   modal.hidden = false;
+  modal.style.display = "grid";
 }
 
 function closePasteTsvModal() {
   const modal = $("modal-paste-tsv");
-  if (modal) modal.hidden = true;
+  if (modal) {
+    modal.hidden = true;
+    modal.style.display = "none";
+  }
 }
 
 /**
@@ -666,6 +702,33 @@ function processTsvData(rawText) {
   }
 
   const prods = cachedMasterProducts || (readStore(STORE_KEYS.master, {})?.produk || []);
+
+  // Pre-indexing Master Produk untuk pencocokan instan (< 10ms)
+  const exactNormMap = new Map();
+  const barcodeMap = new Map();
+  const codeMap = new Map();
+  const candidateList = [];
+
+  for (const p of prods) {
+    if (p._isDeleted) continue;
+    const pCode = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.code || p.id);
+    const pBarcode = norm(p["Barcode"] || p.barcode);
+    const pName = p["Nama Produk"] || p.name || "";
+    const normPName = normalizeProductName(pName);
+
+    if (pBarcode && !barcodeMap.has(pBarcode)) barcodeMap.set(pBarcode, p);
+    if (pCode && !codeMap.has(pCode)) codeMap.set(pCode, p);
+    if (normPName && !exactNormMap.has(normPName)) exactNormMap.set(normPName, p);
+
+    if (normPName) {
+      candidateList.push({
+        product: p,
+        normName: normPName,
+        tokens: new Set(normPName.split(/\s+/).filter(Boolean)),
+        len: normPName.length
+      });
+    }
+  }
 
   // Helper konversi tanggal kedaluwarsa ke YYYY-MM-DD
   const parseExpDate = (rawExp) => {
@@ -726,8 +789,49 @@ function processTsvData(rawText) {
     }
     const rawSubtotal = Math.max(0, Math.round((rawQty * rawBuyPrice) - rawDiscRp));
 
-    // Smart Product Matching dengan Master Produk Lokal
-    const match = findBestProductMatch(rawName, prods, 0.8);
+    // Smart Product Matching dengan Pre-indexed Master Data
+    const normRaw = norm(rawName);
+    const normQuery = normalizeProductName(rawName);
+    let match = null;
+
+    if (barcodeMap.has(normRaw)) {
+      match = { matchType: "exact", score: 1, product: barcodeMap.get(normRaw) };
+    } else if (codeMap.has(normRaw)) {
+      match = { matchType: "exact", score: 1, product: codeMap.get(normRaw) };
+    } else if (exactNormMap.has(normQuery)) {
+      match = { matchType: "exact", score: 1, product: exactNormMap.get(normQuery) };
+    } else {
+      // Fuzzy matching teroptimasi dengan candidate filtering
+      let bestFuzzyMatch = null;
+      let bestFuzzyScore = 0;
+      const qTokens = new Set(normQuery.split(/\s+/).filter(Boolean));
+      const lenQ = normQuery.length;
+
+      for (const cand of candidateList) {
+        if (Math.min(lenQ, cand.len) / Math.max(lenQ, cand.len) < 0.55) continue;
+
+        let commonTokens = 0;
+        for (const qt of qTokens) {
+          if (cand.tokens.has(qt)) commonTokens++;
+        }
+        if (qTokens.size >= 2 && commonTokens === 0) continue;
+
+        const score = stringSimilarity(normQuery, cand.normName);
+        if (score > bestFuzzyScore) {
+          bestFuzzyScore = score;
+          bestFuzzyMatch = cand.product;
+        }
+      }
+
+      if (bestFuzzyScore >= 0.999) {
+        match = { matchType: "exact", score: 1, product: bestFuzzyMatch };
+      } else if (bestFuzzyScore >= 0.8) {
+        match = { matchType: "fuzzy", score: bestFuzzyScore, product: bestFuzzyMatch };
+      } else {
+        match = { matchType: "none", score: bestFuzzyScore, product: null };
+      }
+    }
+
     let finalCode = "";
     let finalBarcode = "";
     let matchStatus = "new";
