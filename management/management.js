@@ -131,10 +131,13 @@ function setupSubProcessNavigation() {
 
 function validateAdminSession() {
   try {
-    const raw = sessionStorage.getItem("kasirpro_session");
+    const raw = sessionStorage.getItem("kasirpro_session") || localStorage.getItem("kasirpro_session");
     if (!raw) {
       location.replace("../index.html");
       return false;
+    }
+    if (!sessionStorage.getItem("kasirpro_session")) {
+      sessionStorage.setItem("kasirpro_session", raw);
     }
     const session = JSON.parse(raw);
     if (!session || session.role !== "admin") {

@@ -16,6 +16,7 @@ import {
 import { firebaseConfig, kasirProFirebase } from "./firebase-config.js";
 import { firebaseAuth, firebaseDb } from "./firebase-client.js";
 import { documentSegments } from "./database-paths.js";
+import { supabaseDb } from "./supabase-client.js";
 
 const SESSION_KEY = "kasirpro_session";
 const ADMIN_EMAIL = kasirProFirebase.adminGmail;
@@ -98,8 +99,6 @@ export async function ensureInitialAdminProfile(user, requestedUsername = "admin
     if (!verified.exists()) throw new Error("Profil Administrator gagal dibuat di Firestore.");
     return verified.data();
 }
-
-import { supabaseDb } from "./supabase-client.js";
 
 export async function signInKasirPro({ username, password, expectedRole }) {
     const clean = cleanUsername(username);
