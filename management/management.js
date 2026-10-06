@@ -9,6 +9,7 @@
 import "../app-dialog.js";
 import { signOutKasirPro, waitForFirebaseUser } from "../modules/database/auth.js";
 import { initializeDatabase, readStore, STORE_KEYS } from "../modules/database/database-store.js";
+import { getDatabaseEnvironment, DB_ENVIRONMENTS } from "../modules/database/database-paths.js";
 
 import { initDashboardModule, renderDashboard } from "./management-dashboard.js";
 import { initProductsModule, renderProducts } from "./management-products.js";
@@ -36,8 +37,13 @@ async function bootManagement() {
   setupMobileSidebar();
   setupLogout();
 
-  // 3. Sembunyikan loader awal
+  // 3. Sembunyikan loader awal & periksa banner sandbox
   hideInitialLoader();
+  const currentDbEnv = getDatabaseEnvironment();
+  const sandboxBanner = $("banner-sandbox-mode");
+  if (sandboxBanner) {
+    sandboxBanner.style.display = currentDbEnv === DB_ENVIRONMENTS.SANDBOX ? "flex" : "none";
+  }
 
   // 4. Inisialisasi Database (IndexedDB Cache + Firestore Source of Truth)
   try {

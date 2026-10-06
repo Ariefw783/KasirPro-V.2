@@ -9,8 +9,15 @@
  * 4. Mode offline hanya bisa membaca data dari cache ini.
  */
 
-const DB_NAME = "KasirProLocalDB_v2";
+import { getDatabaseEnvironment, DB_ENVIRONMENTS } from "../database/database-paths.js";
+
+const BASE_DB_NAME = "KasirProLocalDB_v2";
 const DB_VERSION = 3;
+
+export function getLocalDbName() {
+  const env = getDatabaseEnvironment();
+  return env === DB_ENVIRONMENTS.SANDBOX ? `${BASE_DB_NAME}_sandbox` : BASE_DB_NAME;
+}
 
 export const STORES = Object.freeze({
   PRODUCTS: "products",
@@ -33,12 +40,30 @@ class IndexedDBStore {
     this._openPromise = null;
   }
 
+  close() {
+    if (this.db) {
+      try { this.db.close(); } catch {}
+      this.db = null;
+    }
+    this._openPromise = null;
+  }
+
+  async deleteSandboxDatabase() {
+    this.close();
+    return new Promise((resolve) => {
+      const req = indexedDB.deleteDatabase(`${BASE_DB_NAME}_sandbox`);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => resolve(false);
+      req.onblocked = () => resolve(false);
+    });
+  }
+
   async openDB() {
     if (this.db) return this.db;
     if (this._openPromise) return this._openPromise;
 
     this._openPromise = new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
+      const request = indexedDB.open(getLocalDbName(), DB_VERSION);
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;

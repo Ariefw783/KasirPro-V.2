@@ -182,6 +182,17 @@
 
     <div class="main-area">
 
+        <!-- Banner Indikator Mode Uji Coba (Sandbox) -->
+        <div id="banner-sandbox-mode" style="background:#fffbeb;border-bottom:1px solid #fde68a;padding:10px 20px;display:none;align-items:center;justify-content:space-between;font-size:12.5px;color:#92400e;z-index:99;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <i class="fa-solid fa-flask" style="color:#d97706;font-size:16px;"></i>
+                <span><strong>MODE UJI COBA (SANDBOX) AKTIF:</strong> Anda sedang bekerja pada jalur database <em>'Kasir Pro V2 / Toko Pengujian'</em>. Transaksi &amp; mutasi stok tidak mempengaruhi database utama.</span>
+            </div>
+            <button type="button" id="btn-banner-switch-prod" class="button button-small" style="background:#fff;border:1px solid #fde68a;color:#b45309;font-weight:700;padding:5px 12px;cursor:pointer;">
+                <i class="fa-solid fa-arrow-right-arrow-left"></i> Beralih ke Database Utama
+            </button>
+        </div>
+
         <header class="topbar">
 
             <div class="topbar-left">
@@ -2478,6 +2489,44 @@
                             </div>
                         </section>
                     </form>
+
+                    <!-- PANEL JALUR DATABASE (DUAL ENVIRONMENT: UTAMA VS PENGUJIAN) -->
+                    <section class="import-panel settings-section" style="max-width:760px;margin:24px auto 0;padding:24px;border-left:4px solid #0284c7;">
+                        <div class="panel-header" style="margin-bottom:16px;">
+                            <div>
+                                <h3 style="margin:0 0 6px;font-size:16px;color:#0369a1;"><i class="fa-solid fa-database"></i> Jalur Database (Dual Environment)</h3>
+                                <p style="margin:0;font-size:13px;color:#64748b;">Pilih jalur database yang aktif. Gunakan <strong>Database Pengujian (Sandbox)</strong> untuk mencoba transaksi &amp; faktur tanpa mencemari data riil toko.</p>
+                            </div>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:12px;margin-bottom:16px;">
+                            <label style="border:2px solid #10b981;border-radius:10px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:6px;background:#f0fdf4;" id="lbl-env-prod">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <input type="radio" name="db-environment-radio" value="production" id="radio-env-prod" style="width:16px;height:16px;accent-color:#059669;" checked>
+                                    <strong style="color:#0f172a;font-size:13.5px;"><i class="fa-solid fa-shield-halved" style="color:#059669;"></i> Database Utama (Produksi)</strong>
+                                </div>
+                                <span style="font-size:11.5px;color:#475569;line-height:1.4;">Jalur: <code>Kasir Pro V2 / Toko Utama</code><br>Operasional apotek riil. Data terlindungi dan terisolasi dari uji coba.</span>
+                            </label>
+
+                            <label style="border:2px solid #e2e8f0;border-radius:10px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:6px;background:#fff;" id="lbl-env-sand">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <input type="radio" name="db-environment-radio" value="sandbox" id="radio-env-sand" style="width:16px;height:16px;accent-color:#d97706;">
+                                    <strong style="color:#0f172a;font-size:13.5px;"><i class="fa-solid fa-flask" style="color:#d97706;"></i> Database Pengujian (Sandbox)</strong>
+                                </div>
+                                <span style="font-size:11.5px;color:#475569;line-height:1.4;">Jalur: <code>Kasir Pro V2 / Toko Pengujian</code><br>Tempat simulasi &amp; coba-coba faktur. Bebas direset kapan pun.</span>
+                            </label>
+                        </div>
+
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                            <div>
+                                <strong style="font-size:12.5px;color:#334155;"><i class="fa-solid fa-clone text-primary"></i> Salin Master Obat ke Sandbox</strong>
+                                <p style="margin:2px 0 0 0;font-size:11.5px;color:#64748b;">Salin daftar obat &amp; supplier dari Database Utama ke Database Pengujian (stok di-set ke 0) agar siap diuji.</p>
+                            </div>
+                            <button type="button" id="btn-clone-master-to-sandbox" class="button button-small button-secondary" style="font-weight:700;">
+                                <i class="fa-solid fa-copy"></i> Salin Master ke Sandbox
+                            </button>
+                        </div>
+                    </section>
 
                     <!-- PANEL PEMBERSIHAN DATA UJI COBA (TESTING DATA CLEANER) -->
                     <section class="import-panel settings-section" style="max-width:760px;margin:24px auto 0;padding:24px;border-left:4px solid #ef4444;">

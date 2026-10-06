@@ -17,15 +17,70 @@ export const COLLECTION_NAMES = Object.freeze({
     activeStocks: "StokAktif"
 });
 
-export const ROOT_DOCUMENT_PATH = Object.freeze([
-    kasirProFirebase.rootCollection,
-    kasirProFirebase.storeDocument
-]);
+export const DB_ENVIRONMENTS = Object.freeze({
+    PRODUCTION: "production",
+    SANDBOX: "sandbox"
+});
+
+export const STORE_DOCUMENTS = Object.freeze({
+    production: kasirProFirebase.storeDocument || "Toko Utama",
+    sandbox: kasirProFirebase.sandboxStoreDocument || "Toko Pengujian"
+});
+
+let memoryEnvFallback = null;
+
+export function getDatabaseEnvironment() {
+    try {
+        if (typeof localStorage !== "undefined") {
+            return localStorage.getItem("kasirpro_db_env") || DB_ENVIRONMENTS.PRODUCTION;
+        }
+    } catch {}
+    return memoryEnvFallback || DB_ENVIRONMENTS.PRODUCTION;
+}
+
+export function setDatabaseEnvironment(env) {
+    const valid = env === DB_ENVIRONMENTS.SANDBOX ? DB_ENVIRONMENTS.SANDBOX : DB_ENVIRONMENTS.PRODUCTION;
+    memoryEnvFallback = valid;
+    try {
+        if (typeof localStorage !== "undefined") {
+            localStorage.setItem("kasirpro_db_env", valid);
+        }
+    } catch (e) {
+        console.warn("Gagal menyimpan environment:", e);
+    }
+    return valid;
+}
+
+export function getActiveStoreDocument() {
+    const env = getDatabaseEnvironment();
+    return env === DB_ENVIRONMENTS.SANDBOX ? STORE_DOCUMENTS.sandbox : STORE_DOCUMENTS.production;
+}
+
+export function getRootDocumentPath() {
+    return [
+        kasirProFirebase.rootCollection,
+        getActiveStoreDocument()
+    ];
+}
+
+export const ROOT_DOCUMENT_PATH = new Proxy([kasirProFirebase.rootCollection, kasirProFirebase.storeDocument], {
+    get(target, prop) {
+        const active = getRootDocumentPath();
+        if (prop in active) return active[prop];
+        return target[prop];
+    }
+});
 
 export function collectionSegments(collectionKey) {
     const collectionName = COLLECTION_NAMES[collectionKey];
     if (!collectionName) throw new Error(`Koleksi KasirPro tidak dikenal: ${collectionKey}`);
-    return [...ROOT_DOCUMENT_PATH, collectionName];
+    return [...getRootDocumentPath(), collectionName];
+}
+
+export function storeDocumentSegments(storeDocName, collectionKey) {
+    const collectionName = COLLECTION_NAMES[collectionKey];
+    if (!collectionName) throw new Error(`Koleksi KasirPro tidak dikenal: ${collectionKey}`);
+    return [kasirProFirebase.rootCollection, storeDocName, collectionName];
 }
 
 export function collectionPath(collectionKey) {
