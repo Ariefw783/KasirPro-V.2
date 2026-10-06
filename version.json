@@ -1,14 +1,14 @@
 {
-  "version": "2.2.7",
-  "build": "20261006.5",
+  "version": "2.2.8",
+  "build": "20261006.6",
   "releaseDate": "06 Oktober 2026",
-  "title": "Optimasi Responsivitas Tombol Header & Aksi Tabel Mobile",
-  "description": "Rilis perbaikan layout tombol aksi atas tabel (Stock Opname, Produk, Faktur) di perangkat mobile/PWA sehingga seluruh tombol tampil penuh tanpa terpotong.",
+  "title": "Mobile Stock Sub-tabs & Concise English Changelog",
+  "description": "Responsiveness fix for stock navigation sub-tabs and standardizing changelog format to concise English items (max 5 words).",
   "changelog": [
-    "Perbaikan Layout Tombol Header Aksi Atas Tabel di Ponsel & PWA",
-    "Restrukturisasi Module Header Menjadi Vertikal Full-Width pada Layar Mobile",
-    "Pencegahan Pemotongan Tombol Import Hasil Opname & Sesi Opname Manual",
-    "Penyelarasan Media Query Mobile hingga Breakpoint 820px",
-    "Peningkatan Area Sentuh Tombol Aksi Mobile Menjadi Minimal 42px"
+    "Fix mobile stock navigation layout",
+    "Prevent header action button clipping",
+    "Separate active product status filters",
+    "Sanitize Firestore recursive data payload",
+    "Add in-app diagnostic AI export"
   ]
 }

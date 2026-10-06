@@ -1948,8 +1948,9 @@ body.product-detail-open{overflow:hidden;}
 .ops-total-box { display:flex; justify-content:flex-end; align-items:center; gap:14px; margin-top:12px; padding:12px; border-radius:8px; background:var(--bg-soft); }
 .ops-total-box span { color:var(--text-muted); font-size:.65rem; }
 .ops-total-box strong { font-size:.9rem; }
-.invoice-item-entry { margin-bottom:10px; }
 .topbar-pos-link { text-decoration:none; min-height:32px; }
+.stock-sub-tabs { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+.stock-sub-tabs .button { padding:8px 18px; font-size:0.75rem; font-weight:700; }
 @media (max-width: 980px) {
     .ops-grid.cols-3 { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .ops-grid.cols-6 { grid-template-columns:repeat(2,minmax(0,1fr)); }

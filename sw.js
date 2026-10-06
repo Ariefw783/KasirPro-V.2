@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v55-mobile-header-buttons";
+const CACHE_VERSION = "kasirpro-pwa-v56-stock-subtabs-english-changelog";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

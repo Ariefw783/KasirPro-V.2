@@ -91,7 +91,8 @@
   .panel-actions,
   .settings-bottom-actions,
   .sales-pagination,
-  .sales-detail-actions {
+  .sales-detail-actions,
+  .stock-sub-tabs {
     display: flex !important;
     flex-direction: column !important;
     align-items: stretch !important;
@@ -107,6 +108,11 @@
   .module-header-actions .button,
   .module-header-actions button,
   .module-header-actions a,
+  .stock-sub-tabs > *,
+  .stock-sub-tabs .button,
+  .stock-sub-tabs button,
+  #tab-sub-stock-current,
+  #tab-sub-stock-movements,
   #opname-export-button,
   #go-import-opname,
   #btn-new-opname-session,
