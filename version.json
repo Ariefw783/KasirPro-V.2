@@ -1,14 +1,14 @@
 {
-  "version": "2.2.13",
-  "build": "20261006.11",
+  "version": "2.2.14",
+  "build": "20261006.12",
   "releaseDate": "06 Oktober 2026",
-  "title": "Invoice-Gated Price Editing & Queue Workflow",
-  "description": "Lock price editing for inactive products without invoices and highlight edit button for pending price queue.",
+  "title": "Cloud Purge Permission & Session Resilience",
+  "description": "Fix cloud purge auth validation, delete active stock documents on purge, and improve diagnostic session detection.",
   "changelog": [
-    "Lock price edit without invoice",
-    "Open price edit for pending",
-    "Strict 3-status queue workflow",
-    "Sync real-time PWA app version",
+    "Fix cloud purge auth validation",
+    "Delete active stocks on purge",
+    "Handle cloud permissions error gracefully",
+    "Fix diagnostic session role detection",
     "Verify full audit test suite"
   ]
 }

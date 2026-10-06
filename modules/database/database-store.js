@@ -923,6 +923,16 @@ export async function deletePurchaseInvoice(invoiceIdOrNumber) {
  */
 export async function purgeTestingTransactions(options = {}) {
   requireOnline();
+
+  // Pastikan sesi Firebase aktif sebelum mengeksekusi operasi cloud
+  let user = firebaseAuth.currentUser;
+  if (!user) {
+    user = await waitForFirebaseUser();
+  }
+  if (!user) {
+    throw new Error("Sesi Firebase belum aktif atau telah kedaluwarsa. Silakan muat ulang halaman atau login kembali sebagai Administrator.");
+  }
+
   const {
     clearInvoices = true,
     clearMovements = true,
@@ -942,7 +952,7 @@ export async function purgeTestingTransactions(options = {}) {
     deletedSales: clearSales ? sales.length : 0
   };
 
-  // 1. Eksekusi Batch Deletion di Firestore Cloud (maks 400 per commit)
+  // 1. Eksekusi Batch Deletion di Firestore Cloud (maks 350 per commit)
   const ops = [];
   if (clearInvoices) {
     for (const inv of invoices) {
@@ -969,11 +979,18 @@ export async function purgeTestingTransactions(options = {}) {
   if (resetProductStock) {
     for (const p of products) {
       const code = norm(p["Kode Produk"]);
+      const prevStock = num(p["Stok Awal"]);
       p["Stok Awal"] = 0;
       activeStockIndex.set(code, 0);
       const pId = String(p.id || p["Kode Produk"]).replace(/[\/\\]/g, "_").trim();
-      ops.push({ coll: "products", id: pId, updateData: { "Stok Awal": 0, updatedAt: new Date().toISOString() } });
-      ops.push({ coll: "activeStocks", id: readableDocumentId("stok", code), updateData: { quantity: 0, updatedAt: new Date().toISOString() } });
+
+      // Update dokumen master produk jika memiliki saldo sebelumnya atau terindeks
+      if (prevStock !== 0 || activeStockIndex.has(code)) {
+        ops.push({ coll: "products", id: pId, updateData: { "Stok Awal": 0, updatedAt: new Date().toISOString() } });
+      }
+
+      // Hapus dokumen StokAktif di Firestore (bukan set parsial agar tidak melanggar validActiveStock)
+      ops.push({ coll: "activeStocks", id: readableDocumentId("stok", code) });
     }
   }
 
@@ -990,9 +1007,19 @@ export async function purgeTestingTransactions(options = {}) {
         } else {
           batch.delete(ref);
         }
-      } catch (_) {}
+      } catch (err) {
+        console.warn(`[DatabaseStore] Lewati segmen dokumen [${item.coll}/${item.id}]:`, err);
+      }
     }
-    await batch.commit();
+    try {
+      await batch.commit();
+    } catch (commitErr) {
+      console.error(`[DatabaseStore] Gagal commit batch pembersihan ke Firestore (chunk ${Math.floor(i / chunkSize) + 1}):`, commitErr);
+      if (commitErr?.code === "permission-denied" || commitErr?.message?.toLowerCase().includes("permission")) {
+        throw new Error("Akses Cloud Ditolak: Missing or insufficient permissions. Pastikan akun login Anda adalah Administrator resmi dengan hak akses tulis di database Firestore.");
+      }
+      throw commitErr;
+    }
   }
 
   // 2. Bersihkan In-Memory
