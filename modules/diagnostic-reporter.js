@@ -78,22 +78,35 @@ export const DiagnosticReporter = {
   },
 
   /**
-   * Menghapus laporan berdasarkan ID
+   * Menghapus laporan berdasarkan ID sampai ke akarnya
    */
   deleteReport(id) {
     let list = this.getReports();
     list = list.filter(r => r.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    if (list.length === 0) {
+      localStorage.removeItem(STORAGE_KEY);
+      errorLogBuffer.length = 0;
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    }
     this.updateBadgeCounter();
+    this.showToast("Laporan berhasil dihapus secara permanen.");
     return list;
   },
 
   /**
-   * Menghapus semua riwayat laporan
+   * Menghapus semua riwayat laporan & buffer diagnostik menyeluruh sampai ke akar
    */
   clearAllReports() {
     localStorage.removeItem(STORAGE_KEY);
+    try {
+      localStorage.removeItem("kasirpro_diagnostic_reports_backup");
+      sessionStorage.removeItem(STORAGE_KEY);
+    } catch (_) {}
+    // Bersihkan memory error log buffer menyeluruh
+    errorLogBuffer.length = 0;
     this.updateBadgeCounter();
+    this.showToast("Seluruh riwayat & buffer diagnostik telah dibersihkan tuntas sampai ke akar.");
   },
 
   /**
@@ -458,7 +471,7 @@ Harap telusuri penyebab akar (root cause) dari kendala di atas berdasarkan konte
     backToNewBtn?.addEventListener("click", () => this.switchTab("new"));
 
     clearAllBtn?.addEventListener("click", () => {
-      if (confirm("Apakah Anda yakin ingin menghapus semua riwayat laporan?")) {
+      if (confirm("Apakah Anda yakin ingin menghapus seluruh riwayat laporan kendala dan membersihkan buffer memori diagnostik secara menyeluruh sampai ke akarnya?")) {
         this.clearAllReports();
         this.renderHistoryList();
       }
@@ -660,8 +673,10 @@ Harap telusuri penyebab akar (root cause) dari kendala di atas berdasarkan konte
     container.querySelectorAll(".kp-btn-delete-report").forEach(btn => {
       btn.addEventListener("click", () => {
         const id = btn.dataset.id;
-        this.deleteReport(id);
-        this.renderHistoryList();
+        if (confirm("Hapus laporan ini secara permanen dari perangkat?")) {
+          this.deleteReport(id);
+          this.renderHistoryList();
+        }
       });
     });
   },
