@@ -2012,12 +2012,12 @@
                                         <strong style="font-size:13px;color:#0f172a;"><i class="fa-solid fa-boxes-stacked text-primary"></i> 2. Daftar Obat / Barang &amp; Wadah Konversi</strong>
                                         <p style="font-size:11px;color:#64748b;margin:2px 0 0 0;">Ketik nama produk untuk mencari. Jika belum ada, pilih <strong>[+ Daftarkan Produk Baru]</strong> untuk membuka wadah registrasi.</p>
                                     </div>
-                                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                                        <button type="button" id="btn-paste-tsv" class="button button-small button-secondary" style="padding:6px 14px;background:#f0f9ff;border:1px solid #bae6fd;color:#0284c7;font-weight:700;" title="Tempelkan data TSV dari chat atau clipboard">
-                                            <i class="fa-solid fa-paste"></i> Tempel Data TSV
-                                        </button>
+                                    <div style="display:flex;gap:8px;">
                                         <button type="button" id="btn-manual-add-row" class="button button-small button-primary" style="padding:6px 14px;">
                                             <i class="fa-solid fa-plus"></i> Tambah Baris Obat
+                                        </button>
+                                        <button type="button" id="btn-paste-tsv-inv" class="button button-small button-secondary" style="padding:6px 14px;background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;" title="Tempel data tabel dari Excel / TSV (Ctrl + V)">
+                                            <i class="fa-solid fa-clipboard text-primary"></i> Tempel TSV
                                         </button>
                                     </div>
                                 </div>
@@ -2047,6 +2047,33 @@
                                     </table>
                                 </div>
                                 <div id="manual-inv-global-ac" class="inv-prod-autocomplete" style="position:fixed;display:none;z-index:999999;box-shadow:0 10px 25px rgba(0,0,0,0.2);max-width:420px;border-radius:8px;"></div>
+                            </div>
+
+                            <!-- Modal Fallback Tempel TSV (Jika browser memblokir clipboard API) -->
+                            <div id="modal-paste-tsv" class="product-detail-overlay" style="z-index:9999999;position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(3px);display:grid;place-items:center;padding:16px;" hidden>
+                                <section class="product-detail-panel" style="max-width:580px;width:95vw;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;border:1px solid #cbd5e1;" role="dialog" aria-modal="true" aria-labelledby="paste-tsv-title">
+                                    <header class="product-detail-header" style="background:#f8fafc;padding:14px 18px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+                                        <div>
+                                            <span class="product-detail-label" style="color:#0284c7;font-size:11px;font-weight:700;"><i class="fa-solid fa-table"></i> Impor Cepat TSV</span>
+                                            <h2 id="paste-tsv-title" style="font-size:16px;margin:2px 0 0 0;color:#0f172a;">Tempel Data TSV Faktur</h2>
+                                            <p style="font-size:11px;color:#64748b;margin:2px 0 0 0;">Salin (Copy) tabel obat dari Excel / GPT, lalu tempel (Paste) di kotak berikut:</p>
+                                        </div>
+                                        <button type="button" id="btn-close-paste-tsv-modal" class="product-detail-close" aria-label="Tutup" style="background:none;border:none;font-size:18px;color:#94a3b8;cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+                                    </header>
+                                    <div class="product-detail-body" style="padding:16px;">
+                                        <div style="font-size:11.5px;color:#334155;margin-bottom:10px;background:#eff6ff;padding:9px 12px;border-radius:8px;border:1px solid #bfdbfe;line-height:1.5;">
+                                            <i class="fa-solid fa-circle-info text-primary"></i> <strong>Urutan Kolom TSV:</strong><br>
+                                            <small style="color:#64748b;">Nama Produk &bull; No Batch &bull; Exp Date &bull; Satuan Besar &bull; Satuan Sedang &bull; Satuan Terkecil &bull; Konversi &bull; Qty &bull; Total Masuk &bull; Harga Beli &bull; Disc% &bull; Disc Rp &bull; Subtotal</small>
+                                        </div>
+                                        <textarea id="tsv-paste-textarea" rows="9" placeholder="Klik di sini lalu tekan Ctrl + V (atau tempel teks berformat tab-separated)..." style="width:100%;font-family:monospace;font-size:12px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;resize:vertical;background:#f8fafc;color:#0f172a;box-sizing:border-box;"></textarea>
+                                    </div>
+                                    <footer class="product-detail-footer" style="display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;background:#f8fafc;border-top:1px solid #e2e8f0;">
+                                        <button type="button" id="btn-cancel-paste-tsv" class="button button-secondary">Batal</button>
+                                        <button type="button" id="btn-do-paste-tsv" class="button button-primary" style="font-weight:700;padding:6px 16px;">
+                                            <i class="fa-solid fa-file-import"></i> Impor ke Grid
+                                        </button>
+                                    </footer>
+                                </section>
                             </div>
 
                             <!-- Bagian 3: Live Rekonsiliasi & Status Match -->
@@ -2107,40 +2134,6 @@
                                     <i class="fa-solid fa-box-open"></i> Konfirmasi Faktur &amp; Masuk Stok
                                 </button>
                             </div>
-                        </footer>
-                    </section>
-                </div>
-
-                <!-- Modal Tempel Data TSV Langsung -->
-                <div id="modal-paste-tsv" class="kp-dialog-v4" hidden>
-                    <div class="kp-dialog-v4__backdrop"></div>
-                    <section class="kp-dialog-v4__card" style="width:min(94vw,680px);" role="dialog">
-                        <header style="padding:18px 24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
-                            <div>
-                                <h2 style="font-size:17px;font-weight:800;margin:0;color:#0f172a;"><i class="fa-solid fa-paste text-primary"></i> Tempel Data TSV Grid Mode</h2>
-                                <span style="font-size:12px;color:#64748b;">Salin teks dari AI atau Excel lalu tempelkan (Ctrl+V) di kotak bawah ini.</span>
-                            </div>
-                            <button type="button" id="close-modal-paste-tsv" class="button button-small button-secondary" style="padding:4px 8px;"><i class="fa-solid fa-xmark"></i></button>
-                        </header>
-                        <div style="padding:20px;">
-                            <div style="background:#f8fafc;padding:12px 14px;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:12px;font-size:12px;color:#334155;">
-                                <strong>💡 Urutan Kolom Terbaca Otomatis:</strong><br>
-                                <code>Nama Produk &bull; No. Batch &bull; Exp. Date &bull; Satuan Besar &bull; Satuan Sedang &bull; Satuan Terkecil &bull; Konversi &bull; Qty &bull; Harga Beli &bull; Disc % &bull; Disc Rp</code>
-                            </div>
-                            <label style="display:block;font-size:12.5px;font-weight:700;color:#1e293b;margin-bottom:6px;">Teks TSV Clipboard / Salinan:</label>
-                            <textarea id="tsv-paste-textarea" rows="9" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-family:monospace;font-size:12px;line-height:1.4;box-sizing:border-box;" placeholder="Tempelkan (Ctrl+V) teks TSV di sini..."></textarea>
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
-                                <label style="font-size:12px;color:#475569;display:flex;align-items:center;gap:6px;cursor:pointer;">
-                                    <input type="checkbox" id="tsv-replace-rows" checked> Gantikan seluruh baris saat ini
-                                </label>
-                                <span id="tsv-line-count-preview" style="font-size:12px;color:#64748b;">0 baris terdeteksi</span>
-                            </div>
-                        </div>
-                        <footer style="padding:14px 24px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:8px;">
-                            <button type="button" id="cancel-modal-paste-tsv" class="button button-secondary">Batal</button>
-                            <button type="button" id="btn-process-paste-tsv" class="button button-primary" style="font-weight:700;">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i> Proses &amp; Masukkan ke Tabel
-                            </button>
                         </footer>
                     </section>
                 </div>

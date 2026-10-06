@@ -16,7 +16,7 @@
  * 10. Cetak PDF Faktur resmi A4 Portrait.
  */
 
-import { $, num, parseMoney, text, norm, rupiah, formatNumber, escapeHtml, nowIso, uid, INVOICE_TOLERANCE_RP } from "../modules/core/utils.js";
+import { $, num, parseMoney, text, norm, rupiah, formatNumber, escapeHtml, nowIso, uid, INVOICE_TOLERANCE_RP, normalizeProductName, findBestProductMatch, stringSimilarity } from "../modules/core/utils.js";
 import { STORE_KEYS, readStore, writeStore, writeMasterDelta, readCurrentStock, writeStockTransaction, databaseStore, deletePurchaseInvoice } from "../modules/database/database-store.js";
 import { generatePurchaseInvoicePdf } from "../modules/core/pdf.js";
 
@@ -36,7 +36,42 @@ function bindEvents() {
   $("close-manual-invoice-modal")?.addEventListener("click", closeManualInvoiceModal);
   $("btn-cancel-manual-inv")?.addEventListener("click", closeManualInvoiceModal);
   $("btn-manual-add-row")?.addEventListener("click", () => addManualInvoiceRow());
-  $("btn-paste-tsv")?.addEventListener("click", handlePasteTsvClick);
+  $("btn-paste-tsv-inv")?.addEventListener("click", handleTriggerPasteTsv);
+  $("btn-close-paste-tsv-modal")?.addEventListener("click", closePasteTsvModal);
+  $("btn-cancel-paste-tsv")?.addEventListener("click", closePasteTsvModal);
+  $("btn-do-paste-tsv")?.addEventListener("click", () => {
+    const textVal = $("tsv-paste-textarea")?.value;
+    closePasteTsvModal();
+    if (textVal) {
+      processTsvData(textVal);
+    }
+  });
+
+  // Shortcut Paste (Ctrl + V / Cmd + V) saat modal faktur aktif
+  document.addEventListener("keydown", (e) => {
+    const modalInv = $("modal-manual-invoice");
+    if (!modalInv || modalInv.hidden) return;
+
+    // Jika modal fallback paste sudah terbuka, biarkan textarea menangani paste secara native
+    const pasteModal = $("modal-paste-tsv");
+    if (pasteModal && !pasteModal.hidden) return;
+
+    const activeEl = document.activeElement;
+    const isTextInput = activeEl && (
+      activeEl.tagName === "INPUT" ||
+      activeEl.tagName === "TEXTAREA" ||
+      activeEl.isContentEditable
+    );
+
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v") {
+      // Jika pengguna TIDAK sedang fokus pada input field tertentu, jalankan pembacaan clipboard otomatis
+      if (!isTextInput) {
+        e.preventDefault();
+        handleTriggerPasteTsv();
+      }
+    }
+  });
+
   $("btn-quick-add-supplier-inv")?.addEventListener("click", handleQuickAddSupplierInv);
   $("manual-inv-supplier")?.addEventListener("change", handleSupplierChange);
   $("manual-inv-payment-type")?.addEventListener("change", handlePaymentTypeChange);
@@ -74,27 +109,13 @@ function bindEvents() {
 
   document.querySelector(".manual-invoice-body")?.addEventListener("scroll", hideGlobalAc);
 
-  // Shortcut Ctrl+V langsung pada tabel grid saat tidak sedang mengetik di input
-  document.addEventListener("keydown", (e) => {
-    const manualModal = $("modal-manual-invoice");
-    if (!manualModal || manualModal.hidden) return;
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v") {
-      const activeEl = document.activeElement;
-      if (!activeEl || (activeEl.tagName !== "INPUT" && activeEl.tagName !== "TEXTAREA")) {
-        e.preventDefault();
-        handlePasteTsvClick();
-      }
-    }
-  });
-
   // Search & Filter di daftar faktur
   $("invoice-search")?.addEventListener("input", renderInvoicesTable);
   $("invoice-status-filter")?.addEventListener("change", renderInvoicesTable);
 
-  // Detail & Paste Modal Actions
+  // Detail Modal Actions
   installInvoiceDetailModal();
   installInvoiceCorrectionModal();
-  installPasteTsvModal();
 }
 
 export function renderInvoices() {
@@ -402,244 +423,6 @@ export async function executeConfirmInvoice(inv) {
 }
 
 /* ==========================================================================
-   SMART PHARMACY PRODUCT MATCHING & TSV IMPORT CONTROLLER
-   ========================================================================== */
-
-function cleanPharmacyDrugName(str) {
-  return String(str || "")
-    .toUpperCase()
-    .replace(/\((PRE|PREKUSOR|PREKURSOR|B|OOT|HJ|KPT|KAP|TAB|OBAT|SYR|SIRUP|MEDIKA|OTSUKA|TRIFA|ERELA)\)/gi, "")
-    .replace(/\b(KAPLET|TABLET|KAPSUL|SIRUP|SYRUP|KPT|TAB|SYR|DROP|DROPS|CREAM|KRIM|INJEKSI|INJ|INFUS|SUSPENSI|SUSP)\b/gi, "")
-    .replace(/[^A-Z0-9]/g, "")
-    .trim();
-}
-
-function computeDrugSimilarity(s1, s2) {
-  const str1 = cleanPharmacyDrugName(s1);
-  const str2 = cleanPharmacyDrugName(s2);
-  if (!str1 || !str2) return 0;
-  if (str1 === str2) return 1.0;
-  if (str1.includes(str2) || str2.includes(str1)) return 0.92;
-
-  const getBigrams = s => {
-    const bg = new Set();
-    for (let i = 0; i < s.length - 1; i++) bg.add(s.slice(i, i + 2));
-    return bg;
-  };
-  const bg1 = getBigrams(str1);
-  const bg2 = getBigrams(str2);
-  let intersect = 0;
-  for (const b of bg1) {
-    if (bg2.has(b)) intersect++;
-  }
-  return (2.0 * intersect) / (bg1.size + bg2.size || 1);
-}
-
-function findBestMatchingPharmacyProduct(rawName, prods) {
-  if (!rawName || !Array.isArray(prods) || prods.length === 0) return null;
-  const cleanRaw = cleanPharmacyDrugName(rawName);
-
-  // 1. Exact match (case-insensitive atau normalisasi nama bersih)
-  for (const p of prods) {
-    const pName = p["Nama Produk"] || p.name || "";
-    if (norm(pName) === norm(rawName) || (cleanPharmacyDrugName(pName) === cleanRaw && cleanRaw.length >= 3)) {
-      return { product: p, score: 1.0, type: "exact" };
-    }
-  }
-
-  // 2. Substring match
-  for (const p of prods) {
-    const pName = p["Nama Produk"] || p.name || "";
-    const cleanP = cleanPharmacyDrugName(pName);
-    if (cleanP.length >= 4 && cleanRaw.length >= 4) {
-      if (cleanRaw.startsWith(cleanP) || cleanP.startsWith(cleanRaw)) {
-        return { product: p, score: 0.92, type: "fuzzy" };
-      }
-    }
-  }
-
-  // 3. Dice Bigram Similarity (toleransi typo)
-  let best = null;
-  let maxScore = 0;
-  for (const p of prods) {
-    const pName = p["Nama Produk"] || p.name || "";
-    const score = computeDrugSimilarity(rawName, pName);
-    if (score > maxScore && score >= 0.72) {
-      maxScore = score;
-      best = p;
-    }
-  }
-
-  if (best) {
-    return { product: best, score: maxScore, type: maxScore >= 0.85 ? "fuzzy" : "weak" };
-  }
-
-  return null;
-}
-
-function parseTsvToItems(tsvText) {
-  if (!tsvText || typeof tsvText !== "string") return [];
-  const lines = tsvText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  if (!lines.length) return [];
-
-  let startIndex = 0;
-  if (/nama|batch|satuan|subtotal/i.test(lines[0])) {
-    startIndex = 1;
-  }
-
-  const master = readStore(STORE_KEYS.master, {});
-  const allProds = Array.isArray(master.produk) ? master.produk : [];
-
-  const items = [];
-  for (let i = startIndex; i < lines.length; i++) {
-    const line = lines[i];
-    const cols = line.split("\t").map(c => c.trim());
-    if (cols.length < 3) continue;
-
-    const rawName = cols[0] || "";
-    if (!rawName) continue;
-
-    const batch = cols[1] || "";
-    const expDate = cols[2] || "";
-    const purchaseUnit = cols[3] || "BOX";
-    const intermediateUnit = (cols[4] && cols[4] !== "-") ? cols[4] : "";
-    const baseUnit = cols[5] || "TABLET";
-    const conv = num(cols[6]) || 1;
-    const qty = num(cols[7]) || 1;
-    // cols[8] is Total Masuk
-    const buyPrice = num(cols[9]) || 0;
-    const discPct = num(cols[10]) || 0;
-    const discRp = num(cols[11]) || (discPct ? Math.round((qty * buyPrice) * (discPct / 100)) : 0);
-    const subtotal = num(cols[12]) || Math.max(0, (qty * buyPrice) - discRp);
-
-    // Smart Matching ke database
-    const match = findBestMatchingPharmacyProduct(rawName, allProds);
-    let prodCode = "";
-    let matchType = "new";
-    let matchNote = "";
-
-    if (match && match.product) {
-      prodCode = match.product["Kode Produk"] || match.product["Kode Produk Internal"] || "";
-      matchType = match.type;
-      matchNote = match.product["Nama Produk"] || "";
-    }
-
-    items.push({
-      productCode: prodCode,
-      name: rawName,
-      barcode: match?.product?.Barcode || "",
-      batch,
-      expiryDate: expDate,
-      purchaseUnit,
-      intermediateUnit,
-      intermediateQty: intermediateUnit ? (num(match?.product?.["Isi Satuan Antara"]) || 1) : 1,
-      baseUnit,
-      conversionRatio: conv,
-      qty,
-      buyPrice,
-      discountPercent: discPct,
-      discountRp: discRp,
-      subtotal,
-      matchType,
-      matchNote
-    });
-  }
-
-  return items;
-}
-
-function installPasteTsvModal() {
-  const modal = $("modal-paste-tsv");
-  if (!modal) return;
-
-  $("close-modal-paste-tsv")?.addEventListener("click", closePasteTsvModal);
-  $("cancel-modal-paste-tsv")?.addEventListener("click", closePasteTsvModal);
-
-  const textarea = $("tsv-paste-textarea");
-  textarea?.addEventListener("input", (e) => {
-    const lines = e.target.value.split(/\r?\n/).filter(l => l.trim()).length;
-    const countEl = $("tsv-line-count-preview");
-    if (countEl) countEl.textContent = `${lines} baris terdeteksi`;
-  });
-
-  $("btn-process-paste-tsv")?.addEventListener("click", () => {
-    const raw = textarea?.value || "";
-    if (!raw.trim()) {
-      window.KasirProDialog?.warning("Teks Kosong", "Silakan tempelkan (Ctrl+V) teks TSV ke dalam kotak terlebih dahulu.");
-      return;
-    }
-    const replaceRows = $("tsv-replace-rows")?.checked !== false;
-    processTsvDataIntoGrid(raw, replaceRows);
-    closePasteTsvModal();
-  });
-}
-
-function openPasteTsvModal() {
-  const modal = $("modal-paste-tsv");
-  if (!modal) return;
-  const textarea = $("tsv-paste-textarea");
-  if (textarea) textarea.value = "";
-  const countEl = $("tsv-line-count-preview");
-  if (countEl) countEl.textContent = "0 baris terdeteksi";
-  modal.hidden = false;
-  setTimeout(() => textarea?.focus(), 50);
-}
-
-function closePasteTsvModal() {
-  const modal = $("modal-paste-tsv");
-  if (modal) modal.hidden = true;
-}
-
-async function handlePasteTsvClick() {
-  try {
-    if (navigator.clipboard && typeof navigator.clipboard.readText === "function") {
-      const clipText = await navigator.clipboard.readText();
-      if (clipText && clipText.includes("\t") && clipText.split(/\r?\n/).filter(l => l.trim()).length >= 1) {
-        const lineCount = clipText.split(/\r?\n/).filter(l => l.trim()).length;
-        const confirmPaste = await window.KasirProDialog?.confirm(
-          "Tempel Data Clipboard Langsung",
-          `Terdeteksi data TSV (${lineCount} baris) di clipboard komputer Anda.\n\nLangsung masukkan seluruh baris obat ke tabel Grid Mode?`
-        );
-        if (confirmPaste) {
-          processTsvDataIntoGrid(clipText, true);
-          return;
-        }
-      }
-    }
-  } catch (_) {}
-
-  openPasteTsvModal();
-}
-
-function processTsvDataIntoGrid(rawTsv, replaceRows = true) {
-  const items = parseTsvToItems(rawTsv);
-  if (!items.length) {
-    window.KasirProDialog?.error("Format Tidak Dikenal", "Gagal memproses data TSV. Pastikan data dipisahkan dengan karakter TAB.");
-    return;
-  }
-
-  if (replaceRows) {
-    manualInvoiceItems = items;
-  } else {
-    manualInvoiceItems.push(...items);
-  }
-
-  renderManualInvoiceItems();
-  calculateManualInvoiceTotals();
-
-  const matchedCount = items.filter(i => i.productCode).length;
-  const newCount = items.length - matchedCount;
-
-  window.KasirProDialog?.success(
-    "Data TSV Berhasil Ditempel",
-    `Berhasil memuat ${items.length} item obat ke Grid Mode!\n\n` +
-    `• ${matchedCount} produk otomatis tersambung ke database\n` +
-    `• ${newCount} terdeteksi sebagai produk baru\n\n` +
-    `Silakan periksa nominal dan banner rekonsiliasi sebelum konfirmasi.`
-  );
-}
-
-/* ==========================================================================
    KONTROLLER INPUT FAKTUR MANUAL (GRID MODE DENGAN REKONSILIASI MATEMATIKA)
    ========================================================================== */
 
@@ -797,11 +580,239 @@ function handleDiscountTypeChange() {
   calculateManualInvoiceTotals();
 }
 
-function handlePpnRateChange() {
-  const rate = $("manual-inv-ppn-rate")?.value;
-  const box = $("manual-inv-custom-ppn-box");
-  if (box) box.hidden = rate !== "custom";
+async function handleTriggerPasteTsv() {
+  let clipText = "";
+  try {
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      clipText = await navigator.clipboard.readText();
+    }
+  } catch (err) {
+    console.warn("[Invoice] Gagal membaca clipboard otomatis:", err);
+  }
+
+  // Jika teks clipboard memuat pemisah tab atau baris baru
+  if (clipText && (clipText.includes("\t") || clipText.includes("\n"))) {
+    processTsvData(clipText);
+  } else {
+    // Tampilkan modal fallback input textarea
+    openPasteTsvModal(clipText);
+  }
+}
+
+function openPasteTsvModal(prefill = "") {
+  const modal = $("modal-paste-tsv");
+  if (!modal) return;
+  const ta = $("tsv-paste-textarea");
+  if (ta) {
+    ta.value = prefill || "";
+    setTimeout(() => ta.focus(), 60);
+  }
+  modal.hidden = false;
+}
+
+function closePasteTsvModal() {
+  const modal = $("modal-paste-tsv");
+  if (modal) modal.hidden = true;
+}
+
+/**
+ * One-Click Paste TSV Parser dengan Smart Product Matching
+ * Membaca data tabel TSV (dari Excel/GPT/Clipboard), memetakan 13 kolom faktur,
+ * mencocokkan produk secara cerdas dengan Master Produk (Exact, Fuzzy, New),
+ * serta menghitung ulang rekonsiliasi faktur secara instan.
+ */
+function processTsvData(rawText) {
+  if (!rawText || typeof rawText !== "string") {
+    window.KasirProDialog?.warning("Format Kosong", "Tidak ada teks atau data tabel yang dapat dibaca.");
+    return;
+  }
+
+  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length) {
+    window.KasirProDialog?.warning("Data Kosong", "Teks yang ditempel tidak memuat baris data.");
+    return;
+  }
+
+  // 1. Deteksi Baris Header (lewati jika baris 1 adalah judul kolom)
+  const firstLineNorm = lines[0].toLowerCase();
+  if (
+    firstLineNorm.includes("nama produk") ||
+    firstLineNorm.includes("nama obat") ||
+    firstLineNorm.includes("nama barang") ||
+    firstLineNorm.includes("no batch") ||
+    firstLineNorm.includes("no. batch") ||
+    firstLineNorm.includes("exp date") ||
+    firstLineNorm.includes("subtotal") ||
+    firstLineNorm.includes("harga beli")
+  ) {
+    lines.shift();
+  }
+
+  if (!lines.length) {
+    window.KasirProDialog?.warning("Data Kosong", "Hanya terdeteksi baris header tanpa baris produk.");
+    return;
+  }
+
+  const prods = cachedMasterProducts || (readStore(STORE_KEYS.master, {})?.produk || []);
+
+  // Helper konversi tanggal kedaluwarsa ke YYYY-MM-DD
+  const parseExpDate = (rawExp) => {
+    const s = String(rawExp || "").trim();
+    if (!s) return "";
+    // Format YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    // Format DD/MM/YYYY atau DD-MM-YYYY
+    const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dmy) {
+      const day = dmy[1].padStart(2, "0");
+      const month = dmy[2].padStart(2, "0");
+      const year = dmy[3];
+      return `${year}-${month}-${day}`;
+    }
+    // Format MM/YYYY atau MM-YYYY
+    const my = s.match(/^(\d{1,2})[\/\-](\d{4})$/);
+    if (my) {
+      const month = my[1].padStart(2, "0");
+      const year = my[2];
+      return `${year}-${month}-01`;
+    }
+    // Format MM/YY
+    const myShort = s.match(/^(\d{1,2})[\/\-](\d{2})$/);
+    if (myShort) {
+      const month = myShort[1].padStart(2, "0");
+      const year = `20${myShort[2]}`;
+      return `${year}-${month}-01`;
+    }
+    return s;
+  };
+
+  const parsedItems = [];
+  let exactCount = 0;
+  let fuzzyCount = 0;
+  let newCount = 0;
+
+  for (const line of lines) {
+    const cols = line.split("\t").map(c => c.trim());
+    if (cols.length === 1 && !cols[0]) continue;
+
+    const rawName = cols[0] || "";
+    if (!rawName) continue;
+
+    const rawBatch = cols[1] || "";
+    const rawExp = parseExpDate(cols[2] || "");
+    const rawBuyUnit = cols[3] || "";
+    const rawMidUnit = cols[4] || "";
+    const rawBaseUnit = cols[5] || "";
+    const rawConv = num(cols[6]) || 0;
+    const rawQty = num(cols[7]) || 1;
+    // Kolom 8 adalah total masuk (dihitung otomatis Qty Beli × Konversi)
+    const rawBuyPrice = num(cols[9] || 0);
+    const rawDiscPct = num(cols[10] || 0);
+    let rawDiscRp = num(cols[11] || 0);
+    if (!rawDiscRp && rawDiscPct > 0) {
+      rawDiscRp = Math.round((rawQty * rawBuyPrice * rawDiscPct) / 100);
+    }
+    const rawSubtotal = Math.max(0, Math.round((rawQty * rawBuyPrice) - rawDiscRp));
+
+    // Smart Product Matching dengan Master Produk Lokal
+    const match = findBestProductMatch(rawName, prods, 0.8);
+    let finalCode = "";
+    let finalBarcode = "";
+    let matchStatus = "new";
+    let matchScore = 0;
+    let matchedProduct = null;
+
+    let pUnit = rawBuyUnit;
+    let mUnit = rawMidUnit;
+    let bUnit = rawBaseUnit;
+    let convRatio = rawConv;
+    let mQty = 1;
+
+    if (match.matchType === "exact" && match.product) {
+      finalCode = match.product["Kode Produk"] || match.product["Kode Produk Internal"] || match.product.id || "";
+      finalBarcode = match.product["Barcode"] || "";
+      matchStatus = "exact";
+      matchScore = 100;
+      matchedProduct = match.product;
+      exactCount++;
+
+      // Isi satuan default jika kolom TSV kosong
+      if (!pUnit) pUnit = match.product["Kemasan Beli"] || match.product["Satuan Pembelian"] || "Box";
+      if (!bUnit) bUnit = match.product["Satuan Dasar"] || match.product["Satuan"] || "Pcs";
+      if (!convRatio) convRatio = num(match.product["Konversi"] ?? match.product["Isi Kemasan"] ?? 1) || 1;
+      if (!mUnit && match.product["Satuan Antara"]) {
+        mUnit = match.product["Satuan Antara"];
+        mQty = num(match.product["Isi Satuan Antara"]) || 1;
+      }
+    } else if (match.matchType === "fuzzy" && match.product) {
+      finalCode = match.product["Kode Produk"] || match.product["Kode Produk Internal"] || match.product.id || "";
+      finalBarcode = match.product["Barcode"] || "";
+      matchStatus = "fuzzy";
+      matchScore = Math.round(match.score * 100);
+      matchedProduct = match.product;
+      fuzzyCount++;
+
+      if (!pUnit) pUnit = match.product["Kemasan Beli"] || match.product["Satuan Pembelian"] || "Box";
+      if (!bUnit) bUnit = match.product["Satuan Dasar"] || match.product["Satuan"] || "Pcs";
+      if (!convRatio) convRatio = num(match.product["Konversi"] ?? match.product["Isi Kemasan"] ?? 1) || 1;
+    } else {
+      matchStatus = "new";
+      matchScore = 0;
+      newCount++;
+
+      if (!pUnit) pUnit = "Box";
+      if (!bUnit) bUnit = "Pcs";
+      if (!convRatio) convRatio = 1;
+    }
+
+    // Fleksibilitas Multi-Satuan
+    if (norm(pUnit) === norm(bUnit) || convRatio <= 1) {
+      mUnit = "";
+      mQty = "";
+      convRatio = 1;
+    }
+
+    parsedItems.push({
+      productCode: finalCode,
+      name: rawName,
+      barcode: finalBarcode,
+      purchaseUnit: pUnit,
+      intermediateUnit: mUnit,
+      intermediateQty: mQty > 1 ? mQty : "",
+      baseUnit: bUnit,
+      conversionRatio: convRatio,
+      qty: rawQty,
+      buyPrice: rawBuyPrice,
+      discountPercent: rawDiscPct > 0 ? rawDiscPct : "",
+      discountRp: rawDiscRp > 0 ? rawDiscRp : "",
+      subtotal: rawSubtotal,
+      batch: rawBatch,
+      expiryDate: rawExp,
+      matchStatus,
+      matchScore,
+      matchedProduct
+    });
+  }
+
+  if (!parsedItems.length) {
+    window.KasirProDialog?.warning("Gagal Impor", "Tidak ada baris produk valid yang dapat diekstraksi dari data TSV.");
+    return;
+  }
+
+  // Jika tabel hanya memiliki 1 baris kosong awal, ganti sepenuhnya
+  if (manualInvoiceItems.length === 1 && !manualInvoiceItems[0].name && !manualInvoiceItems[0].qty) {
+    manualInvoiceItems = parsedItems;
+  } else {
+    manualInvoiceItems.push(...parsedItems);
+  }
+
+  renderManualInvoiceItems();
   calculateManualInvoiceTotals();
+
+  window.KasirProDialog?.success(
+    "Impor TSV Berhasil",
+    `Berhasil memuat ${parsedItems.length} baris obat dari data TSV!\n\n• ${exactCount} produk cocok sempurna (Exact)\n• ${fuzzyCount} produk mirip (Fuzzy Match)\n• ${newCount} produk baru (Belum ada di master)`
+  );
 }
 
 function addManualInvoiceRow(prefill = {}) {
@@ -872,6 +883,40 @@ function renderManualInvoiceItems() {
     const convStr = (item.conversionRatio !== undefined && item.conversionRatio !== null && item.conversionRatio !== "") ? item.conversionRatio : "";
     const midQtyStr = (item.intermediateQty !== undefined && item.intermediateQty !== null && item.intermediateQty !== "" && item.intermediateUnit) ? item.intermediateQty : "";
 
+    let matchBadgeHtml = "";
+    if (item.matchStatus === "exact" && item.productCode) {
+      matchBadgeHtml = `
+        <div style="margin-top:2px;">
+          <span style="font-size:10px;font-weight:700;background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;padding:1px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;" title="Produk cocok 100% dengan master data">
+            <i class="fa-solid fa-circle-check"></i> Tersambung: ${escapeHtml(item.productCode)}
+          </span>
+        </div>
+      `;
+    } else if (item.matchStatus === "fuzzy" && item.matchedProduct) {
+      const matchName = item.matchedProduct["Nama Produk"] || item.productCode || "";
+      matchBadgeHtml = `
+        <div style="margin-top:2px;">
+          <span style="font-size:10px;font-weight:700;background:#fffbeb;color:#d97706;border:1px solid #fde68a;padding:1px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;cursor:pointer;" title="Mirip (${item.matchScore}%). Klik/ketik untuk mengganti jika perlu.">
+            <i class="fa-solid fa-triangle-exclamation"></i> Mirip: ${escapeHtml(matchName)} (${item.matchScore}%)
+          </span>
+        </div>
+      `;
+    } else if (item.name && (item.matchStatus === "new" || !item.productCode)) {
+      matchBadgeHtml = `
+        <div style="margin-top:2px;">
+          <span style="font-size:10px;font-weight:700;background:#f0f9ff;color:#0284c7;border:1px solid #bae6fd;padding:1px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;" title="Produk belum terdaftar di master data (akan didaftarkan otomatis)">
+            <i class="fa-solid fa-plus-circle"></i> + Produk Baru
+          </span>
+        </div>
+      `;
+    } else if (item.productCode) {
+      matchBadgeHtml = `
+        <div style="font-size:10.5px;color:#0284c7;display:flex;gap:6px;margin-top:2px;">
+          <span>Kode: ${escapeHtml(item.productCode)}</span>
+        </div>
+      `;
+    }
+
     return `
       <tr data-index="${idx}">
         <td style="text-align:center;font-weight:700;color:#64748b;">${idx + 1}</td>
@@ -881,19 +926,7 @@ function renderManualInvoiceItems() {
               placeholder="${supSelected ? 'Ketik nama obat / scan barcode...' : 'Pilih Supplier terlebih dahulu...'}" 
               ${supSelected ? '' : 'disabled'} autocomplete="off" 
               style="font-weight:700;${supSelected ? 'color:#0f172a;background:#fff;' : 'background:#f8fafc;color:#94a3b8;cursor:not-allowed;'}">
-            <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:2px;">
-              ${item.productCode ? `
-                <span class="badge" style="background:${item.matchType === 'fuzzy' ? '#fefce8' : '#ecfdf5'};color:${item.matchType === 'fuzzy' ? '#a16207' : '#059669'};font-size:10px;padding:1.5px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;font-weight:700;" title="Kode Produk: ${escapeHtml(item.productCode)}">
-                  <i class="fa-solid ${item.matchType === 'fuzzy' ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i> 
-                  ${item.matchType === 'fuzzy' ? 'Tersambung (Mirip)' : 'Tersambung'}: ${escapeHtml(item.productCode)}
-                </span>
-                ${item.matchNote && item.matchType === 'fuzzy' ? `<small style="font-size:9.5px;color:#64748b;" title="Nama di Master Data">(${escapeHtml(item.matchNote)})</small>` : ''}
-              ` : `
-                <span class="badge" style="background:#eff6ff;color:#0284c7;font-size:10px;padding:1.5px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;font-weight:600;">
-                  <i class="fa-solid fa-plus-circle"></i> Produk Baru
-                </span>
-              `}
-            </div>
+            ${matchBadgeHtml}
           </div>
         </td>
         <td>
@@ -1249,8 +1282,6 @@ function selectProductForRow(idx, prod) {
   item.productCode = prod["Kode Produk"] || prod["Kode Produk Internal"] || "";
   item.name = prod["Nama Produk"] || prod.name || "";
   item.barcode = prod["Barcode"] || "";
-  item.matchType = "exact";
-  item.matchNote = prod["Nama Produk"] || prod.name || "";
   item.purchaseUnit = prod["Kemasan Beli"] || prod["Satuan Pembelian"] || "BOX";
 
   const baseU = prod["Satuan Dasar"] || prod["Satuan"] || "TABLET";
@@ -1278,6 +1309,9 @@ function selectProductForRow(idx, prod) {
   }
 
   item.buyPrice = num(prod["Harga Beli Terakhir"] ?? prod["Harga Beli"] ?? 0);
+  item.matchStatus = "exact";
+  item.matchScore = 100;
+  item.matchedProduct = prod;
 
   recalculateRow(idx);
   renderManualInvoiceItems();

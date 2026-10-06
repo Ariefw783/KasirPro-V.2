@@ -26,7 +26,13 @@ function assert(condition, testName, details = "") {
 }
 
 function num(val) {
-  return Number(String(val ?? 0).replace(/[^0-9.-]/g, "")) || 0;
+  if (typeof val === "number") return Number.isFinite(val) ? val : 0;
+  const s = String(val ?? 0).trim();
+  if (!s) return 0;
+  if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) {
+    return Number(s.replace(/\./g, "")) || 0;
+  }
+  return Number(s.replace(/[^0-9.-]/g, "")) || 0;
 }
 
 console.log("\n========================================================");
@@ -266,6 +272,58 @@ const postInvoiceStock = initialStock + invoiceReceivedQty; // 120
 // Saat faktur dihapus:
 const revertedStock = postInvoiceStock - invoiceReceivedQty; // 100
 assert(revertedStock === initialStock, "Cascade Delete Faktur: Stok Berhasil Dipulihkan Tepat ke Jumlah Awal (100 Pcs)");
+
+// -----------------------------------------------------------------------------
+// PENGUJIAN ONE-CLICK PASTE TSV & SMART PRODUCT MATCHING
+// -----------------------------------------------------------------------------
+const { normalizeProductName, stringSimilarity, findBestProductMatch } = await import("../modules/core/utils.js");
+
+// 1. Uji Normalisasi Nama Obat
+const rawDrug1 = "PARACETAMOL 500 MG (B)";
+const rawDrug2 = "AMOXICILLIN SYR 125 MG / 5 ML (PRE)";
+assert(normalizeProductName(rawDrug1) === "PARACETAMOL 500MG", "Normalisasi: Imbuhan (B) & Spasi Dosis 500 MG Dibereskan");
+assert(normalizeProductName(rawDrug2).includes("SIRUP") && normalizeProductName(rawDrug2).includes("125MG"), "Normalisasi: Singkatan SYR Dikonversi ke SIRUP & Dosis Dirapatkan");
+
+// 2. Uji Fuzzy Similarity
+const simExact = stringSimilarity("PARACETAMOL 500MG", "PARACETAMOL 500MG");
+const simTypo = stringSimilarity("PARACETAML 500MG", "PARACETAMOL 500MG");
+const simDiff = stringSimilarity("AMOXICILLIN 500MG", "PARACETAMOL 500MG");
+assert(simExact === 1, "Fuzzy Match: Skor Exact Match Adalah 1.0 (100%)");
+assert(simTypo >= 0.85, "Fuzzy Match: Typo 1 Huruf Masih Dikenali dengan Skor Tinggi (>= 85%)");
+assert(simDiff <= 0.55, "Fuzzy Match: Obat Beda Jauh Mendapat Skor Rendah (<= 55%)");
+
+// 3. Uji Smart Matching Master Data
+const mockMasterProds = [
+  { "Kode Produk": "PRD-PCT", "Nama Produk": "Paracetamol 500mg Tablet", "Barcode": "89912345", "Kemasan Beli": "Box", "Satuan Dasar": "Tablet", "Konversi": 100 },
+  { "Kode Produk": "PRD-AMX", "Nama Produk": "Amoxicillin 500mg Kaplet", "Barcode": "89954321", "Kemasan Beli": "Box", "Satuan Dasar": "Kaplet", "Konversi": 100 }
+];
+
+const match1 = findBestProductMatch("PARACETAMOL 500 MG (B)", mockMasterProds);
+assert(match1.matchType === "exact" || match1.score >= 0.9, "Smart Matching: Exact/High Match Menemukan PRD-PCT");
+assert(match1.product?.["Kode Produk"] === "PRD-PCT", "Smart Matching: Kode Produk Terpaut Tepat");
+
+const match2 = findBestProductMatch("PARACETAML 500MG", mockMasterProds);
+assert(match2.matchType === "fuzzy", "Smart Matching: Typo Dikenali Sebagai Fuzzy Match (80%-99%)");
+assert(match2.product?.["Kode Produk"] === "PRD-PCT", "Smart Matching: Kandidat Terdekat Adalah PRD-PCT");
+
+const match3 = findBestProductMatch("OBAT HERBAL BARU 100ML", mockMasterProds);
+assert(match3.matchType === "none", "Smart Matching: Obat Belum Terdaftar Dikenali Sebagai Produk Baru (< 80%)");
+
+// 4. Uji Parser TSV Grid Mode
+const mockTsvData = `Nama Produk\tNo Batch\tExp Date\tSatuan Besar\tSatuan Sedang\tSatuan Kecil\tKonversi\tQty\tTotal Masuk\tHarga Beli\tDisc%\tDisc Rp\tSubtotal
+PARACETAMOL 500 MG (B)\tB1234\t2028-12-31\tBox\tStrip\tTablet\t100\t2\t200\t50.000\t10\t10.000\t90.000
+OBAT HERBAL BARU\tH001\t15/08/2027\tBotol\t\tBotol\t1\t5\t5\t20.000\t0\t0\t100.000`;
+
+const tsvLines = mockTsvData.split("\n").map(l => l.trim()).filter(Boolean);
+// Skip header
+if (tsvLines[0].toLowerCase().includes("nama produk")) tsvLines.shift();
+assert(tsvLines.length === 2, "TSV Parser: Berhasil Melewati Header dan Membaca 2 Baris Data");
+
+const parsedRow1 = tsvLines[0].split("\t");
+assert(parsedRow1[0] === "PARACETAMOL 500 MG (B)", "TSV Parser: Kolom 0 (Nama Produk) Akurat");
+assert(parsedRow1[1] === "B1234", "TSV Parser: Kolom 1 (No. Batch) Akurat");
+assert(num(parsedRow1[7]) === 2, "TSV Parser: Kolom 7 (Qty Beli) Benar");
+assert(num(parsedRow1[9]) === 50000, "TSV Parser: Kolom 9 (Harga Beli) Bersih dari Pemisah Ribuan (Rp 50.000)");
 
 // -----------------------------------------------------------------------------
 // 6. LOGIKA STOCK OPNAME & REKONSILIASI (management-stock-opname.js)

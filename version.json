@@ -1,14 +1,14 @@
 {
   "version": "2.2.17",
-  "build": "20261006.17",
+  "build": "20261006.15",
   "releaseDate": "06 Oktober 2026",
-  "title": "One-Click TSV Paste & Smart Product Matching",
-  "description": "Fitur tempel data TSV Grid Mode langsung dari clipboard dengan algoritma Smart Product Matching untuk mencegah duplikasi obat.",
+  "title": "One-Click Paste TSV & Smart Product Matching",
+  "description": "Instant TSV table pasting for manual invoice grid mode with intelligent fuzzy product matching and visual status badges.",
   "changelog": [
-    "Tambah tombol 'Tempel Data TSV' pada modal input faktur manual Grid Mode",
-    "Implementasi algoritma Smart Product Matching (normalisasi nama farmasi & fuzzy similarity)",
-    "Indikator visual badge status pencocokan di baris tabel (Tersambung, Mirip, Produk Baru)",
-    "Dukungan shortcut keyboard Ctrl+V langsung pada tabel grid faktur",
-    "Perbarui cache PWA Service Worker ke v65"
+    "One-click TSV table paste",
+    "Smart fuzzy product matching",
+    "Visual match status badges",
+    "Verify 65 system audit tests",
+    "Sync PWA cache v65"
   ]
 }
