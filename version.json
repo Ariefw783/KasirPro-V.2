@@ -1,14 +1,14 @@
 {
-  "version": "2.2.17",
-  "build": "20261006.15",
+  "version": "2.2.18",
+  "build": "20261006.16",
   "releaseDate": "06 Oktober 2026",
-  "title": "One-Click Paste TSV & Smart Product Matching",
-  "description": "Instant TSV table pasting for manual invoice grid mode with intelligent fuzzy product matching and visual status badges.",
+  "title": "Runtime Stability & Multi-Tier Pricing Fix",
+  "description": "Resolved invoice and settings purge runtime handler issues, aligned multi-tier pricing calculation strictly with invoice units, and enforced live currency dot formatting.",
   "changelog": [
-    "One-click TSV table paste",
-    "Smart fuzzy product matching",
-    "Visual match status badges",
-    "Verify 65 system audit tests",
-    "Sync PWA cache v65"
+    "Fix manual invoice modal crash",
+    "Fix testing purge button listener",
+    "Restore tiered price conversion logic",
+    "Add live dots to prices",
+    "Isolate module initialization errors"
   ]
 }

@@ -33,6 +33,11 @@ function bindEvents() {
   $("btn-open-manual-invoice")?.addEventListener("click", () => {
     openManualInvoiceModal();
   });
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("#btn-open-manual-invoice")) {
+      openManualInvoiceModal();
+    }
+  });
   $("close-manual-invoice-modal")?.addEventListener("click", closeManualInvoiceModal);
   $("btn-cancel-manual-inv")?.addEventListener("click", closeManualInvoiceModal);
   $("btn-manual-add-row")?.addEventListener("click", () => addManualInvoiceRow());
@@ -577,6 +582,13 @@ function handleDiscountTypeChange() {
   const type = $("manual-inv-discount-type")?.value;
   const box = $("manual-inv-global-discount-box");
   if (box) box.hidden = type !== "global";
+  calculateManualInvoiceTotals();
+}
+
+function handlePpnRateChange() {
+  const rate = $("manual-inv-ppn-rate")?.value || "11";
+  const customBox = $("manual-inv-custom-ppn-box");
+  if (customBox) customBox.hidden = rate !== "custom";
   calculateManualInvoiceTotals();
 }
 

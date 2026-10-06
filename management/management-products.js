@@ -586,7 +586,7 @@ function installEditPriceModal() {
                 <label id="label-edit-sell-price" style="font-size:12px;font-weight:700;color:#1e293b;">
                   Harga Jual Satuan Terkecil / Ecer <span class="text-danger">*</span>
                 </label>
-                <span id="badge-auto-base" style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;font-weight:600;" hidden>Terhitung Otomatis</span>
+                <span id="badge-auto-base" style="font-size:10px;padding:2px 8px;border-radius:4px;background:#e0f2fe;color:#0369a1;font-weight:700;" hidden><i class="fa-solid fa-calculator"></i> Terisi Otomatis (Perhitungan Satuan Terbesar Faktur)</span>
               </div>
               <div style="position:relative;">
                 <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-weight:700;color:#64748b;font-size:12.5px;">Rp</span>
@@ -601,7 +601,7 @@ function installEditPriceModal() {
                 <label id="label-edit-price-mid" style="font-size:12px;font-weight:700;color:#0369a1;">
                   Harga Jual Satuan Sedang
                 </label>
-                <span id="badge-auto-mid" style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;font-weight:600;" hidden>Terhitung Otomatis</span>
+                <span id="badge-auto-mid" style="font-size:10px;padding:2px 8px;border-radius:4px;background:#e0f2fe;color:#0369a1;font-weight:700;" hidden><i class="fa-solid fa-calculator"></i> Terisi Otomatis (Perhitungan Satuan Terbesar Faktur)</span>
               </div>
               <div style="position:relative;">
                 <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-weight:700;color:#64748b;font-size:12.5px;">Rp</span>
@@ -616,7 +616,7 @@ function installEditPriceModal() {
                 <label id="label-edit-price-buy" style="font-size:12px;font-weight:700;color:#047857;">
                   Harga Jual Satuan Besar
                 </label>
-                <span id="badge-auto-buy" style="font-size:10px;padding:1px 6px;border-radius:4px;background:#f1f5f9;color:#64748b;font-weight:600;" hidden>Terhitung Otomatis</span>
+                <span id="badge-auto-buy" style="font-size:10px;padding:2px 8px;border-radius:4px;background:#e0f2fe;color:#0369a1;font-weight:700;" hidden><i class="fa-solid fa-calculator"></i> Terisi Otomatis (Perhitungan Satuan Terbesar Faktur)</span>
               </div>
               <div style="position:relative;">
                 <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-weight:700;color:#64748b;font-size:12.5px;">Rp</span>
@@ -689,7 +689,7 @@ function updatePriceModalUIByMode() {
   const badgeBuy = $("badge-auto-buy");
 
   if (mode === "1") {
-    // Mode 1: Hanya 1 satuan yang dipilih yang aktif, 2 lainnya read-only otomatis
+    // Mode 1: Pengguna cukup input harga satuan yang dipilih, 2 satuan lainnya terisi otomatis
     const activeUnit = priceModalState.singleSelected || "base";
     if (inpBase) {
       inpBase.readOnly = activeUnit !== "base";
@@ -707,7 +707,7 @@ function updatePriceModalUIByMode() {
       if (badgeBuy) badgeBuy.hidden = activeUnit === "buy";
     }
   } else if (mode === "2") {
-    // Mode 2: 2 satuan aktif yang dicentang, 1 satuan lainnya otomatis
+    // Mode 2: Pengguna cukup input 2 harga satuan yang dipilih, 1 satuan lainnya terisi otomatis
     const dual = priceModalState.dualSelected || ["base", "mid"];
     if (inpBase) {
       const isAct = dual.includes("base");
@@ -745,6 +745,67 @@ function updatePriceModalUIByMode() {
       if (badgeBuy) badgeBuy.hidden = true;
     }
   }
+
+  syncAutomaticPricesFromActiveUnits();
+}
+
+function syncAutomaticPricesFromActiveUnits() {
+  const mode = priceModalState.mode;
+  const buyPrice = num(priceModalState.buyPrice || 0);
+  const conv = Math.max(1, priceModalState.conversion || 1);
+  const midQty = Math.max(1, priceModalState.midQty || 1);
+
+  const inpBase = $("input-edit-sell-price");
+  const inpMid = $("input-edit-price-mid");
+  const inpBuy = $("input-edit-price-buy");
+
+  const curBase = inpBase ? parseInt(inpBase.value.replace(/[^0-9]/g, ""), 10) || 0 : 0;
+  const curMid = inpMid ? parseInt(inpMid.value.replace(/[^0-9]/g, ""), 10) || 0 : 0;
+  const curBuy = inpBuy ? parseInt(inpBuy.value.replace(/[^0-9]/g, ""), 10) || 0 : 0;
+
+  // Nilai perhitungan acuan dari satuan terbesar fisik
+  const defaultBuy = buyPrice > 0 ? buyPrice : 0;
+  const defaultBase = buyPrice > 0 ? Math.round(buyPrice / conv) : 0;
+  const defaultMid = buyPrice > 0 ? Math.round((buyPrice / conv) * midQty) : 0;
+
+  if (mode === "1") {
+    const single = priceModalState.singleSelected || "base";
+    if (single === "base") {
+      const activeBase = curBase > 0 ? curBase : defaultBase;
+      if (inpBase && !curBase && defaultBase) inpBase.value = formatNumber(defaultBase);
+      if (inpMid) inpMid.value = activeBase ? formatNumber(Math.round(activeBase * midQty)) : (defaultMid ? formatNumber(defaultMid) : "");
+      if (inpBuy) inpBuy.value = activeBase ? formatNumber(Math.round(activeBase * conv)) : (defaultBuy ? formatNumber(defaultBuy) : "");
+    } else if (single === "mid") {
+      const activeMid = curMid > 0 ? curMid : defaultMid;
+      if (inpMid && !curMid && defaultMid) inpMid.value = formatNumber(defaultMid);
+      const bPrice = activeMid ? Math.round(activeMid / midQty) : defaultBase;
+      if (inpBase) inpBase.value = bPrice ? formatNumber(bPrice) : "";
+      if (inpBuy) inpBuy.value = bPrice ? formatNumber(Math.round(bPrice * conv)) : (defaultBuy ? formatNumber(defaultBuy) : "");
+    } else if (single === "buy") {
+      const activeBuy = curBuy > 0 ? curBuy : defaultBuy;
+      if (inpBuy && !curBuy && defaultBuy) inpBuy.value = formatNumber(defaultBuy);
+      const bPrice = activeBuy ? Math.round(activeBuy / conv) : defaultBase;
+      if (inpBase) inpBase.value = bPrice ? formatNumber(bPrice) : "";
+      if (inpMid) inpMid.value = bPrice ? formatNumber(Math.round(bPrice * midQty)) : (defaultMid ? formatNumber(defaultMid) : "");
+    }
+  } else if (mode === "2") {
+    const dual = priceModalState.dualSelected || ["base", "mid"];
+    if (!dual.includes("base") && inpBase) {
+      if (dual.includes("mid") && curMid > 0) inpBase.value = formatNumber(Math.round(curMid / midQty));
+      else if (dual.includes("buy") && curBuy > 0) inpBase.value = formatNumber(Math.round(curBuy / conv));
+      else if (defaultBase) inpBase.value = formatNumber(defaultBase);
+    }
+    if (!dual.includes("mid") && inpMid) {
+      if (curBase > 0) inpMid.value = formatNumber(Math.round(curBase * midQty));
+      else if (curBuy > 0) inpMid.value = formatNumber(Math.round((curBuy / conv) * midQty));
+      else if (defaultMid) inpMid.value = formatNumber(defaultMid);
+    }
+    if (!dual.includes("buy") && inpBuy) {
+      if (curBase > 0) inpBuy.value = formatNumber(Math.round(curBase * conv));
+      else if (curMid > 0) inpBuy.value = formatNumber(Math.round((curMid / midQty) * conv));
+      else if (defaultBuy) inpBuy.value = formatNumber(defaultBuy);
+    }
+  }
 }
 
 function recalculateTieredPricesFrom(sourceLevel, sourceVal) {
@@ -752,7 +813,6 @@ function recalculateTieredPricesFrom(sourceLevel, sourceVal) {
 
   const conv = Math.max(1, priceModalState.conversion || 1); // isi kemasan total dasar
   const midQty = Math.max(1, priceModalState.midQty || 1); // isi dasar per sedang
-  const midPerBuy = Math.max(1, conv / midQty);
 
   const inpBase = $("input-edit-sell-price");
   const inpMid = $("input-edit-price-mid");
@@ -767,10 +827,10 @@ function recalculateTieredPricesFrom(sourceLevel, sourceVal) {
     basePrice = Math.round(sourceVal / conv);
   }
 
-  // Jika mode 1 atau mode 2: isi field yang readOnly
+  // Jika mode 1 atau mode 2: isi field yang readOnly secara proporsional dari satuan terbesar
   const mode = priceModalState.mode;
   if (mode === "1") {
-    const single = priceModalState.singleSelected;
+    const single = priceModalState.singleSelected || "base";
     if (single !== "base" && inpBase && inpBase.readOnly) {
       inpBase.value = basePrice ? formatNumber(basePrice) : "";
     }
@@ -783,7 +843,7 @@ function recalculateTieredPricesFrom(sourceLevel, sourceVal) {
       inpBuy.value = buyP ? formatNumber(buyP) : "";
     }
   } else if (mode === "2") {
-    const dual = priceModalState.dualSelected;
+    const dual = priceModalState.dualSelected || [];
     if (!dual.includes("base") && inpBase && inpBase.readOnly) {
       inpBase.value = basePrice ? formatNumber(basePrice) : "";
     }
@@ -911,7 +971,7 @@ function openEditPriceModal(prod) {
     if (priceModalState.midUnit) {
       $("label-edit-price-mid").innerHTML = `Harga Jual Satuan Sedang (<strong>${escapeHtml(priceModalState.midUnit)}</strong> - isi ${priceModalState.midQty} ${escapeHtml(baseUnit)})`;
       const curMid = num(prod["Harga Jual Satuan Sedang"]);
-      const initMid = curMid > 0 ? curMid : (curBase ? curBase * priceModalState.midQty : Math.round((buyPrice / priceModalState.conversion) * priceModalState.midQty * 1.2));
+      const initMid = curMid > 0 ? curMid : (curBase ? curBase * priceModalState.midQty : Math.round((buyPrice / priceModalState.conversion) * priceModalState.midQty));
       $("input-edit-price-mid").value = initMid > 0 ? formatNumber(initMid) : "";
       if ($("hint-price-mid")) $("hint-price-mid").textContent = `Modal dasar: ${rupiah(Math.round((buyPrice / priceModalState.conversion) * priceModalState.midQty))}`;
     }
@@ -924,7 +984,7 @@ function openEditPriceModal(prod) {
     if (priceModalState.buyUnit) {
       $("label-edit-price-buy").innerHTML = `Harga Jual Satuan Besar (<strong>${escapeHtml(priceModalState.buyUnit)}</strong> - isi ${priceModalState.conversion} ${escapeHtml(baseUnit)})`;
       const curBuy = num(prod["Harga Jual Satuan Besar"]);
-      const initBuy = curBuy > 0 ? curBuy : (curBase ? curBase * priceModalState.conversion : Math.round(buyPrice * 1.2));
+      const initBuy = curBuy > 0 ? curBuy : (curBase ? curBase * priceModalState.conversion : buyPrice);
       $("input-edit-price-buy").value = initBuy > 0 ? formatNumber(initBuy) : "";
       if ($("hint-price-buy")) $("hint-price-buy").textContent = `Modal faktur fisik: ${rupiah(buyPrice)}`;
     }
@@ -1205,7 +1265,7 @@ function installProductModal() {
           <div style="display:grid;grid-template-columns:1fr 90px 1fr 85px;gap:10px;">
             <div>
               <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Harga Beli (Rp)</label>
-              <input type="number" id="input-prod-buy-price" min="0" step="100" style="width:100%;min-height:38px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;" placeholder="0">
+              <input type="text" inputmode="numeric" id="input-prod-buy-price" style="width:100%;min-height:38px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;" placeholder="0">
             </div>
             <div>
               <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Margin (%)</label>
@@ -1213,7 +1273,7 @@ function installProductModal() {
             </div>
             <div>
               <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Harga Jual (Rp) <span class="text-danger">*</span></label>
-              <input type="number" id="input-prod-sell-price" min="0" step="100" style="width:100%;min-height:38px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;font-weight:700;color:#0369a1;" placeholder="0">
+              <input type="text" inputmode="numeric" id="input-prod-sell-price" style="width:100%;min-height:38px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;font-weight:700;color:#0369a1;" placeholder="0">
             </div>
             <div>
               <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Stok Min</label>
@@ -1235,17 +1295,31 @@ function installProductModal() {
   $("cancel-product-form")?.addEventListener("click", closeProductModal);
   $("save-product-form")?.addEventListener("click", handleSaveProductModal);
 
-  // Kalkulator Margin otomatis
+  // Kalkulator Margin otomatis dengan format titik live
   const calcFromMargin = () => {
     const buy = num($("input-prod-buy-price")?.value);
     const margin = num($("input-prod-margin")?.value);
     if (buy > 0 && margin > 0) {
       const sell = Math.round(buy * (1 + margin / 100));
       const sellInput = $("input-prod-sell-price");
-      if (sellInput) sellInput.value = sell;
+      if (sellInput) sellInput.value = formatNumber(sell);
     }
   };
-  $("input-prod-buy-price")?.addEventListener("input", calcFromMargin);
+
+  const setupProdLiveDots = (id) => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener("input", (e) => {
+      const digits = e.target.value.replace(/[^0-9]/g, "");
+      const valNum = parseInt(digits, 10) || 0;
+      e.target.value = valNum ? formatNumber(valNum) : "";
+      calcFromMargin();
+    });
+    el.addEventListener("focus", (e) => e.target.select());
+  };
+
+  setupProdLiveDots("input-prod-buy-price");
+  setupProdLiveDots("input-prod-sell-price");
   $("input-prod-margin")?.addEventListener("input", calcFromMargin);
 
   // Quick Add Supplier
@@ -1364,9 +1438,10 @@ export function openProductModal(prefill = {}, callback = null) {
   const midQtyInput = $("input-prod-mid-qty");
   if (midQtyInput) midQtyInput.value = prefill.midQty || 1;
   $("input-prod-conversion").value = prefill.conversion || 1;
-  $("input-prod-base-unit").value = prefill.baseUnit || "Pcs";
-  $("input-prod-buy-price").value = prefill.buyPrice !== undefined && prefill.buyPrice !== null ? prefill.buyPrice : "";
-  $("input-prod-sell-price").value = prefill.sellPrice !== undefined && prefill.sellPrice !== null ? prefill.sellPrice : "";
+  const bPriceVal = num(prefill.buyPrice);
+  $("input-prod-buy-price").value = bPriceVal > 0 ? formatNumber(bPriceVal) : "";
+  const sPriceVal = num(prefill.sellPrice);
+  $("input-prod-sell-price").value = sPriceVal > 0 ? formatNumber(sPriceVal) : "";
   $("input-prod-min-stock").value = prefill.minStock || "10";
 
   modal.hidden = false;

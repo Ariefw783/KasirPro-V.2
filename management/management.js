@@ -48,19 +48,29 @@ async function bootManagement() {
     window.KasirProDialog?.error("Koneksi Database", "Gagal memuat data utama. Aplikasi berjalan dengan cache lokal.");
   }
 
-  // 5. Inisialisasi Seluruh Domain Controller
-  initDashboardModule();
-  initProductsModule();
-  initSuppliersModule();
-  initCategoriesModule();
-  initInvoicesModule();
-  initStockModule();
-  initStockOpnameModule();
-  initSalesModule();
-  initReportsModule();
-  initUsersModule();
-  initSettingsModule();
-  initImportMasterModule();
+  // 5. Inisialisasi Seluruh Domain Controller secara aman & terisolasi
+  const modulesToInit = [
+    { name: "Dashboard", fn: initDashboardModule },
+    { name: "Products", fn: initProductsModule },
+    { name: "Suppliers", fn: initSuppliersModule },
+    { name: "Categories", fn: initCategoriesModule },
+    { name: "Invoices", fn: initInvoicesModule },
+    { name: "Stock", fn: initStockModule },
+    { name: "StockOpname", fn: initStockOpnameModule },
+    { name: "Sales", fn: initSalesModule },
+    { name: "Reports", fn: initReportsModule },
+    { name: "Users", fn: initUsersModule },
+    { name: "Settings", fn: initSettingsModule },
+    { name: "ImportMaster", fn: initImportMasterModule }
+  ];
+
+  modulesToInit.forEach(m => {
+    try {
+      m.fn();
+    } catch (err) {
+      console.error(`[Management] Error inisialisasi modul ${m.name}:`, err);
+    }
+  });
 
   // 6. Setup Event Listener Sinkronisasi Database
   window.addEventListener("kasirpro:database-synced", () => {

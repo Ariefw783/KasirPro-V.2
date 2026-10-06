@@ -24,6 +24,11 @@ function bindEvents() {
 
   $("store-settings-form")?.addEventListener("submit", handleSaveSettings);
   $("btn-purge-testing-data")?.addEventListener("click", handlePurgeTestingData);
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("#btn-purge-testing-data")) {
+      handlePurgeTestingData();
+    }
+  });
 }
 
 export function renderSettings() {

@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v65-tsv-smart-matching";
+const CACHE_VERSION = "kasirpro-pwa-v66-runtime-fix-tiered-prices";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
