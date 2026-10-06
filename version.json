@@ -1,14 +1,14 @@
 {
-  "version": "2.2.12",
-  "build": "20261006.10",
+  "version": "2.2.13",
+  "build": "20261006.11",
   "releaseDate": "06 Oktober 2026",
-  "title": "Strict 3-Status Filter Flow & POS Alignment",
-  "description": "Standardize strictly 3 operational product status filters plus 1 reset button aligned with invoice stock intake and POS.",
+  "title": "Invoice-Gated Price Editing & Queue Workflow",
+  "description": "Lock price editing for inactive products without invoices and highlight edit button for pending price queue.",
   "changelog": [
-    "Enforce 3 operational status filters",
-    "Sync POS active sellable products",
-    "Refine product table status badges",
-    "Add product filter reset button",
-    "Update full system verification suite"
+    "Lock price edit without invoice",
+    "Open price edit for pending",
+    "Strict 3-status queue workflow",
+    "Sync real-time PWA app version",
+    "Verify full audit test suite"
   ]
 }

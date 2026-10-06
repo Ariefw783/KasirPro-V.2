@@ -287,6 +287,39 @@ function renderTable() {
       const rawStatus = p["Status"] || p["Status Produk"];
       const statusBadge = getStatusBadge(rawStatus, sellPrice, stock);
 
+      let priceDisplayHtml = "";
+      if (stock <= 0) {
+        // Status Tidak Aktif: Belum disentuh faktur -> Kunci ikon edit
+        priceDisplayHtml = `
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="color:#94a3b8;font-size:11px;font-style:italic;">— (Menunggu Faktur)</span>
+            <button type="button" class="button button-small" disabled style="opacity:0.5;cursor:not-allowed;background:#f1f5f9;color:#94a3b8;border:1px solid #cbd5e1;padding:4px 7px;" title="Terkunci: Input faktur pembelian terlebih dahulu untuk menentukan harga jual">
+              <i class="fa-solid fa-lock"></i>
+            </button>
+          </div>
+        `;
+      } else if (sellPrice <= 0) {
+        // Status Belum Aktif (Perlu Harga Jual): Sudah ada stok dari faktur -> Tombol TERBUKA & MENONJOL
+        priceDisplayHtml = `
+          <div style="display:flex;align-items:center;gap:6px;">
+            <strong class="text-danger" style="color:#dc2626;font-size:11px;">Rp0 (Wajib Diisi)</strong>
+            <button type="button" class="btn-edit-price button button-small button-primary" data-code="${escapeHtml(code)}" style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;font-size:11px;font-weight:700;" title="Klik untuk tetapkan harga jual">
+              <i class="fa-solid fa-pen"></i> Atur Harga
+            </button>
+          </div>
+        `;
+      } else {
+        // Status Aktif (Siap Jual): Sudah ada stok dan harga jual -> Ikon pena terbuka untuk ubah harga
+        priceDisplayHtml = `
+          <div style="display:flex;align-items:center;gap:6px;">
+            <strong class="text-primary">${rupiah(sellPrice)}</strong>
+            <button type="button" class="btn-edit-price button button-small button-secondary" data-code="${escapeHtml(code)}" style="padding:4px 7px;" title="Ubah Harga Jual">
+              <i class="fa-solid fa-pen"></i>
+            </button>
+          </div>
+        `;
+      }
+
       return `
         <tr data-code="${escapeHtml(code)}">
           <td><strong>${escapeHtml(code)}</strong><br><small class="text-muted">${escapeHtml(p["Barcode"] || "")}</small></td>
@@ -294,14 +327,7 @@ function renderTable() {
           <td><span style="font-weight:600;color:#0f2a43;">${escapeHtml(cat)}</span></td>
           <td><span style="font-weight:600;color:#0f2a43;">${escapeHtml(sup)}</span></td>
           <td>${rupiah(buyPrice)}</td>
-          <td>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <strong class="${sellPrice <= 0 ? 'text-danger' : 'text-primary'}">${sellPrice > 0 ? rupiah(sellPrice) : 'Rp0 (Belum diisi)'}</strong>
-              <button type="button" class="btn-edit-price button button-small button-secondary" data-code="${escapeHtml(code)}" title="Ubah Harga Jual">
-                <i class="fa-solid fa-pen"></i>
-              </button>
-            </div>
-          </td>
+          <td>${priceDisplayHtml}</td>
           <td>${unitLabel}</td>
           <td><strong>${formatNumber(stock)}</strong> ${escapeHtml(unit)}</td>
           <td>${formatNumber(minStock)} ${escapeHtml(unit)}</td>
@@ -773,6 +799,17 @@ function recalculateTieredPricesFrom(sourceLevel, sourceVal) {
 }
 
 function openEditPriceModal(prod) {
+  if (!prod) return;
+  const code = norm(prod["Kode Produk"] || prod["Kode Produk Internal"] || prod.code || prod.id);
+  const curStock = Math.max(readCurrentStock(code), num(prod["Stok Awal"] ?? prod.stock ?? 0));
+  if (curStock <= 0) {
+    window.KasirProDialog?.warning(
+      "Harga Jual Terkunci",
+      `Produk "${prod["Nama Produk"] || code}" belum memiliki stok faktur.\n\nSilakan input faktur pembelian terlebih dahulu melalui Input Faktur Grid Mode untuk menentukan harga jual produk ini.`
+    );
+    return;
+  }
+
   activeEditingProduct = prod;
   const modal = $("modal-edit-price");
   if (!modal) return;
