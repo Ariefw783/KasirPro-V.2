@@ -51,6 +51,23 @@ function bindEvents() {
     applyFilters();
   });
 
+  $("product-reset-filter")?.addEventListener("click", () => {
+    const sInput = $("product-search");
+    if (sInput) sInput.value = "";
+    const cFilter = $("product-category-filter");
+    if (cFilter) cFilter.value = "";
+    const supFilter = $("product-supplier-filter");
+    if (supFilter) supFilter.value = "";
+    const stFilter = $("product-status-filter");
+    if (stFilter) stFilter.value = "";
+    currentPage = 1;
+    applyFilters();
+  });
+
+  window.addEventListener("kasirpro:stock-updated", () => {
+    renderProducts();
+  });
+
   $("refresh-products")?.addEventListener("click", () => {
     renderProducts();
     window.KasirProDialog?.success("Berhasil", "Data produk berhasil disegarkan.");
@@ -124,15 +141,15 @@ function populateFilterDropdowns(master) {
     supFilter.value = currentVal;
   }
 
-  // Pastikan status filter punya opsi lengkap dan rapi (tanpa tumpang tindih)
+  // Pastikan status filter punya opsi resmi KasirPro
   const statusFilter = $("product-status-filter");
-  if (statusFilter && (!statusFilter.querySelector('option[value="perlu harga jual"]') || statusFilter.querySelector('option[value="perlu harga jual"]')?.textContent.trim() !== "Aktif (Perlu Harga Jual)")) {
+  if (statusFilter && !statusFilter.querySelector('option[value="tidak aktif"]')) {
     const curVal = statusFilter.value;
     statusFilter.innerHTML = `
       <option value="">Semua Status</option>
       <option value="aktif">Aktif (Siap Jual)</option>
-      <option value="perlu harga jual">Aktif (Perlu Harga Jual)</option>
-      <option value="belum aktif">Belum Aktif (Stok Kosong)</option>
+      <option value="belum aktif">Belum Aktif (Perlu Harga Jual)</option>
+      <option value="tidak aktif">Tidak Aktif (Belum Ada Stok)</option>
       <option value="nonaktif">Nonaktif</option>
     `;
     if (curVal) statusFilter.value = curVal;
@@ -145,7 +162,8 @@ function updateSummaryKpis() {
   let lowStockCount = 0;
 
   currentProducts.forEach(p => {
-    const stock = readCurrentStock(p["Kode Produk"] || p.id);
+    const code = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
+    const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
     const min = num(p["Stok Minimum"]);
     totalStock += stock;
     if (stock <= 0 || (min > 0 && stock <= min)) {
@@ -176,8 +194,8 @@ function applyFilters() {
     const name = norm(p["Nama Produk"]);
     const pCat = norm(p["Kategori"]);
     const pSup = norm(p["Supplier"]);
-    const pStatus = norm(p["Status"] || p["Status Produk"]);
-    const sellPrice = num(p["Harga Jual"]);
+    const pStatus = norm(p["Status"] || p["Status Produk"] || p.status);
+    const sellPrice = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
 
     // Pencarian text
     if (q && !code.includes(q) && !barcode.includes(q) && !name.includes(q)) {
@@ -188,7 +206,7 @@ function applyFilters() {
     // Filter supplier
     if (sup && pSup !== sup) return false;
 
-    const stock = readCurrentStock(code);
+    const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
 
     // Filter status khusus yang saling eksklusif sesuai alur operasional KasirPro:
     // 1. Belum Aktif (Perlu Harga Jual): Mempunyai stok via faktur (> 0), tapi belum diisi harga jual (<= 0)
@@ -213,6 +231,11 @@ function applyFilters() {
 
     return true;
   });
+
+  const resetBtn = $("product-reset-filter");
+  if (resetBtn) {
+    resetBtn.hidden = !(q || cat || sup || statusVal);
+  }
 
   renderTable();
 }
@@ -257,8 +280,8 @@ function renderTable() {
       const cat = categoryLookup.get(norm(rawCat)) || rawCat || "—";
       const sup = supplierLookup.get(norm(rawSup)) || rawSup || "—";
       const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
-      const sellPrice = num(p["Harga Jual"] ?? 0);
-      const stock = readCurrentStock(code);
+      const sellPrice = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
+      const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
       const unit = p["Satuan Dasar"] || p["Satuan"] || "Pcs";
       const buyUnit = p["Satuan Pembelian"] || unit;
       const conv = num(p["Konversi"]) || 1;

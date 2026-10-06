@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v58-product-status-pos-sync";
+const CACHE_VERSION = "kasirpro-pwa-v59-product-status-filter-fixed";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

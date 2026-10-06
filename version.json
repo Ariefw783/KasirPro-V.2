@@ -1,14 +1,14 @@
 {
-  "version": "2.2.10",
-  "build": "20261006.8",
+  "version": "2.2.11",
+  "build": "20261006.9",
   "releaseDate": "06 Oktober 2026",
-  "title": "Product Status Flow Alignment & POS Sync",
-  "description": "Align operational product status filters (Active, Pending Price, Inactive) with invoice-stock lifecycle and POS sales readiness.",
+  "title": "Product Filter Dropdown Fix & Dynamic Stock Sync",
+  "description": "Fix product status dropdown sync override, robust stock fallback lookup, and auto refresh on stock update events.",
   "changelog": [
-    "Align product operational status filters",
-    "Enforce POS active stock validation",
-    "Refine product table status badges",
-    "Sync real-time PWA app version",
-    "Update verification audit test suite"
+    "Fix product filter dropdown sync",
+    "Add robust stock fallback lookup",
+    "Add product filter reset button",
+    "Listen live stock update events",
+    "Sync real-time PWA app version"
   ]
 }
