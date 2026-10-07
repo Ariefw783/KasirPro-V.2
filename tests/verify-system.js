@@ -379,67 +379,36 @@ assert(fin.grossProfit === 10000, "Laporan Laba Kotor Akurat (Rp 10.000)");
 assert(Math.round(fin.marginPercent) === 29, "Persentase Margin Laba Akurat (~29%)");
 
 // -----------------------------------------------------------------------------
-// 8. LOGIKA PEMBERSIHAN TESTING DATA DI PENGATURAN (management-settings.js)
 // -----------------------------------------------------------------------------
-console.log("\n⚙️ BAGIAN 8: PENGUJIAN PURGE TESTING DATA DI MENU PENGATURAN");
+// 8. LOGIKA FACTORY HARD RESET DI PENGATURAN (management-settings.js)
+// -----------------------------------------------------------------------------
+console.log("\n⚙️ BAGIAN 8: PENGUJIAN FACTORY HARD RESET DI MENU PENGATURAN");
 
-const mockDatabase = {
-  activeStocks: new Map([["prd-01", 10], ["prd-02", 20]]),
-  products: [{ code: "PRD-01", "Stok Awal": 10, "Status": "Aktif" }, { code: "PRD-02", "Stok Awal": 20, "Status": "Belum Aktif" }],
-  invoices: [{ id: "INV-01" }],
-  sales: [{ id: "SALE-01" }],
-  movements: [{ id: "MOV-01" }],
-  opnames: [{ id: "OPN-01" }]
-};
-
-function purgeAllTestData(db) {
-  db.invoices = [];
-  db.sales = [];
-  db.movements = [];
-  db.opnames = [];
-  db.products.forEach(p => { 
-    p["Stok Awal"] = 0; 
-    p["Status"] = "Tidak Aktif";
-    p["Status Produk"] = "Tidak Aktif";
-  });
-  db.activeStocks.clear();
-  return db;
-}
-
-const purgedDb = purgeAllTestData(mockDatabase);
-assert(purgedDb.invoices.length === 0, "Purge: Seluruh Faktur Pembelian Dihapus Total");
-assert(purgedDb.sales.length === 0, "Purge: Seluruh Riwayat Penjualan Dihapus Total");
-assert(purgedDb.movements.length === 0, "Purge: Seluruh Mutasi Stok Dihapus Total");
-assert(purgedDb.opnames.length === 0, "Purge: Seluruh Riwayat Sesi Stock Opname Dihapus Total");
-assert(purgedDb.products.every(p => p["Stok Awal"] === 0), "Purge: Seluruh Stok Master Produk Direset ke 0");
-assert(purgedDb.products.every(p => p["Status"] === "Tidak Aktif"), "Purge: Seluruh Status Produk Kembali ke 'Tidak Aktif'");
-assert(purgedDb.activeStocks.size === 0, "Purge: Seluruh Dokumen ActiveStocks Firestore Dihapus Bersih");
-
-// Uji Validasi Autentikasi Purge Cloud
-function validatePurgeAuth(currentUser) {
+// Uji Validasi Autentikasi Cloud Reset
+function validateResetAuth(currentUser) {
   if (!currentUser) throw new Error("Sesi Firebase belum aktif atau telah kedaluwarsa.");
   return true;
 }
 let authErrorCaught = false;
 try {
-  validatePurgeAuth(null);
+  validateResetAuth(null);
 } catch (e) {
   authErrorCaught = true;
 }
-assert(authErrorCaught === true, "Purge: Wajib Memiliki Sesi Firebase Auth Aktif Sebelum Eksekusi Cloud");
-assert(validatePurgeAuth({ uid: "admin-123" }) === true, "Purge: Berhasil Diverifikasi Jika User Terautentikasi");
+assert(authErrorCaught === true, "Reset Auth: Wajib Memiliki Sesi Firebase Auth Aktif Sebelum Eksekusi Cloud");
+assert(validateResetAuth({ uid: "admin-123" }) === true, "Reset Auth: Berhasil Diverifikasi Jika User Terautentikasi");
 
 // Uji Emisi Progress Pop-up Loading Aktual
 const progressEvents = [];
-function simulatePurgeWithProgress(onProgress) {
-  onProgress({ percent: 10, detail: "Auth check" });
+function simulateResetWithProgress(onProgress) {
+  onProgress({ percent: 5, detail: "Auth check" });
   onProgress({ percent: 50, detail: "Cloud deletion chunk 1" });
   onProgress({ percent: 90, detail: "IndexedDB clean" });
   onProgress({ percent: 100, detail: "Done" });
 }
-simulatePurgeWithProgress(p => progressEvents.push(p.percent));
-assert(progressEvents.length === 4, "Purge Progress: Emisi Event Progress Lengkap");
-assert(progressEvents[0] === 10 && progressEvents[3] === 100, "Purge Progress: Skala Persentase Bergerak dari Awal hingga Selesai (10% -> 100%)");
+simulateResetWithProgress(p => progressEvents.push(p.percent));
+assert(progressEvents.length === 4, "Reset Progress: Emisi Event Progress Lengkap");
+assert(progressEvents[0] === 5 && progressEvents[3] === 100, "Reset Progress: Skala Persentase Bergerak dari Awal hingga Selesai (5% -> 100%)");
 
 // Uji Logika Factory Hard Reset (Kosong Bersih Total)
 function simulateFactoryHardReset(db, adminUser) {
@@ -456,7 +425,7 @@ function simulateFactoryHardReset(db, adminUser) {
   };
   return resultDb;
 }
-const factoryDb = simulateFactoryHardReset(purgedDb, { email: "apotekdoaibu.v2@gmail.com", role: "admin" });
+const factoryDb = simulateFactoryHardReset({}, { email: "apotekdoaibu.v2@gmail.com", role: "admin" });
 assert(factoryDb.products.length === 0, "Factory Reset: Seluruh Master Produk Dikosongkan Bersih (0 item)");
 assert(factoryDb.suppliers.length === 0, "Factory Reset: Seluruh Master Supplier Dikosongkan Bersih (0 item)");
 assert(factoryDb.categories.length === 0, "Factory Reset: Seluruh Master Kategori Dikosongkan Bersih (0 item)");

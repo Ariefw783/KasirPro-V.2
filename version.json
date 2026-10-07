@@ -1,14 +1,14 @@
 {
-  "version": "2.2.24",
-  "build": "20261007.05",
+  "version": "2.2.25",
+  "build": "20261007.06",
   "releaseDate": "07 Oktober 2026",
-  "title": "Pembersihan Total Residu Cache Lokal & Fresh Start 0 Data",
-  "description": "Pemusnahan database lama kasirpro_local_v1, pengosongan otomatis cache lokal 7500 produk lama, dan reset bersih total 0 produk serta 0 supplier.",
+  "title": "Pembersihan Fitur Testing Purge & Penguatan Factory Reset",
+  "description": "Menghapus fitur Pembersihan Data Uji Coba sampai ke akar dan mengonsolidasikan pembersihan data hanya melalui Factory Hard Reset.",
   "changelog": [
-    "Pemusnahan database legacy kasirpro_local_v1 secara permanen",
-    "Pembersihan otomatis cache lokal lama pada pembukaan awal",
-    "Pengosongan total master produk (0 produk) dan supplier (0 supplier)",
-    "Pembaruan Service Worker cache v77 dengan auto-skipWaiting",
-    "Sinkronisasi Cloudflare Pages"
+    "Remove testing purge feature",
+    "Retain factory hard reset",
+    "Optimize firestore quota operations",
+    "Clear legacy local database",
+    "Update service worker cache"
   ]
 }

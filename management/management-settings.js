@@ -9,7 +9,7 @@
  */
 
 import { $, text } from "../modules/core/utils.js";
-import { STORE_KEYS, readStore, writeStore, writeMasterDelta, purgeTestingTransactions, executeFactoryHardReset } from "../modules/database/database-store.js";
+import { STORE_KEYS, readStore, writeStore, writeMasterDelta, executeFactoryHardReset } from "../modules/database/database-store.js";
 
 export function initSettingsModule() {
   bindEvents();
@@ -23,13 +23,9 @@ function bindEvents() {
   });
 
   $("store-settings-form")?.addEventListener("submit", handleSaveSettings);
-  $("btn-purge-testing-data")?.addEventListener("click", handlePurgeTestingData);
   $("btn-factory-hard-reset")?.addEventListener("click", handleFactoryHardReset);
 
   document.addEventListener("click", (e) => {
-    if (e.target.closest("#btn-purge-testing-data")) {
-      handlePurgeTestingData();
-    }
     if (e.target.closest("#btn-factory-hard-reset")) {
       handleFactoryHardReset();
     }
@@ -110,72 +106,6 @@ async function handleSaveSettings(e) {
   } catch (err) {
     console.error("[Settings] Gagal menyimpan pengaturan toko:", err);
     window.KasirProDialog?.error("Gagal Menyimpan", err.message || "Terjadi kesalahan saat menyimpan pengaturan ke database.");
-  }
-}
-
-async function handlePurgeTestingData() {
-  if (!navigator.onLine) {
-    window.KasirProDialog?.error("Perangkat Offline", "Fitur pembersihan data cloud membutuhkan koneksi internet aktif.");
-    return;
-  }
-
-  const confirm1 = await window.KasirProDialog?.confirm(
-    "Pembersihan Data Uji Coba",
-    "PERINGATAN TINGKAT TINGGI:\n\nApakah Anda yakin ingin menghapus seluruh data transaksi uji coba?\n\nHal ini akan menghapus:\n1. Seluruh Faktur Pembelian yang pernah diinput\n2. Seluruh Riwayat Mutasi Kartu Stok\n3. Seluruh Riwayat Penjualan Kasir POS\n4. Mereset saldo stok seluruh produk ke 0\n\nMaster data produk dan supplier TIDAK AKAN terhapus."
-  );
-  if (!confirm1) return;
-
-  const confirm2 = await window.KasirProDialog?.confirm(
-    "Konfirmasi Akhir Pembersihan",
-    "Data akan dihapus secara permanen dari Cloud Firestore dan IndexedDB perangkat. Tindakan ini TIDAK DAPAT DIBATALKAN.\n\nKetik 'YA' pada pikiran Anda dan lanjutkan pembersihan sekarang?"
-  );
-  if (!confirm2) return;
-
-  const btn = $("btn-purge-testing-data");
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sedang Membersihkan Database...';
-  }
-
-  try {
-    window.KasirProDialog?.showProgress(
-      "Pembersihan Data Uji Coba",
-      "Memulai pembersihan data transaksi...",
-      { percent: 5, detail: "Menghubungkan ke server database..." }
-    );
-
-    const res = await purgeTestingTransactions({
-      clearInvoices: true,
-      clearMovements: true,
-      clearSales: true,
-      clearOpnames: true,
-      resetProductStock: true,
-      onProgress: (p) => {
-        window.KasirProDialog?.updateProgress(p);
-      }
-    });
-
-    window.KasirProDialog?.closeProgress();
-
-    window.KasirProDialog?.success(
-      "Pembersihan Berhasil",
-      `Database berhasil dibersihkan hingga ke akar Firestore!\n\n• ${res.deletedInvoices} Faktur dihapus\n• ${res.deletedMovements} Mutasi stok dibersihkan\n• ${res.deletedSales} Transaksi penjualan dihapus\n• ${res.deletedOpnames || 0} Sesi opname dibersihkan\n• Saldo stok produk telah direset ke 0 (Status kembali Tidak Aktif).`
-    );
-
-    // Refresh halaman agar seluruh cache dan tampilan bersih seketika
-    setTimeout(() => {
-      window.location.reload();
-    }, 1200);
-  } catch (err) {
-    window.KasirProDialog?.closeProgress();
-    console.error("[Settings] Gagal membersihkan data uji coba:", err);
-    window.KasirProDialog?.error("Gagal Membersihkan", err.message || "Terjadi kesalahan saat membersihkan data.");
-  } finally {
-    window.KasirProDialog?.closeProgress();
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Bersihkan Semua Data Uji Coba';
-    }
   }
 }
 
