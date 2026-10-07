@@ -1,14 +1,14 @@
 {
-  "version": "2.2.26",
-  "build": "20261007.07",
+  "version": "2.2.27",
+  "build": "20261007.08",
   "releaseDate": "07 Oktober 2026",
-  "title": "Pembersihan Total Factory Reset & Sistem Dual Toko",
-  "description": "Menghapus seluruh sistem Factory Hard Reset dan dual lingkungan Toko Pengujian/Toko Utama untuk melindungi kuota Firestore dan menyederhanakan arsitektur.",
+  "title": "Migrasi Database Lokal V3 & Pemusnahan Residu Data Ponsel",
+  "description": "Menaikkan basis database lokal ke KasirProLocalDB_v3 dan memusnahkan database versi lama di perangkat ponsel agar tidak ada data residu 7499 produk.",
   "changelog": [
-    "Remove factory hard reset",
-    "Remove dual store sandbox",
-    "Unify single store paths",
-    "Optimize firestore quota operations",
-    "Update service worker cache"
+    "Upgrade local database to v3",
+    "Wipe legacy local cached data",
+    "Align local cache with cloud",
+    "Sync fresh zero item state",
+    "Update service worker cache v80"
   ]
 }

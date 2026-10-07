@@ -156,9 +156,9 @@ function normalizeProductRecord(prod) {
 async function loadFromIndexedDB() {
   try {
     // Satu kali eksekusi pembersihan total cache lokal untuk Fresh Start project baru
-    if (typeof localStorage !== "undefined" && !localStorage.getItem("kasirpro_v2_fresh_reset_applied_v1")) {
+    if (typeof localStorage !== "undefined" && !localStorage.getItem("kasirpro_v3_fresh_reset_applied")) {
       try {
-        console.log("[DatabaseStore] Menerapkan Fresh Clean Slate satu kali untuk project baru kasirpro-v2...");
+        console.log("[DatabaseStore] Menerapkan Fresh Clean Slate v3 untuk project baru...");
         await indexedDBStore.clearStore(STORES.PRODUCTS);
         await indexedDBStore.clearStore(STORES.SUPPLIERS);
         await indexedDBStore.clearStore(STORES.CATEGORIES);
@@ -168,9 +168,11 @@ async function loadFromIndexedDB() {
         await indexedDBStore.clearStore(STORES.OPNAMES);
         await indexedDBStore.clearStore(STORES.STOCK_SUMMARIES);
         if (typeof indexedDB !== "undefined") {
-          indexedDB.deleteDatabase("kasirpro_local_v1");
+          try { indexedDB.deleteDatabase("KasirProLocalDB_v2"); } catch (_) {}
+          try { indexedDB.deleteDatabase("KasirProLocalDB_v2_sandbox"); } catch (_) {}
+          try { indexedDB.deleteDatabase("kasirpro_local_v1"); } catch (_) {}
         }
-        localStorage.setItem("kasirpro_v2_fresh_reset_applied_v1", "true");
+        localStorage.setItem("kasirpro_v3_fresh_reset_applied", "true");
       } catch (cleanErr) {
         console.warn("[DatabaseStore] Clean slate error:", cleanErr);
       }
@@ -371,13 +373,19 @@ async function syncFromFirestore(force = false) {
       });
 
     const prodIdFn = p => p["Kode Produk"] || p.id || p["Kode Produk Internal"];
-    const mergedProducts = mergeEntities(currentMaster.produk, normalizedIncomingProducts, prodIdFn);
+    const mergedProducts = isIncremental
+      ? mergeEntities(currentMaster.produk, normalizedIncomingProducts, prodIdFn)
+      : normalizedIncomingProducts;
 
     const supIdFn = s => s["Nama Perusahaan"] || s["Supplier"] || s.id;
-    const mergedSuppliers = mergeEntities(currentMaster.supplier, firestoreSuppliers, supIdFn);
+    const mergedSuppliers = isIncremental
+      ? mergeEntities(currentMaster.supplier, firestoreSuppliers, supIdFn)
+      : firestoreSuppliers;
 
     const katIdFn = k => k["Kode Kategori"] || k["Nama Kategori"] || k.id;
-    const mergedCategories = mergeEntities(currentMaster.kategori, firestoreCategories, katIdFn);
+    const mergedCategories = isIncremental
+      ? mergeEntities(currentMaster.kategori, firestoreCategories, katIdFn)
+      : firestoreCategories;
 
     const masterObj = {
       produk: mergedProducts,
@@ -389,31 +397,55 @@ async function syncFromFirestore(force = false) {
 
     inMemory.set(STORE_KEYS.master, masterObj);
 
-    if (firestoreInvoices.length) {
-      const invs = mergeEntities(inMemory.get(STORE_KEYS.invoices) || [], firestoreInvoices, i => i.id || i.invoiceNumber);
-      inMemory.set(STORE_KEYS.invoices, invs);
-      await indexedDBStore.putMany(STORES.INVOICES, firestoreInvoices);
-    }
-    if (firestoreSales.length) {
-      const sls = mergeEntities(inMemory.get(STORE_KEYS.sales) || [], firestoreSales, s => s.id || s.transactionNumber);
-      inMemory.set(STORE_KEYS.sales, sls);
-      await indexedDBStore.putMany(STORES.SALES, firestoreSales);
-    }
-    if (firestoreMovements.length) {
-      const movs = mergeEntities(inMemory.get(STORE_KEYS.movements) || [], firestoreMovements, m => m.id);
-      inMemory.set(STORE_KEYS.movements, movs);
-      await indexedDBStore.putMany(STORES.MOVEMENTS, firestoreMovements);
-    }
-    if (firestoreOpnames.length) {
-      const opns = mergeEntities(inMemory.get(STORE_KEYS.opnames) || [], firestoreOpnames, o => o.id);
-      inMemory.set(STORE_KEYS.opnames, opns);
-      await indexedDBStore.putMany(STORES.OPNAMES, firestoreOpnames);
+    if (isIncremental) {
+      if (firestoreInvoices.length) {
+        const invs = mergeEntities(inMemory.get(STORE_KEYS.invoices) || [], firestoreInvoices, i => i.id || i.invoiceNumber);
+        inMemory.set(STORE_KEYS.invoices, invs);
+        await indexedDBStore.putMany(STORES.INVOICES, firestoreInvoices);
+      }
+      if (firestoreSales.length) {
+        const sls = mergeEntities(inMemory.get(STORE_KEYS.sales) || [], firestoreSales, s => s.id || s.transactionNumber);
+        inMemory.set(STORE_KEYS.sales, sls);
+        await indexedDBStore.putMany(STORES.SALES, firestoreSales);
+      }
+      if (firestoreMovements.length) {
+        const movs = mergeEntities(inMemory.get(STORE_KEYS.movements) || [], firestoreMovements, m => m.id);
+        inMemory.set(STORE_KEYS.movements, movs);
+        await indexedDBStore.putMany(STORES.MOVEMENTS, firestoreMovements);
+      }
+      if (firestoreOpnames.length) {
+        const opns = mergeEntities(inMemory.get(STORE_KEYS.opnames) || [], firestoreOpnames, o => o.id);
+        inMemory.set(STORE_KEYS.opnames, opns);
+        await indexedDBStore.putMany(STORES.OPNAMES, firestoreOpnames);
+      }
+    } else {
+      // Pada Full Initial Sync, Cloud Firestore adalah Source of Truth mutlak
+      inMemory.set(STORE_KEYS.invoices, firestoreInvoices);
+      inMemory.set(STORE_KEYS.sales, firestoreSales);
+      inMemory.set(STORE_KEYS.movements, firestoreMovements);
+      inMemory.set(STORE_KEYS.opnames, firestoreOpnames);
+
+      await Promise.all([
+        indexedDBStore.clearStore(STORES.PRODUCTS),
+        indexedDBStore.clearStore(STORES.SUPPLIERS),
+        indexedDBStore.clearStore(STORES.CATEGORIES),
+        indexedDBStore.clearStore(STORES.INVOICES),
+        indexedDBStore.clearStore(STORES.SALES),
+        indexedDBStore.clearStore(STORES.MOVEMENTS),
+        indexedDBStore.clearStore(STORES.OPNAMES)
+      ]);
     }
 
-    // Simpan hanya rekaman yang berubah ke IndexedDB cache
+    // Simpan ke IndexedDB cache lokal
     if (normalizedIncomingProducts.length) await indexedDBStore.putMany(STORES.PRODUCTS, normalizedIncomingProducts);
     if (firestoreSuppliers.length) await indexedDBStore.putMany(STORES.SUPPLIERS, firestoreSuppliers);
     if (firestoreCategories.length) await indexedDBStore.putMany(STORES.CATEGORIES, firestoreCategories);
+    if (!isIncremental) {
+      if (firestoreInvoices.length) await indexedDBStore.putMany(STORES.INVOICES, firestoreInvoices);
+      if (firestoreSales.length) await indexedDBStore.putMany(STORES.SALES, firestoreSales);
+      if (firestoreMovements.length) await indexedDBStore.putMany(STORES.MOVEMENTS, firestoreMovements);
+      if (firestoreOpnames.length) await indexedDBStore.putMany(STORES.OPNAMES, firestoreOpnames);
+    }
     if (firestoreSettings.length && firestoreSettings[0]) {
       await indexedDBStore.put(STORES.CONFIGURATIONS, { key: "storeSettings", ...firestoreSettings[0] });
     }

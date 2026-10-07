@@ -9,8 +9,8 @@
  * 4. Mode offline hanya bisa membaca data dari cache ini.
  */
 
-const BASE_DB_NAME = "KasirProLocalDB_v2";
-const DB_VERSION = 3;
+const BASE_DB_NAME = "KasirProLocalDB_v3";
+const DB_VERSION = 1;
 
 export function getLocalDbName() {
   return BASE_DB_NAME;
@@ -48,6 +48,14 @@ class IndexedDBStore {
   async openDB() {
     if (this.db) return this.db;
     if (this._openPromise) return this._openPromise;
+
+    // Musnahkan database lokal versi lama agar tidak ada residu 7499 produk lama
+    if (typeof indexedDB !== "undefined" && typeof sessionStorage !== "undefined" && !sessionStorage.getItem("kasirpro_legacy_db_v2_deleted")) {
+      try { indexedDB.deleteDatabase("KasirProLocalDB_v2"); } catch (_) {}
+      try { indexedDB.deleteDatabase("KasirProLocalDB_v2_sandbox"); } catch (_) {}
+      try { indexedDB.deleteDatabase("kasirpro_local_v1"); } catch (_) {}
+      try { sessionStorage.setItem("kasirpro_legacy_db_v2_deleted", "1"); } catch (_) {}
+    }
 
     this._openPromise = new Promise((resolve, reject) => {
       const request = indexedDB.open(getLocalDbName(), DB_VERSION);
