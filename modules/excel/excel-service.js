@@ -198,9 +198,11 @@ export async function parseMasterWorkbook(file, currentMaster = {}) {
       status = sellPrice > 0 ? "Aktif" : "Perlu Harga Jual";
     }
 
+    const prodCode = code || `PRD-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const itemPayload = {
-      "Kode Produk": code || `PRD-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      "Kode Produk Internal": code,
+      id: prodCode,
+      "Kode Produk": prodCode,
+      "Kode Produk Internal": code || prodCode,
       "Barcode": barcode,
       "Nama Produk": name,
       "Kategori": category,

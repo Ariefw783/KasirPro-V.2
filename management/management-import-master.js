@@ -617,24 +617,37 @@ async function handleApplyMasterImport() {
       detail: "Menyusun struktur master data"
     });
 
+    const prodMap = new Map();
+    for (const p of existingProducts) {
+      const code = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
+      if (code) prodMap.set(code, p);
+    }
+
     // 1. Tambahkan produk baru
     for (const item of addedList) {
-      existingProducts.push(item);
+      const code = norm(item["Kode Produk"] || item["Kode Produk Internal"] || item.id);
+      if (code && !prodMap.has(code)) {
+        prodMap.set(code, item);
+      }
     }
 
     // 2. Perbarui produk lama jika mode === "update"
     if (existingMode === "update") {
       for (const item of updatedList) {
-        const idx = existingProducts.findIndex(p => norm(p["Kode Produk"] || p["Kode Produk Internal"]) === norm(item.incoming["Kode Produk"]));
-        if (idx >= 0) {
-          existingProducts[idx] = {
-            ...existingProducts[idx],
+        const code = norm(item.incoming["Kode Produk"] || item.incoming["Kode Produk Internal"] || item.incoming.id);
+        if (code && prodMap.has(code)) {
+          const oldProd = prodMap.get(code);
+          prodMap.set(code, {
+            ...oldProd,
             ...item.incoming,
-            "Stok Awal": existingProducts[idx]["Stok Awal"] // Kunci: JANGAN timpa stok fisik sistem!
-          };
+            "Stok Awal": oldProd["Stok Awal"] // Kunci: JANGAN timpa stok fisik sistem!
+          });
         }
       }
     }
+
+    existingProducts.length = 0;
+    existingProducts.push(...prodMap.values());
 
     // 3. Tambahkan supplier baru dari sheet SUPPLIER maupun dari kolom produk jika belum terdaftar
     for (const s of suppliersList) {

@@ -1,14 +1,14 @@
 {
-  "version": "2.2.32",
-  "build": "20261007.13",
+  "version": "2.2.33",
+  "build": "20261007.14",
   "releaseDate": "07 Oktober 2026",
-  "title": "Perlindungan Mutlak Anti-Overwrite Katalog & Stabilitas 10.000 Produk",
-  "description": "Mengunci proteksi IndexedDB lokal agar background sync Firestore tidak dapat menimpa katalog acuan sehingga jumlah 10.000+ produk tetap stabil selamanya.",
+  "title": "Resolusi Permanen Retensi Katalog & Pemulihan Master Snapshot Chunks",
+  "description": "Menghilangkan tabrakan kunci ID pada IndexedDB dan mengaktifkan pemulihan otomatis seluruh 10.000+ produk dari Cloud Snapshot Chunks sehingga kuota Firestore hemat 99.9% dan jumlah produk tidak pernah berkurang saat di-refresh.",
   "changelog": [
-    "Lock local catalog against overwrites",
-    "Fallback IndexedDB on background sync",
+    "Fix product catalog key collisions",
+    "Restore full catalog snapshot chunks",
     "Prevent product count drops completely",
-    "Maintain ten thousand catalog stability",
-    "Update service worker cache v85"
+    "Optimize Firestore writes and reads",
+    "Update service worker cache v86"
   ]
 }

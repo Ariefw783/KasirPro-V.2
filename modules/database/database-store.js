@@ -383,38 +383,76 @@ async function syncFromFirestore(force = false) {
       : await indexedDBStore.getAll(STORES.PRODUCTS);
     localProds = (localProds || []).filter(p => !p._isDeleted);
 
-    let mergedProducts = localProds.length > 0
-      ? mergeEntities(localProds, normalizedIncomingProducts, prodIdFn)
-      : normalizedIncomingProducts;
+    const prodMap = new Map();
+    for (const p of localProds) {
+      const key = prodIdFn(p);
+      if (key) prodMap.set(key, p);
+    }
 
-    // Jika produk lokal kosong (misal instalasi baru di perangkat lain), pulihkan katalog dari Master Snapshot Chunks
-    if (mergedProducts.length === 0) {
+    // Periksa Manifest Master Snapshot Chunks di Cloud Firestore
+    let manifestData = null;
+    try {
+      const manifestRef = doc(firebaseDb, ...masterSnapshotManifestSegments());
+      const manifestSnap = await getDoc(manifestRef);
+      if (manifestSnap.exists()) {
+        manifestData = manifestSnap.data();
+      }
+    } catch (mErr) {
+      console.warn("[DatabaseStore] Gagal membaca manifest snapshot cloud:", mErr?.message || mErr);
+    }
+
+    const expectedTotal = Number(manifestData?.totalProducts) || 0;
+    const cloudVersion = Number(manifestData?.version) || 1;
+    const localVersion = Number(currentMaster.version) || 0;
+
+    // Jika katalog lokal lebih sedikit dari total manifest (misal browser baru, refresh setelah pembersihan, dll.)
+    // ATAU versi master di cloud lebih baru dari versi lokal:
+    if (expectedTotal > 0 && (prodMap.size < expectedTotal || cloudVersion > localVersion)) {
       try {
-        const manifestRef = doc(firebaseDb, ...masterSnapshotManifestSegments());
-        const manifestSnap = await getDoc(manifestRef);
-        if (manifestSnap.exists()) {
-          const mData = manifestSnap.data();
-          const version = mData.version || 1;
-          const totalChunks = mData.chunksCount || 0;
-          const chunkPromises = [];
-          for (let i = 0; i < totalChunks; i++) {
-            const cRef = doc(firebaseDb, ...masterSnapshotChunkSegments(version, i));
-            chunkPromises.push(getDoc(cRef));
-          }
-          const chunkSnaps = await Promise.all(chunkPromises);
-          for (const cs of chunkSnaps) {
-            if (cs.exists()) {
-              const cData = cs.data();
-              if (Array.isArray(cData.items)) {
-                mergedProducts.push(...cData.items.map(p => normalizeProductRecord(p)));
+        console.log(`[DatabaseStore] Mengunduh ${manifestData.chunksCount} Master Snapshot Chunks (Cloud: ${expectedTotal} produk, Lokal: ${prodMap.size} produk)...`);
+        const totalChunks = manifestData.chunksCount || 0;
+        const chunkPromises = [];
+        for (let i = 0; i < totalChunks; i++) {
+          const cRef = doc(firebaseDb, ...masterSnapshotChunkSegments(cloudVersion, i));
+          chunkPromises.push(getDoc(cRef));
+        }
+        const chunkSnaps = await Promise.all(chunkPromises);
+        for (const cs of chunkSnaps) {
+          if (cs.exists()) {
+            const cData = cs.data();
+            if (Array.isArray(cData.items)) {
+              for (const item of cData.items) {
+                const key = prodIdFn(item);
+                if (key) {
+                  const existingItem = prodMap.get(key);
+                  const normItem = normalizeProductRecord(item);
+                  if (existingItem) {
+                    normItem["Stok Awal"] = existingItem["Stok Awal"] ?? normItem["Stok Awal"];
+                  }
+                  prodMap.set(key, normItem);
+                }
               }
             }
           }
         }
-      } catch (snapErr) {
-        console.warn("[DatabaseStore] Gagal membaca master snapshot cloud:", snapErr?.message || snapErr);
+      } catch (chunkErr) {
+        console.warn("[DatabaseStore] Gagal mengunduh snapshot chunks:", chunkErr?.message || chunkErr);
       }
     }
+
+    // Incoming individual produk dari Firestore (produk dengan stok aktif atau perubahan data)
+    normalizedIncomingProducts.forEach(inc => {
+      const key = prodIdFn(inc);
+      if (key) {
+        if (prodMap.has(key)) {
+          prodMap.set(key, { ...prodMap.get(key), ...inc });
+        } else {
+          prodMap.set(key, inc);
+        }
+      }
+    });
+
+    const mergedProducts = Array.from(prodMap.values());
 
     const supIdFn = s => s["Nama Perusahaan"] || s["Supplier"] || s.id;
     const mergedSuppliers = isIncremental
@@ -557,8 +595,9 @@ export async function writeStore(key, value, onProgress) {
 
   // Tulis ke IndexedDB
   if (key === STORE_KEYS.master) {
-    // Perbarui active stock index secara instan untuk 10.000+ produk
+    // Normalisasi dan perbarui active stock index secara instan untuk 10.000+ produk
     if (Array.isArray(value?.produk)) {
+      value.produk = value.produk.map(p => normalizeProductRecord(p));
       activeStockIndex.clear();
       for (let i = 0; i < value.produk.length; i++) {
         const p = value.produk[i];
@@ -632,23 +671,20 @@ export async function writeStore(key, value, onProgress) {
     }
 
     const allProds = Array.isArray(value?.produk) ? value.produk : [];
-    // 1. Pisahkan Produk Operasional (Aktif / Ada Stok / Siap Jual) vs Katalog Acuan Supplier Pasif
-    const activeProducts = allProds.filter(p => num(p["Stok Awal"] ?? p.stock) > 0 || num(p["Harga Jual"] ?? p.sellPrice) > 0);
-    const passiveProducts = allProds.filter(p => num(p["Stok Awal"] ?? p.stock) <= 0 && num(p["Harga Jual"] ?? p.sellPrice) <= 0);
-
-    // Produk operasional aktif ditulis individual (hanya produk toko yang nyata dan siap transaksi)
-    for (const p of activeProducts) {
+    // 1. Produk fisik nyata dengan stok (>0) disinkronkan ke koleksi products
+    const productsWithStock = allProds.filter(p => num(p["Stok Awal"] ?? p.stock) > 0);
+    for (const p of productsWithStock) {
       const id = sanitizeDocId(p.id || p["Kode Produk"] || p["Kode Produk Internal"], "prd");
       const ref = doc(firebaseDb, ...documentSegments("products", id));
       operations.push({ ref, data: sanitizeFirestorePayload({ ...p, updatedAt: now }) });
     }
 
-    // 2. Katalog Acuan Supplier Pasif (Kamus obat ribuan item) disimpan dalam bentuk Snapshot Chunks (Hemat 99.9% Writes)
-    // 2.000 produk per dokumen chunk Firestore (~300 KB per doc, batas Firestore 1 MB).
+    // 2. Seluruh Master Katalog (100% Produk) disimpan dalam Master Snapshot Chunks (Hemat 99.9% Writes & Reads)
+    // 2.000 produk per dokumen chunk (~250 KB per dokumen, batas Firestore 1 MB).
     const SNAPSHOT_CHUNK_SIZE = 2000;
     const catalogChunks = [];
-    for (let ci = 0; ci < passiveProducts.length; ci += SNAPSHOT_CHUNK_SIZE) {
-      catalogChunks.push(passiveProducts.slice(ci, ci + SNAPSHOT_CHUNK_SIZE));
+    for (let ci = 0; ci < allProds.length; ci += SNAPSHOT_CHUNK_SIZE) {
+      catalogChunks.push(allProds.slice(ci, ci + SNAPSHOT_CHUNK_SIZE));
     }
 
     const currentVersion = Number(value?.version) || 1;
@@ -670,14 +706,21 @@ export async function writeStore(key, value, onProgress) {
           "Supplier": p["Supplier"] || "",
           "Produsen": p["Produsen"] || "",
           "Harga Beli Terakhir": num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0),
+          "Harga Beli": num(p["Harga Beli"] ?? p["Harga Beli Terakhir"] ?? 0),
           "Harga Jual": num(p["Harga Jual"] ?? 0),
+          "Harga Jual Satuan Sedang": num(p["Harga Jual Satuan Sedang"] ?? 0),
+          "Harga Jual Satuan Besar": num(p["Harga Jual Satuan Besar"] ?? 0),
           "Satuan Dasar": p["Satuan Dasar"] || p["Satuan"] || "Pcs",
+          "Satuan": p["Satuan Dasar"] || p["Satuan"] || "Pcs",
           "Satuan Pembelian": p["Satuan Pembelian"] || p["Kemasan Beli"] || "Pcs",
+          "Kemasan Beli": p["Kemasan Beli"] || p["Satuan Pembelian"] || "Pcs",
           "Konversi": num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1),
+          "Isi Kemasan": num(p["Isi Kemasan"] ?? p["Konversi"] ?? 1),
           "Satuan Antara": p["Satuan Antara"] || "Pcs",
           "Isi Satuan Antara": num(p["Isi Satuan Antara"] ?? 1),
           "Stok Minimum": num(p["Stok Minimum"] ?? 0),
-          "Status": "Katalog Acuan"
+          "Stok Awal": num(p["Stok Awal"] ?? p.stock ?? 0),
+          "Status": p["Status"] || (num(p["Harga Jual"]) > 0 ? "Aktif" : "Perlu Harga Jual")
         }))
       };
       operations.push({ ref: cRef, data: chunkData });
@@ -691,8 +734,7 @@ export async function writeStore(key, value, onProgress) {
         data: {
           version: currentVersion,
           totalProducts: allProds.length,
-          activeCount: activeProducts.length,
-          passiveCount: passiveProducts.length,
+          activeCount: productsWithStock.length,
           chunksCount: catalogChunks.length,
           updatedAt: now
         }

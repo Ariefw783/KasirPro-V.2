@@ -132,7 +132,7 @@ class IndexedDBStore {
       if (store.keyPath === "key" && !item.key) {
         item.key = item.id || "storeSettings";
       } else if (store.keyPath === "id" && !item.id) {
-        item.id = item.key || ("id_" + Date.now());
+        item.id = item["Kode Produk"] || item["Kode Produk Internal"] || item.code || item.Supplier || item["Nama Perusahaan"] || item["Kode Kategori"] || item.invoiceNumber || item.transactionNumber || item.key || (`id_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
       }
       const req = store.put(item);
       req.onsuccess = () => resolve(req.result);
@@ -151,7 +151,7 @@ class IndexedDBStore {
           if (store.keyPath === "key" && !item.key) {
             item.key = item.id || "storeSettings";
           } else if (store.keyPath === "id" && !item.id) {
-            item.id = item.key || ("id_" + Date.now());
+            item.id = item["Kode Produk"] || item["Kode Produk Internal"] || item.code || item.Supplier || item["Nama Perusahaan"] || item["Kode Kategori"] || item.invoiceNumber || item.transactionNumber || item.key || (`id_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
           }
           store.put(item);
         }
