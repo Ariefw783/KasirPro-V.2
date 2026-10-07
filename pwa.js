@@ -157,10 +157,13 @@
                     </ul>
                 </div>
 
-                <button type="button" id="kp-btn-apply-update" class="kp-update-btn">
-                    <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:currentColor;" aria-hidden="true"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
-                    <span>Perbarui Aplikasi Sekarang</span>
-                </button>
+                <div style="display:flex;gap:10px;margin-top:12px;">
+                    <button type="button" id="kp-btn-dismiss-update" style="flex:1;min-height:44px;background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px;">Nanti Saja</button>
+                    <button type="button" id="kp-btn-apply-update" class="kp-update-btn" style="flex:2;">
+                        <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:currentColor;" aria-hidden="true"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                        <span>Perbarui Sekarang</span>
+                    </button>
+                </div>
                 <div class="kp-update-footnote">
                     Aplikasi akan memuat ulang secara otomatis setelah pembaruan diterapkan.
                 </div>
@@ -169,8 +172,14 @@
 
         modal.hidden = false;
 
-        // Cegah penutupan modal via Escape atau klik di luar (Pembaruan Wajib)
-        modal.onclick = (e) => e.stopPropagation();
+        const btnDismiss = document.getElementById("kp-btn-dismiss-update");
+        if (btnDismiss) {
+            btnDismiss.onclick = () => {
+                modal.hidden = true;
+                modal.style.display = "none";
+                modal.remove();
+            };
+        }
 
         const btnApply = document.getElementById("kp-btn-apply-update");
         if (btnApply) {
