@@ -1,14 +1,14 @@
 {
-  "version": "2.2.25",
-  "build": "20261007.06",
+  "version": "2.2.26",
+  "build": "20261007.07",
   "releaseDate": "07 Oktober 2026",
-  "title": "Pembersihan Fitur Testing Purge & Penguatan Factory Reset",
-  "description": "Menghapus fitur Pembersihan Data Uji Coba sampai ke akar dan mengonsolidasikan pembersihan data hanya melalui Factory Hard Reset.",
+  "title": "Pembersihan Total Factory Reset & Sistem Dual Toko",
+  "description": "Menghapus seluruh sistem Factory Hard Reset dan dual lingkungan Toko Pengujian/Toko Utama untuk melindungi kuota Firestore dan menyederhanakan arsitektur.",
   "changelog": [
-    "Remove testing purge feature",
-    "Retain factory hard reset",
+    "Remove factory hard reset",
+    "Remove dual store sandbox",
+    "Unify single store paths",
     "Optimize firestore quota operations",
-    "Clear legacy local database",
     "Update service worker cache"
   ]
 }

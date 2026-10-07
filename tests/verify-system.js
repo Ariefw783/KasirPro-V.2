@@ -379,58 +379,46 @@ assert(fin.grossProfit === 10000, "Laporan Laba Kotor Akurat (Rp 10.000)");
 assert(Math.round(fin.marginPercent) === 29, "Persentase Margin Laba Akurat (~29%)");
 
 // -----------------------------------------------------------------------------
+// 8. LOGIKA MODUL PENGATURAN TOKO (management-settings.js)
 // -----------------------------------------------------------------------------
-// 8. LOGIKA FACTORY HARD RESET DI PENGATURAN (management-settings.js)
-// -----------------------------------------------------------------------------
-console.log("\n⚙️ BAGIAN 8: PENGUJIAN FACTORY HARD RESET DI MENU PENGATURAN");
+console.log("\n⚙️ BAGIAN 8: PENGUJIAN MODUL PENGATURAN TOKO");
 
-// Uji Validasi Autentikasi Cloud Reset
-function validateResetAuth(currentUser) {
-  if (!currentUser) throw new Error("Sesi Firebase belum aktif atau telah kedaluwarsa.");
-  return true;
-}
-let authErrorCaught = false;
-try {
-  validateResetAuth(null);
-} catch (e) {
-  authErrorCaught = true;
-}
-assert(authErrorCaught === true, "Reset Auth: Wajib Memiliki Sesi Firebase Auth Aktif Sebelum Eksekusi Cloud");
-assert(validateResetAuth({ uid: "admin-123" }) === true, "Reset Auth: Berhasil Diverifikasi Jika User Terautentikasi");
+// Uji Normalisasi Data Profil Toko
+function normalizeStoreSettings(input) {
+  const storeName = (input["Nama Toko"] || input["Nama Apotek"] || "Apotek Doa Ibu").trim();
+  const address = (input["Alamat"] || "").trim();
+  const phone = (input["Telepon"] || input["No. Telepon"] || "").trim();
+  let receiptSize = String(input["Ukuran Struk"] || input["Lebar Kertas"] || "58 mm").toLowerCase().trim();
+  if (receiptSize.includes("80")) receiptSize = "80 mm";
+  else if (receiptSize.includes("a4")) receiptSize = "A4";
+  else receiptSize = "58 mm";
 
-// Uji Emisi Progress Pop-up Loading Aktual
-const progressEvents = [];
-function simulateResetWithProgress(onProgress) {
-  onProgress({ percent: 5, detail: "Auth check" });
-  onProgress({ percent: 50, detail: "Cloud deletion chunk 1" });
-  onProgress({ percent: 90, detail: "IndexedDB clean" });
-  onProgress({ percent: 100, detail: "Done" });
-}
-simulateResetWithProgress(p => progressEvents.push(p.percent));
-assert(progressEvents.length === 4, "Reset Progress: Emisi Event Progress Lengkap");
-assert(progressEvents[0] === 5 && progressEvents[3] === 100, "Reset Progress: Skala Persentase Bergerak dari Awal hingga Selesai (5% -> 100%)");
-
-// Uji Logika Factory Hard Reset (Kosong Bersih Total)
-function simulateFactoryHardReset(db, adminUser) {
-  const resultDb = {
-    products: [],
-    suppliers: [],
-    categories: [],
-    invoices: [],
-    sales: [],
-    movements: [],
-    opnames: [],
-    activeStocks: new Map(),
-    adminProfile: adminUser
+  return {
+    "Nama Toko": storeName,
+    "Nama Apotek": storeName,
+    "Alamat": address,
+    "Telepon": phone,
+    "Ukuran Struk": receiptSize,
+    "Lebar Kertas": receiptSize,
+    "Footer Struk": input["Footer Struk"] || "Terima kasih atas kunjungan Anda"
   };
-  return resultDb;
 }
-const factoryDb = simulateFactoryHardReset({}, { email: "apotekdoaibu.v2@gmail.com", role: "admin" });
-assert(factoryDb.products.length === 0, "Factory Reset: Seluruh Master Produk Dikosongkan Bersih (0 item)");
-assert(factoryDb.suppliers.length === 0, "Factory Reset: Seluruh Master Supplier Dikosongkan Bersih (0 item)");
-assert(factoryDb.categories.length === 0, "Factory Reset: Seluruh Master Kategori Dikosongkan Bersih (0 item)");
-assert(factoryDb.invoices.length === 0 && factoryDb.sales.length === 0, "Factory Reset: Seluruh Transaksi & Faktur Kosong Total");
-assert(factoryDb.adminProfile.email === "apotekdoaibu.v2@gmail.com", "Factory Reset: Akun Administrator Resmi Tetap Dilindungi");
+
+const defaultSettings = normalizeStoreSettings({});
+assert(defaultSettings["Nama Toko"] === "Apotek Doa Ibu", "Settings: Fallback nama toko default akurat");
+assert(defaultSettings["Ukuran Struk"] === "58 mm", "Settings: Fallback ukuran struk 58 mm");
+
+const customSettings = normalizeStoreSettings({
+  "Nama Toko": "Apotek Sehat Sentosa",
+  "Alamat": "Jl. Merdeka No. 45",
+  "Telepon": "081234567890",
+  "Ukuran Struk": "80mm Kertas Lebar"
+});
+assert(customSettings["Nama Toko"] === "Apotek Sehat Sentosa", "Settings: Nama toko kustom tersimpan");
+assert(customSettings["Ukuran Struk"] === "80 mm", "Settings: Normalisasi ukuran struk 80 mm akurat");
+
+const a4Settings = normalizeStoreSettings({ "Ukuran Struk": "Format A4 Standar" });
+assert(a4Settings["Ukuran Struk"] === "A4", "Settings: Normalisasi ukuran struk A4 akurat");
 
 // -----------------------------------------------------------------------------
 // 9. LOGIKA IN-APP DIAGNOSTIC REPORTER & AI EXPORT

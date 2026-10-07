@@ -11,7 +11,6 @@ export const kasirProFirebase = Object.freeze({
     sdkVersion: "12.18.0",
     rootCollection: "Kasir Pro V2",
     storeDocument: "Toko Utama",
-    sandboxStoreDocument: "Toko Pengujian",
     authEmailDomain: "kasirpro-v2.app",
     adminGmail: "apotekdoaibu.v2@gmail.com",
     schemaVersion: 2,

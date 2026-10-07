@@ -5,7 +5,7 @@ service cloud.firestore {
 
     function isKasirProV2(namespace, storeId) {
       return namespace == 'Kasir Pro V2'
-        && (storeId == 'Toko Utama' || storeId == 'Toko Pengujian');
+        && storeId == 'Toko Utama';
     }
 
     function isSignedIn() {
@@ -18,16 +18,11 @@ service cloud.firestore {
     }
 
     function profileExists(namespace, storeId) {
-      return isSignedIn() && (
-        exists(/databases/$(database)/documents/$(namespace)/$(storeId)/Pengguna/$(request.auth.uid))
-        || exists(/databases/$(database)/documents/$(namespace)/Toko Utama/Pengguna/$(request.auth.uid))
-      );
+      return isSignedIn() && exists(/databases/$(database)/documents/$(namespace)/$(storeId)/Pengguna/$(request.auth.uid));
     }
 
     function profile(namespace, storeId) {
-      return exists(/databases/$(database)/documents/$(namespace)/$(storeId)/Pengguna/$(request.auth.uid))
-        ? get(/databases/$(database)/documents/$(namespace)/$(storeId)/Pengguna/$(request.auth.uid)).data
-        : get(/databases/$(database)/documents/$(namespace)/Toko Utama/Pengguna/$(request.auth.uid)).data;
+      return get(/databases/$(database)/documents/$(namespace)/$(storeId)/Pengguna/$(request.auth.uid)).data;
     }
 
     function isActiveMember(namespace, storeId) {
@@ -89,7 +84,6 @@ service cloud.firestore {
     match /{namespace}/{storeId} {
       allow read: if isActiveMember(namespace, storeId);
       allow create, update: if isAdmin(namespace, storeId);
-      allow delete: if storeId == 'Toko Pengujian' && isAdmin(namespace, storeId);
 
       match /Pengguna/{userId} {
         allow create: if isKasirProV2(namespace, storeId)

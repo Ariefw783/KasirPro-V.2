@@ -7,7 +7,6 @@ import {
 } from "../modules/database/database-store.js";
 
 import { signOutKasirPro } from "../modules/database/auth.js";
-import { getDatabaseEnvironment, DB_ENVIRONMENTS } from "../modules/database/database-paths.js";
 
 const databaseInitialization = initializeDatabase();
 
@@ -107,15 +106,6 @@ function init(){
     if ($("pos-store-name")) $("pos-store-name").textContent = storeTitle;
     $("pos-user-name").textContent=session.name||session.username||"Kasir";
     $("back-management").title=session.role==="admin"?"Buka Management":"Management khusus Administrator";
-
-    // Indikator Lingkungan Database (Sandbox vs Production) di POS
-    const env = getDatabaseEnvironment();
-    if (env === DB_ENVIRONMENTS.SANDBOX) {
-        const statusContainer = document.querySelector(".retail-status");
-        if (statusContainer) {
-            statusContainer.innerHTML = `<span class="status-pill" style="background:#fef3c7;color:#b45309;border:1px solid #fde68a;font-weight:700;"><i class="fa-solid fa-flask"></i> Mode Sandbox (Pengujian)</span><span class="transaction-label" style="color:#b45309;">Transaksi Uji Coba</span>`;
-        }
-    }
 
     bind();
     closeSearchResults();

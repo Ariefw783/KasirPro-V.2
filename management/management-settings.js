@@ -7,9 +7,8 @@
  * - HANYA 4 konfigurasi: Nama Apotek/Toko, Alamat Lengkap, Nomor Telepon, dan Ukuran Struk (58 mm, 80 mm, A4).
  * - Tidak ada upload logo atau pengaturan teknis database yang membingungkan.
  */
-
 import { $, text } from "../modules/core/utils.js";
-import { STORE_KEYS, readStore, writeStore, writeMasterDelta, executeFactoryHardReset } from "../modules/database/database-store.js";
+import { STORE_KEYS, readStore, writeStore, writeMasterDelta } from "../modules/database/database-store.js";
 
 export function initSettingsModule() {
   bindEvents();
@@ -23,13 +22,6 @@ function bindEvents() {
   });
 
   $("store-settings-form")?.addEventListener("submit", handleSaveSettings);
-  $("btn-factory-hard-reset")?.addEventListener("click", handleFactoryHardReset);
-
-  document.addEventListener("click", (e) => {
-    if (e.target.closest("#btn-factory-hard-reset")) {
-      handleFactoryHardReset();
-    }
-  });
 }
 
 export function renderSettings() {
@@ -106,65 +98,5 @@ async function handleSaveSettings(e) {
   } catch (err) {
     console.error("[Settings] Gagal menyimpan pengaturan toko:", err);
     window.KasirProDialog?.error("Gagal Menyimpan", err.message || "Terjadi kesalahan saat menyimpan pengaturan ke database.");
-  }
-}
-
-async function handleFactoryHardReset() {
-  if (!navigator.onLine) {
-    window.KasirProDialog?.error("Perangkat Offline", "Fitur Factory Reset membutuhkan koneksi internet aktif untuk membersihkan Cloud Firestore.");
-    return;
-  }
-
-  const confirm1 = await window.KasirProDialog?.confirm(
-    "⚠️ FACTORY HARD RESET (RESET TOTAL PABRIK)",
-    "PERINGATAN TINGKAT TINGGI:\n\nTindakan ini akan mengosongkan SELURUH DATA SISTEM seperti pertama kali aplikasi dibuat:\n\n1. Seluruh Master Produk / Obat DIHAPUS TOTAL\n2. Seluruh Kategori & Supplier DIHAPUS TOTAL\n3. Seluruh Faktur Pembelian & Penjualan POS DIHAPUS TOTAL\n4. Seluruh Kartu Stok & Saldo Stok DIHAPUS TOTAL\n5. Database lokal IndexedDB & Cache peramban DIKOSONGKAN TOTAL\n\nAkun Administrator utama tetap aman agar Anda dapat login kembali.\n\nApakah Anda benar-benar yakin ingin melakukan Factory Reset sekarang?"
-  );
-  if (!confirm1) return;
-
-  const confirm2 = await window.KasirProDialog?.confirm(
-    "🔴 KONFIRMASI AKHIR - TIDAK DAPAT DIBATALKAN",
-    "Semua master obat, supplier, faktur, dan transaksi akan LENYAP PERMANEN dari Cloud Firestore dan IndexedDB.\n\nApakah Anda yakin ingin mengeksekusi Factory Hard Reset sekarang?"
-  );
-  if (!confirm2) return;
-
-  const btn = $("btn-factory-hard-reset");
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengeksekusi Factory Reset...';
-  }
-
-  try {
-    window.KasirProDialog?.showProgress(
-      "Factory Hard Reset",
-      "Memulai pembersihan total database...",
-      { percent: 5, detail: "Menghubungkan ke Cloud Firestore..." }
-    );
-
-    const res = await executeFactoryHardReset({
-      onProgress: (p) => {
-        window.KasirProDialog?.updateProgress(p);
-      }
-    });
-
-    window.KasirProDialog?.closeProgress();
-
-    window.KasirProDialog?.success(
-      "Factory Reset Berhasil!",
-      `Seluruh data sistem berhasil dikosongkan secara permanen!\n\n• ${res.deletedDocuments} Dokumen Cloud Firestore dibersihkan\n• Database lokal IndexedDB & Cache browser telah dikosongkan total\n• Akun Administrator tetap aktif\n\nHalaman akan memuat ulang seketika ke kondisi awal bersih.`
-    );
-
-    setTimeout(() => {
-      window.location.reload();
-    }, 1500);
-  } catch (err) {
-    window.KasirProDialog?.closeProgress();
-    console.error("[Settings] Gagal Factory Hard Reset:", err);
-    window.KasirProDialog?.error("Gagal Factory Reset", err.message || "Terjadi kesalahan saat mengeksekusi Factory Reset.");
-  } finally {
-    window.KasirProDialog?.closeProgress();
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-bomb"></i> Factory Hard Reset (Kosongkan Semua Data)';
-    }
   }
 }
