@@ -255,8 +255,28 @@ ${errorsText}
 
 ---
 
-## 5. Instruksi untuk AI Assistant (Antigravity)
-Harap telusuri penyebab akar (root cause) dari kendala di atas berdasarkan konteks file sumber terkait, spesifikasi tampilan perangkat, dan log error yang tercatat. Lakukan perbaikan kode pada file tersebut dengan mematuhi prinsip arsitektur KasirPro, pastikan tampilan tetap responsif di ponsel/desktop, dan pertahankan keutuhan database.`;
+## 5. Protokol & Aturan Wajib Eksekusi AI (Strict Operational Guidelines)
+Kepada AI Assistant (Antigravity / Coding Agent), Anda WAJIB mematuhi seluruh protokol berikut secara mutlak:
+
+1. **BATASAN PERUBAHAN KODE (STRICT ZERO COLLATERAL DAMAGE)**:
+   - DILARANG KERAS mengubah, menambah, menghapus, atau merefaktor kode dalam bentuk apapun di luar ruang lingkup yang berkaitan langsung dengan instruksi perbaikan kendala ini.
+   - Pertahankan seluruh komentar, docstring, arsitektur data lokal (IndexedDB), efisiensi kuota Firestore, dan fungsi yang sudah berjalan baik.
+
+2. **VERIFIKASI SISTEM SECARA MENYELURUH**:
+   - Selalu jalankan uji verifikasi sistem menggunakan perintah: \`node tests/verify-system.js\`
+   - Pastikan seluruh pengujian 100% PASS (0 Fail) sebelum menyelesaikan tugas.
+
+3. **PEMBARUAN VERSI & CACHE PWA**:
+   - Naikkan nomor build/patch pada berkas \`version.json\`.
+   - Perbarui versi cache PWA pada variabel \`CACHE_VERSION\` di berkas \`sw.js\` agar perangkat klien langsung menerima pembaruan terbaru.
+
+4. **ATURAN BAKU PENULISAN CHANGELOG**:
+   - Format changelog pada berkas \`version.json\` WAJIB ditulis MAKSIMAL 5 KATA per poin dalam BAHASA INGGRIS (\`<= 5 English words per item\`).
+
+5. **SINKRONISASI REPOSITORI & AUTO-PUSH GITHUB**:
+   - Pastikan seluruh berkas lokal bersih dan sama persis dengan repositori GitHub.
+   - Buat git commit dengan pesan yang deskriptif dan profesional.
+   - OTOMATIS lakukan push ke repositori GitHub (\`git push origin main\`) segera setelah verifikasi berhasil.`;
   },
 
   /**

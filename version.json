@@ -1,14 +1,14 @@
 {
-  "version": "2.2.28",
-  "build": "20261007.09",
+  "version": "2.2.29",
+  "build": "20261007.10",
   "releaseDate": "07 Oktober 2026",
-  "title": "Optimasi Etalase Opsi B & Standarisasi Bahasa Profesional",
-  "description": "Menerapkan etalase default aktif dan pencarian cerdas untuk menangani 10.000 katalog obat dengan sangat ringan dan cepat di ponsel serta menyelaraskan bahasa antarmuka menjadi profesional.",
+  "title": "Penyempurnaan Template Bug Report & Protokol Eksekusi AI Ketat",
+  "description": "Menyematkan protokol operasi ketat ke dalam generator prompt diagnostik AI KasirPro untuk memastikan kode terjaga utuh, verifikasi selalu lulus, dan sinkronisasi GitHub otomatis.",
   "changelog": [
-    "Default active ready storefront view",
-    "Smart search across full catalog",
-    "Support ten thousand supplier products",
-    "Professional concise interface copywriting",
-    "Update service worker cache v81"
+    "Enforce strict AI execution rules",
+    "Embed verification gate in prompt",
+    "Preserve untouched code integrity",
+    "Automate git repository sync",
+    "Update service worker cache v82"
   ]
 }
