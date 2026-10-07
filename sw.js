@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v75-instant-dashboard";
+const CACHE_VERSION = "kasirpro-pwa-v76-fix-overlay";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

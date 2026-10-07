@@ -167,6 +167,13 @@ function hideInitialLoader() {
   if (loader) {
     loader.hidden = true;
     loader.style.display = "none";
+    loader.style.pointerEvents = "none";
+  }
+  const overlay = $("sidebar-overlay");
+  if (overlay) {
+    overlay.classList.remove("show");
+    overlay.style.display = "none";
+    overlay.style.pointerEvents = "none";
   }
 }
 
@@ -299,6 +306,9 @@ function setupLogout() {
     location.replace("../index.html");
   });
 }
+
+// Tutup loader & overlay seawal mungkin
+hideInitialLoader();
 
 // Jalankan saat dokumen siap
 if (document.readyState === "loading") {

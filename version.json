@@ -1,14 +1,14 @@
 {
-  "version": "2.2.22",
-  "build": "20261007.03",
+  "version": "2.2.23",
+  "build": "20261007.04",
   "releaseDate": "07 Oktober 2026",
-  "title": "Inisialisasi Instan Dashboard 0ms & Firebase kasirpro-v2",
-  "description": "Render instan KPI dashboard 0ms, anti-stall IndexedDB, non-blocking cloud Firestore, dan integrasi penuh project Firebase kasirpro-v2.",
+  "title": "Perbaikan Interaktivitas Tombol & Nilai Bersih Dashboard",
+  "description": "Perbaikan total ghost overlay yang memblokir ketikan/klik tombol, penggantian teks fallback Memuat menjadi Rp 0 dan 0, serta pembaruan Service Worker v76.",
   "changelog": [
-    "Inisialisasi modul UI dan kartu dashboard instan 0ms",
-    "Anti-stall timeout guard pada pembukaan IndexedDB cache",
-    "Penanganan koneksi Firestore non-blocking dan graceful degradation",
-    "Pembaruan Service Worker cache v75 dengan auto-skipWaiting",
-    "Integrasi project Firebase baru kasirpro-v2"
+    "Perbaikan CSS sidebar-overlay: penonaktifan total pointer-events dan display saat tertutup",
+    "Penggantian teks default Memuat... menjadi Rp 0 dan 0 pada seluruh kartu dashboard",
+    "Pembebasan interaksi ketikan input dan klik tombol di seluruh resolusi layar",
+    "Pembaruan Service Worker cache v76 dengan auto-skipWaiting",
+    "Inisialisasi modul UI instan 0ms"
   ]
 }
