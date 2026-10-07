@@ -1,14 +1,14 @@
 {
-  "version": "2.2.23",
-  "build": "20261007.04",
+  "version": "2.2.24",
+  "build": "20261007.05",
   "releaseDate": "07 Oktober 2026",
-  "title": "Perbaikan Interaktivitas Tombol & Nilai Bersih Dashboard",
-  "description": "Perbaikan total ghost overlay yang memblokir ketikan/klik tombol, penggantian teks fallback Memuat menjadi Rp 0 dan 0, serta pembaruan Service Worker v76.",
+  "title": "Pembersihan Total Residu Cache Lokal & Fresh Start 0 Data",
+  "description": "Pemusnahan database lama kasirpro_local_v1, pengosongan otomatis cache lokal 7500 produk lama, dan reset bersih total 0 produk serta 0 supplier.",
   "changelog": [
-    "Perbaikan CSS sidebar-overlay: penonaktifan total pointer-events dan display saat tertutup",
-    "Penggantian teks default Memuat... menjadi Rp 0 dan 0 pada seluruh kartu dashboard",
-    "Pembebasan interaksi ketikan input dan klik tombol di seluruh resolusi layar",
-    "Pembaruan Service Worker cache v76 dengan auto-skipWaiting",
-    "Inisialisasi modul UI instan 0ms"
+    "Pemusnahan database legacy kasirpro_local_v1 secara permanen",
+    "Pembersihan otomatis cache lokal lama pada pembukaan awal",
+    "Pengosongan total master produk (0 produk) dan supplier (0 supplier)",
+    "Pembaruan Service Worker cache v77 dengan auto-skipWaiting",
+    "Sinkronisasi Cloudflare Pages"
   ]
 }

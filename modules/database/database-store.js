@@ -155,6 +155,27 @@ function normalizeProductRecord(prod) {
  */
 async function loadFromIndexedDB() {
   try {
+    // Satu kali eksekusi pembersihan total cache lokal untuk Fresh Start project baru
+    if (typeof localStorage !== "undefined" && !localStorage.getItem("kasirpro_v2_fresh_reset_applied_v1")) {
+      try {
+        console.log("[DatabaseStore] Menerapkan Fresh Clean Slate satu kali untuk project baru kasirpro-v2...");
+        await indexedDBStore.clearStore(STORES.PRODUCTS);
+        await indexedDBStore.clearStore(STORES.SUPPLIERS);
+        await indexedDBStore.clearStore(STORES.CATEGORIES);
+        await indexedDBStore.clearStore(STORES.INVOICES);
+        await indexedDBStore.clearStore(STORES.SALES);
+        await indexedDBStore.clearStore(STORES.MOVEMENTS);
+        await indexedDBStore.clearStore(STORES.OPNAMES);
+        await indexedDBStore.clearStore(STORES.STOCK_SUMMARIES);
+        if (typeof indexedDB !== "undefined") {
+          indexedDB.deleteDatabase("kasirpro_local_v1");
+        }
+        localStorage.setItem("kasirpro_v2_fresh_reset_applied_v1", "true");
+      } catch (cleanErr) {
+        console.warn("[DatabaseStore] Clean slate error:", cleanErr);
+      }
+    }
+
     let [products, suppliers, categories, config, invoices, sales, movements, opnames] = await Promise.all([
       indexedDBStore.getAll(STORES.PRODUCTS),
       indexedDBStore.getAll(STORES.SUPPLIERS),
@@ -166,44 +187,9 @@ async function loadFromIndexedDB() {
       indexedDBStore.getAll(STORES.OPNAMES)
     ]);
 
-    // Jika IndexedDB V2 masih kosong, coba periksa apakah ada data dari versi sebelumnya (kasirpro_local_v1)
-    if ((!products || products.length === 0) && typeof indexedDB !== "undefined") {
-      try {
-        const legacyData = await new Promise((resolve) => {
-          const req = indexedDB.open("kasirpro_local_v1");
-          req.onerror = () => resolve(null);
-          req.onsuccess = (e) => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains("products")) {
-              db.close();
-              resolve(null);
-              return;
-            }
-            try {
-              const tx = db.transaction("products", "readonly");
-              const store = tx.objectStore("products");
-              const getAllReq = store.getAll();
-              getAllReq.onsuccess = () => {
-                const list = getAllReq.result || [];
-                db.close();
-                resolve(list.length ? list : null);
-              };
-              getAllReq.onerror = () => { db.close(); resolve(null); };
-            } catch {
-              db.close();
-              resolve(null);
-            }
-          };
-        });
-
-        if (legacyData && legacyData.length > 0) {
-          console.log(`[DatabaseStore] Menemukan ${legacyData.length} produk dari cache versi lama (v1), memigrasikan...`);
-          products = legacyData;
-          await indexedDBStore.putMany(STORES.PRODUCTS, products.map(normalizeProductRecord));
-        }
-      } catch (legacyErr) {
-        console.warn("[DatabaseStore] Pengecekan legacy cache v1 dilewati:", legacyErr);
-      }
+    // Pastikan database legacy kasirpro_local_v1 dimusnahkan secara permanen agar tidak menyuntikkan data sampah
+    if (typeof indexedDB !== "undefined") {
+      try { indexedDB.deleteDatabase("kasirpro_local_v1"); } catch (_) {}
     }
 
     const cleanProducts = [];
@@ -1335,6 +1321,9 @@ export async function executeFactoryHardReset(options = {}) {
     await indexedDBStore.clearStore(STORES.SUPPLIERS);
     await indexedDBStore.clearStore(STORES.STOCK_SUMMARIES);
     await indexedDBStore.clearStore(STORES.MASTER_SNAPSHOTS);
+    if (typeof indexedDB !== "undefined") {
+      try { indexedDB.deleteDatabase("kasirpro_local_v1"); } catch (_) {}
+    }
   } catch (idbErr) {
     console.warn("[FactoryReset] Gagal clear IndexedDB stores:", idbErr);
   }
