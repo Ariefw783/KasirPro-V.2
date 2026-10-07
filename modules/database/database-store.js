@@ -197,14 +197,43 @@ async function loadFromIndexedDB() {
       try { indexedDB.deleteDatabase("kasirpro_local_v1"); } catch (_) {}
     }
 
-    const cleanProducts = [];
+    const prodMap = new Map();
+    const orphanKeysToDelete = [];
+
     for (const p of (products || [])) {
       if (p._isDeleted) {
-        if (p.id) indexedDBStore.delete(STORES.PRODUCTS, p.id).catch(() => {});
+        if (p.id) orphanKeysToDelete.push(p.id);
         continue;
       }
-      cleanProducts.push(normalizeProductRecord(p));
+      const normP = normalizeProductRecord(p);
+      const code = norm(normP["Kode Produk"] || normP["Kode Produk Internal"] || normP.id);
+      if (!code) continue;
+
+      if (prodMap.has(code)) {
+        const existing = prodMap.get(code);
+        if (p.id && String(p.id).startsWith("id_") && p.id !== normP.id) {
+          orphanKeysToDelete.push(p.id);
+        } else if (existing.id && String(existing.id).startsWith("id_") && existing.id !== normP.id) {
+          orphanKeysToDelete.push(existing.id);
+          prodMap.set(code, normP);
+        } else {
+          prodMap.set(code, { ...existing, ...normP });
+        }
+      } else {
+        if (p.id && String(p.id).startsWith("id_") && p.id !== normP.id) {
+          orphanKeysToDelete.push(p.id);
+        }
+        prodMap.set(code, normP);
+      }
     }
+
+    if (orphanKeysToDelete.length > 0) {
+      for (const orphanKey of orphanKeysToDelete) {
+        indexedDBStore.delete(STORES.PRODUCTS, orphanKey).catch(() => {});
+      }
+    }
+
+    const cleanProducts = Array.from(prodMap.values());
 
     const activeConfig = Array.isArray(config) ? (config[0] || null) : config;
     const defaultSettings = {

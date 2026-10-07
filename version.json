@@ -1,14 +1,14 @@
 {
-  "version": "2.2.33",
-  "build": "20261007.14",
+  "version": "2.2.34",
+  "build": "20261007.15",
   "releaseDate": "07 Oktober 2026",
-  "title": "Resolusi Permanen Retensi Katalog & Pemulihan Master Snapshot Chunks",
-  "description": "Menghilangkan tabrakan kunci ID pada IndexedDB dan mengaktifkan pemulihan otomatis seluruh 10.000+ produk dari Cloud Snapshot Chunks sehingga kuota Firestore hemat 99.9% dan jumlah produk tidak pernah berkurang saat di-refresh.",
+  "title": "Stabilisasi Konsistensi Angka Produk & Pembersihan Kunci Duplikat Lokal",
+  "description": "Menghilangkan fluktuasi angka produk dengan membersihkan residu kunci orphan pada IndexedDB sehingga tampilan angka selalu konsisten 10.186 sejak milidetik pertama hingga selesai sinkronisasi.",
   "changelog": [
-    "Fix product catalog key collisions",
-    "Restore full catalog snapshot chunks",
-    "Prevent product count drops completely",
-    "Optimize Firestore writes and reads",
-    "Update service worker cache v86"
+    "Eliminate local orphan key duplicates",
+    "Stabilize catalog count across refreshes",
+    "Ensure consistent product count displays",
+    "Clean IndexedDB legacy key residues",
+    "Update service worker cache v87"
   ]
 }
