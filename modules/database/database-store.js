@@ -375,9 +375,16 @@ async function syncFromFirestore(force = false) {
         return normProd;
       });
 
-    const prodIdFn = p => p["Kode Produk"] || p.id || p["Kode Produk Internal"];
-    let mergedProducts = (currentMaster.produk && currentMaster.produk.length > 0)
-      ? mergeEntities(currentMaster.produk, normalizedIncomingProducts, prodIdFn)
+    const prodIdFn = p => norm(p["Kode Produk"] || p.id || p["Kode Produk Internal"]);
+    
+    // Pastikan katalog lokal selalu terbaca utuh (in-memory atau langsung dari IndexedDB)
+    let localProds = (currentMaster.produk && currentMaster.produk.length > 0)
+      ? currentMaster.produk
+      : await indexedDBStore.getAll(STORES.PRODUCTS);
+    localProds = (localProds || []).filter(p => !p._isDeleted);
+
+    let mergedProducts = localProds.length > 0
+      ? mergeEntities(localProds, normalizedIncomingProducts, prodIdFn)
       : normalizedIncomingProducts;
 
     // Jika produk lokal kosong (misal instalasi baru di perangkat lain), pulihkan katalog dari Master Snapshot Chunks
@@ -457,10 +464,7 @@ async function syncFromFirestore(force = false) {
       inMemory.set(STORE_KEYS.movements, firestoreMovements);
       inMemory.set(STORE_KEYS.opnames, firestoreOpnames);
 
-      // PROTEKSI: JANGAN PERNAH hapus STORES.PRODUCTS jika lokal memiliki data katalog lebih banyak dari Firestore
-      if (!currentMaster.produk || currentMaster.produk.length <= normalizedIncomingProducts.length) {
-        await indexedDBStore.clearStore(STORES.PRODUCTS);
-      }
+      // KUNCI: Jangan pernah menghapus STORES.PRODUCTS pada sync latar belakang
       await Promise.all([
         indexedDBStore.clearStore(STORES.SUPPLIERS),
         indexedDBStore.clearStore(STORES.CATEGORIES),
