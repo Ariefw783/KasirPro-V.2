@@ -35,6 +35,9 @@ import {
   collectionSegments,
   documentSegments,
   readableDocumentId,
+  masterSnapshotManifestSegments,
+  masterSnapshotChunkSegments,
+  masterSnapshotChunkId,
   COLLECTION_NAMES,
   ROOT_DOCUMENT_PATH
 } from "./database-paths.js";
@@ -373,9 +376,38 @@ async function syncFromFirestore(force = false) {
       });
 
     const prodIdFn = p => p["Kode Produk"] || p.id || p["Kode Produk Internal"];
-    const mergedProducts = isIncremental
+    let mergedProducts = (currentMaster.produk && currentMaster.produk.length > 0)
       ? mergeEntities(currentMaster.produk, normalizedIncomingProducts, prodIdFn)
       : normalizedIncomingProducts;
+
+    // Jika produk lokal kosong (misal instalasi baru di perangkat lain), pulihkan katalog dari Master Snapshot Chunks
+    if (mergedProducts.length === 0) {
+      try {
+        const manifestRef = doc(firebaseDb, ...masterSnapshotManifestSegments());
+        const manifestSnap = await getDoc(manifestRef);
+        if (manifestSnap.exists()) {
+          const mData = manifestSnap.data();
+          const version = mData.version || 1;
+          const totalChunks = mData.chunksCount || 0;
+          const chunkPromises = [];
+          for (let i = 0; i < totalChunks; i++) {
+            const cRef = doc(firebaseDb, ...masterSnapshotChunkSegments(version, i));
+            chunkPromises.push(getDoc(cRef));
+          }
+          const chunkSnaps = await Promise.all(chunkPromises);
+          for (const cs of chunkSnaps) {
+            if (cs.exists()) {
+              const cData = cs.data();
+              if (Array.isArray(cData.items)) {
+                mergedProducts.push(...cData.items.map(p => normalizeProductRecord(p)));
+              }
+            }
+          }
+        }
+      } catch (snapErr) {
+        console.warn("[DatabaseStore] Gagal membaca master snapshot cloud:", snapErr?.message || snapErr);
+      }
+    }
 
     const supIdFn = s => s["Nama Perusahaan"] || s["Supplier"] || s.id;
     const mergedSuppliers = isIncremental
@@ -419,14 +451,17 @@ async function syncFromFirestore(force = false) {
         await indexedDBStore.putMany(STORES.OPNAMES, firestoreOpnames);
       }
     } else {
-      // Pada Full Initial Sync, Cloud Firestore adalah Source of Truth mutlak
+      // Pada Full Initial Sync, Cloud Firestore adalah Source of Truth untuk transaksi operasional
       inMemory.set(STORE_KEYS.invoices, firestoreInvoices);
       inMemory.set(STORE_KEYS.sales, firestoreSales);
       inMemory.set(STORE_KEYS.movements, firestoreMovements);
       inMemory.set(STORE_KEYS.opnames, firestoreOpnames);
 
+      // PROTEKSI: JANGAN PERNAH hapus STORES.PRODUCTS jika lokal memiliki data katalog lebih banyak dari Firestore
+      if (!currentMaster.produk || currentMaster.produk.length <= normalizedIncomingProducts.length) {
+        await indexedDBStore.clearStore(STORES.PRODUCTS);
+      }
       await Promise.all([
-        indexedDBStore.clearStore(STORES.PRODUCTS),
         indexedDBStore.clearStore(STORES.SUPPLIERS),
         indexedDBStore.clearStore(STORES.CATEGORIES),
         indexedDBStore.clearStore(STORES.INVOICES),
@@ -437,7 +472,7 @@ async function syncFromFirestore(force = false) {
     }
 
     // Simpan ke IndexedDB cache lokal
-    if (normalizedIncomingProducts.length) await indexedDBStore.putMany(STORES.PRODUCTS, normalizedIncomingProducts);
+    if (mergedProducts.length) await indexedDBStore.putMany(STORES.PRODUCTS, mergedProducts);
     if (firestoreSuppliers.length) await indexedDBStore.putMany(STORES.SUPPLIERS, firestoreSuppliers);
     if (firestoreCategories.length) await indexedDBStore.putMany(STORES.CATEGORIES, firestoreCategories);
     if (!isIncremental) {
@@ -577,19 +612,81 @@ export async function writeStore(key, value, onProgress) {
     if (typeof onProgress === "function") {
       onProgress({
         step: "preparing_firestore",
-        message: "Menyiapkan sinkronisasi Cloud Firestore...",
-        detail: "Memformat payload produk, supplier & kategori",
+        message: "Menyiapkan sinkronisasi Cloud Firestore hemat kuota...",
+        detail: "Memproses katalog acuan & produk operasional",
         percent: 40
       });
     }
 
-    if (Array.isArray(value?.produk)) {
-      for (const p of value.produk) {
-        const id = sanitizeDocId(p.id || p["Kode Produk"] || p["Kode Produk Internal"], "prd");
-        const ref = doc(firebaseDb, ...documentSegments("products", id));
-        operations.push({ ref, data: sanitizeFirestorePayload({ ...p, updatedAt: now }) });
-      }
+    const allProds = Array.isArray(value?.produk) ? value.produk : [];
+    // 1. Pisahkan Produk Operasional (Aktif / Ada Stok / Siap Jual) vs Katalog Acuan Supplier Pasif
+    const activeProducts = allProds.filter(p => num(p["Stok Awal"] ?? p.stock) > 0 || num(p["Harga Jual"] ?? p.sellPrice) > 0);
+    const passiveProducts = allProds.filter(p => num(p["Stok Awal"] ?? p.stock) <= 0 && num(p["Harga Jual"] ?? p.sellPrice) <= 0);
+
+    // Produk operasional aktif ditulis individual (hanya produk toko yang nyata dan siap transaksi)
+    for (const p of activeProducts) {
+      const id = sanitizeDocId(p.id || p["Kode Produk"] || p["Kode Produk Internal"], "prd");
+      const ref = doc(firebaseDb, ...documentSegments("products", id));
+      operations.push({ ref, data: sanitizeFirestorePayload({ ...p, updatedAt: now }) });
     }
+
+    // 2. Katalog Acuan Supplier Pasif (Kamus obat ribuan item) disimpan dalam bentuk Snapshot Chunks (Hemat 99.9% Writes)
+    // 2.000 produk per dokumen chunk Firestore (~300 KB per doc, batas Firestore 1 MB).
+    const SNAPSHOT_CHUNK_SIZE = 2000;
+    const catalogChunks = [];
+    for (let ci = 0; ci < passiveProducts.length; ci += SNAPSHOT_CHUNK_SIZE) {
+      catalogChunks.push(passiveProducts.slice(ci, ci + SNAPSHOT_CHUNK_SIZE));
+    }
+
+    const currentVersion = Number(value?.version) || 1;
+    for (let idx = 0; idx < catalogChunks.length; idx++) {
+      const cRef = doc(firebaseDb, ...masterSnapshotChunkSegments(currentVersion, idx));
+      const chunkData = {
+        version: currentVersion,
+        chunkIndex: idx,
+        totalChunks: catalogChunks.length,
+        itemsCount: catalogChunks[idx].length,
+        updatedAt: now,
+        items: catalogChunks[idx].map(p => sanitizeFirestorePayload({
+          id: p.id || p["Kode Produk"] || p["Kode Produk Internal"],
+          "Kode Produk": p["Kode Produk"] || p["Kode Produk Internal"] || p.id,
+          "Kode Produk Internal": p["Kode Produk Internal"] || p["Kode Produk"] || p.id,
+          "Barcode": p["Barcode"] || "",
+          "Nama Produk": p["Nama Produk"] || "",
+          "Kategori": p["Kategori"] || "",
+          "Supplier": p["Supplier"] || "",
+          "Produsen": p["Produsen"] || "",
+          "Harga Beli Terakhir": num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0),
+          "Harga Jual": num(p["Harga Jual"] ?? 0),
+          "Satuan Dasar": p["Satuan Dasar"] || p["Satuan"] || "Pcs",
+          "Satuan Pembelian": p["Satuan Pembelian"] || p["Kemasan Beli"] || "Pcs",
+          "Konversi": num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1),
+          "Satuan Antara": p["Satuan Antara"] || "Pcs",
+          "Isi Satuan Antara": num(p["Isi Satuan Antara"] ?? 1),
+          "Stok Minimum": num(p["Stok Minimum"] ?? 0),
+          "Status": "Katalog Acuan"
+        }))
+      };
+      operations.push({ ref: cRef, data: chunkData });
+    }
+
+    // Manifest Snapshot
+    if (catalogChunks.length > 0) {
+      const manifestRef = doc(firebaseDb, ...masterSnapshotManifestSegments());
+      operations.push({
+        ref: manifestRef,
+        data: {
+          version: currentVersion,
+          totalProducts: allProds.length,
+          activeCount: activeProducts.length,
+          passiveCount: passiveProducts.length,
+          chunksCount: catalogChunks.length,
+          updatedAt: now
+        }
+      });
+    }
+
+    // 3. Supplier & Kategori
     if (Array.isArray(value?.supplier)) {
       for (const s of value.supplier) {
         const id = sanitizeDocId(s.id || s["Supplier"] || s["Nama Perusahaan"], "sup");
@@ -611,7 +708,7 @@ export async function writeStore(key, value, onProgress) {
 
     // Commit dalam chunk 400 operasi dengan timeout perlindungan agar UI tidak hang
     const CHUNK_SIZE = 400;
-    const totalChunks = Math.ceil(operations.length / CHUNK_SIZE);
+    const totalChunks = Math.ceil(operations.length / CHUNK_SIZE) || 1;
 
     for (let i = 0; i < operations.length; i += CHUNK_SIZE) {
       const chunk = operations.slice(i, i + CHUNK_SIZE);
@@ -640,7 +737,7 @@ export async function writeStore(key, value, onProgress) {
         );
         await Promise.race([commitPromise, timeoutPromise]);
       } catch (commitErr) {
-        console.warn("[DatabaseStore] Peringatan commit batch master:", commitErr.message || commitErr);
+        console.warn("[DatabaseStore] Peringatan commit batch master (data lokal tetap aman tersimpan di IndexedDB):", commitErr?.message || commitErr);
       }
     }
 

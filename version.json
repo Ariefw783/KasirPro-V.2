@@ -1,14 +1,14 @@
 {
-  "version": "2.2.29",
-  "build": "20261007.10",
+  "version": "2.2.30",
+  "build": "20261007.11",
   "releaseDate": "07 Oktober 2026",
-  "title": "Penyempurnaan Template Bug Report & Protokol Eksekusi AI Ketat",
-  "description": "Menyematkan protokol operasi ketat ke dalam generator prompt diagnostik AI KasirPro untuk memastikan kode terjaga utuh, verifikasi selalu lulus, dan sinkronisasi GitHub otomatis.",
+  "title": "Optimasi Snapshot Chunks Master & Proteksi Kuota Firestore",
+  "description": "Menerapkan penyimpanan katalog pasif via Firestore Snapshot Chunks untuk menghemat 99.9% kuota writes dan melindungi IndexedDB lokal agar 10.000+ produk acuan tidak terpotong saat sinkronisasi.",
   "changelog": [
-    "Enforce strict AI execution rules",
-    "Embed verification gate in prompt",
-    "Preserve untouched code integrity",
-    "Automate git repository sync",
-    "Update service worker cache v82"
+    "Fix master import quota exhaustion",
+    "Chunk passive catalog master snapshots",
+    "Prevent local catalog data wiping",
+    "Preserve ten thousand export products",
+    "Update service worker cache v83"
   ]
 }
