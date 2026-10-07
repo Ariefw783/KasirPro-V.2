@@ -107,10 +107,22 @@ class IndexedDBStore {
         resolve(this.db);
       };
 
+      request.onblocked = () => {
+        console.warn("[IndexedDB] Database upgrade terhalang koneksi lain, melanjutkan...");
+        resolve(request.result || null);
+      };
+
       request.onerror = (event) => {
         console.error("[IndexedDB] Gagal membuka database:", event.target.error);
         reject(event.target.error);
       };
+
+      setTimeout(() => {
+        if (!this.db) {
+          console.warn("[IndexedDB] Timeout membuka database (3 detik), melanjutkan...");
+          resolve(request.result || null);
+        }
+      }, 3000);
     });
 
     return this._openPromise;

@@ -46,17 +46,7 @@ async function bootManagement() {
     sandboxBanner.style.display = currentDbEnv === DB_ENVIRONMENTS.SANDBOX ? "flex" : "none";
   }
 
-  // 3. Inisialisasi Database (IndexedDB Cache + Supabase/Firestore Source of Truth)
-  try {
-    await initializeDatabase();
-    console.log("[Management] Database siap, menginisialisasi controller modul...");
-  } catch (err) {
-    console.warn("[Management] Menggunakan cache lokal:", err);
-  } finally {
-    hideInitialLoader();
-  }
-
-  // 4. Inisialisasi Seluruh Domain Controller secara aman & terisolasi
+  // 3. Inisialisasi Seluruh Domain Controller secara aman & terisolasi (Instan 0ms)
   const modulesToInit = [
     { name: "Dashboard", fn: initDashboardModule },
     { name: "Products", fn: initProductsModule },
@@ -76,11 +66,11 @@ async function bootManagement() {
     try {
       m.fn();
     } catch (err) {
-      console.error(`[Management] Error inisialisasi modul ${m.name}:`, err);
+      console.warn(`[Management] Inisialisasi modul ${m.name}:`, err);
     }
   });
 
-  // 5. Setup Event Listener Sinkronisasi Database
+  // 4. Setup Event Listener Sinkronisasi Database
   window.addEventListener("kasirpro:database-synced", () => {
     console.log("[Management] Event kasirpro:database-synced diterima, menyegarkan tampilan:", currentActiveView);
     refreshCurrentView();
@@ -90,14 +80,28 @@ async function bootManagement() {
     refreshCurrentView();
   });
 
-  // 6. Setup Navigasi Sub-proses Khusus
+  // 5. Setup Navigasi Sub-proses Khusus
   setupSubProcessNavigation();
 
-  // 7. Set active view & render dashboard langsung
+  // 6. Set active view & render dashboard seketika (0ms)
   switchView("dashboard");
   try {
     renderDashboard();
   } catch (_) {}
+
+  // 7. Inisialisasi Database (IndexedDB Cache + Supabase PostgreSQL)
+  try {
+    const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error("Timeout init db")), 2500));
+    await Promise.race([initializeDatabase(), timeoutPromise]);
+    console.log("[Management] Database siap, data tersinkron.");
+  } catch (err) {
+    console.warn("[Management] Menggunakan cache lokal:", err);
+  } finally {
+    hideInitialLoader();
+    try {
+      renderDashboard();
+    } catch (_) {}
+  }
 }
 
 function setupSubProcessNavigation() {

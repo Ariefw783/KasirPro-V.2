@@ -1,14 +1,13 @@
 {
-  "version": "2.2.23",
-  "build": "20261007.01",
+  "version": "2.2.24",
+  "build": "20261007.02",
   "releaseDate": "07 Oktober 2026",
-  "title": "Migrasi Penuh & Total ke Supabase PostgreSQL",
-  "description": "Supabase PostgreSQL resmi menjadi Single Source of Truth Utama 100%. Bebas total dari batas kuota Firebase.",
+  "title": "Inisialisasi Instan Dashboard & Anti-Stall Controller",
+  "description": "Dashboard KPI render instan 0ms tanpa menunggu database, perlindungan IndexedDB timeout, dan auto-sinkronisasi Supabase PostgreSQL.",
   "changelog": [
-    "Supabase PostgreSQL 100% Single Source of Truth",
-    "Bebas dari hambatan batas kuota harian Firestore",
-    "Penyimpanan master dan transaksi instan ke Supabase",
-    "Kinerja POS dan faktur mulus tanpa delay",
-    "Dashboard dan metrik tersinkronisasi cepat"
+    "Inisialisasi modul dan KPI Dashboard instan (0ms)",
+    "Anti-stall Promise IndexedDB dengan batas toleransi",
+    "Sinkronisasi Supabase PostgreSQL berjalan mulus di latar belakang",
+    "Seluruh metrik dan angka dashboard langsung aktif"
   ]
 }
