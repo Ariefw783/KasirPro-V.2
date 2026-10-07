@@ -29,9 +29,6 @@ const $ = (id) => document.getElementById(id);
 let currentActiveView = "dashboard";
 
 async function bootManagement() {
-  // Sembunyikan loader sesegera mungkin
-  hideInitialLoader();
-
   // 1. Verifikasi Sesi Pengguna
   if (!validateAdminSession()) return;
 
@@ -40,13 +37,15 @@ async function bootManagement() {
   setupMobileSidebar();
   setupLogout();
 
+  // 3. Sembunyikan loader awal & periksa banner sandbox
+  hideInitialLoader();
   const currentDbEnv = getDatabaseEnvironment();
   const sandboxBanner = $("banner-sandbox-mode");
   if (sandboxBanner) {
     sandboxBanner.style.display = currentDbEnv === DB_ENVIRONMENTS.SANDBOX ? "flex" : "none";
   }
 
-  // 3. Inisialisasi Seluruh Domain Controller secara aman & terisolasi (Instan 0ms)
+  // 4. Inisialisasi Seluruh Domain Controller secara aman & terisolasi (Instan 0ms)
   const modulesToInit = [
     { name: "Dashboard", fn: initDashboardModule },
     { name: "Products", fn: initProductsModule },
@@ -70,7 +69,7 @@ async function bootManagement() {
     }
   });
 
-  // 4. Setup Event Listener Sinkronisasi Database
+  // 5. Setup Event Listener Sinkronisasi Database
   window.addEventListener("kasirpro:database-synced", () => {
     console.log("[Management] Event kasirpro:database-synced diterima, menyegarkan tampilan:", currentActiveView);
     refreshCurrentView();
@@ -80,22 +79,22 @@ async function bootManagement() {
     refreshCurrentView();
   });
 
-  // 5. Setup Navigasi Sub-proses Khusus
+  // 6. Setup Navigasi Sub-proses Khusus
   setupSubProcessNavigation();
 
-  // 6. Set active view & render dashboard seketika (0ms)
+  // 7. Set active view & render dashboard seketika (0ms)
   switchView("dashboard");
   try {
     renderDashboard();
   } catch (_) {}
 
-  // 7. Inisialisasi Database (IndexedDB Cache + Supabase PostgreSQL)
+  // 8. Inisialisasi Database (IndexedDB Cache + Cloud Firestore) Non-blocking
   try {
-    const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error("Timeout init db")), 2500));
+    const timeoutPromise = new Promise((_, rej) => setTimeout(() => rej(new Error("Timeout init db")), 3000));
     await Promise.race([initializeDatabase(), timeoutPromise]);
     console.log("[Management] Database siap, data tersinkron.");
   } catch (err) {
-    console.warn("[Management] Menggunakan cache lokal:", err);
+    console.warn("[Management] Berjalan dengan data lokal:", err?.message || err);
   } finally {
     hideInitialLoader();
     try {
@@ -140,13 +139,10 @@ function setupSubProcessNavigation() {
 
 function validateAdminSession() {
   try {
-    const raw = sessionStorage.getItem("kasirpro_session") || localStorage.getItem("kasirpro_session");
+    const raw = sessionStorage.getItem("kasirpro_session");
     if (!raw) {
       location.replace("../index.html");
       return false;
-    }
-    if (!sessionStorage.getItem("kasirpro_session")) {
-      sessionStorage.setItem("kasirpro_session", raw);
     }
     const session = JSON.parse(raw);
     if (!session || session.role !== "admin") {
@@ -303,9 +299,6 @@ function setupLogout() {
     location.replace("../index.html");
   });
 }
-
-// Tutup loader seawal mungkin
-hideInitialLoader();
 
 // Jalankan saat dokumen siap
 if (document.readyState === "loading") {

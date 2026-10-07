@@ -113,7 +113,7 @@ class IndexedDBStore {
       };
 
       request.onerror = (event) => {
-        console.error("[IndexedDB] Gagal membuka database:", event.target.error);
+        console.warn("[IndexedDB] Gagal membuka database:", event.target.error);
         reject(event.target.error);
       };
 

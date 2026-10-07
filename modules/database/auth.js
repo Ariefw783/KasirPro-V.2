@@ -16,7 +16,6 @@ import {
 import { firebaseConfig, kasirProFirebase } from "./firebase-config.js";
 import { firebaseAuth, firebaseDb } from "./firebase-client.js";
 import { documentSegments } from "./database-paths.js";
-import { supabaseDb } from "./supabase-client.js";
 
 const SESSION_KEY = "kasirpro_session";
 const ADMIN_EMAIL = kasirProFirebase.adminGmail;
@@ -104,75 +103,30 @@ export async function signInKasirPro({ username, password, expectedRole }) {
     const clean = cleanUsername(username);
     if (!clean || !password) throw new Error("Nama pengguna dan kata sandi wajib diisi.");
 
-    let session = null;
+    const legacyEmail = `${clean}@${kasirProFirebase.authEmailDomain}`;
+    const email = usernameToFirebaseEmail(clean);
 
-    // 1. Coba login via Supabase Profile (Database Utama Baru)
+    let credential;
     try {
-        const rows = await supabaseDb.select("profiles", `username=eq.${encodeURIComponent(clean)}&limit=1`);
-        if (Array.isArray(rows) && rows.length > 0) {
-            const p = rows[0];
-            const role = normalizeRole(p.role);
-            if (normalizeStatus(p.status) !== "aktif") {
-                throw new Error("Akun ini sedang nonaktif.");
-            }
-            if (expectedRole && role !== normalizeRole(expectedRole)) {
-                throw new Error("Peran akun tidak sesuai dengan mode masuk yang dipilih.");
-            }
-
-            // Verifikasi akun admin (atau kasir)
-            if (clean === "admin") {
-                session = {
-                    role: "admin",
-                    userId: p.id || p.auth_user_id || "admin-supabase-id",
-                    username: p.username,
-                    name: p.name || "Administrator",
-                    firebaseEmail: ADMIN_EMAIL
-                };
-            } else {
-                session = {
-                    role,
-                    userId: p.id || p.auth_user_id || `${clean}-supabase-id`,
-                    username: p.username,
-                    name: p.name || p.username,
-                    firebaseEmail: usernameToFirebaseEmail(clean)
-                };
-            }
-        }
-    } catch (supErr) {
-        console.warn("[Auth] Supabase check:", supErr.message);
+        credential = await signInWithEmailAndPassword(firebaseAuth, email, password);
+    } catch (error) {
+        if (clean === "admin" || email === legacyEmail) throw error;
+        credential = await signInWithEmailAndPassword(firebaseAuth, legacyEmail, password);
     }
 
-    // 2. Fallback Firebase Auth
-    if (!session) {
-        const legacyEmail = `${clean}@${kasirProFirebase.authEmailDomain}`;
-        const email = usernameToFirebaseEmail(clean);
-
-        let credential;
-        try {
-            credential = await signInWithEmailAndPassword(firebaseAuth, email, password);
-        } catch (error) {
-            if (clean === "admin" || email === legacyEmail) throw error;
-            credential = await signInWithEmailAndPassword(firebaseAuth, legacyEmail, password);
-        }
-
-        const profile = await ensureInitialAdminProfile(credential.user, username);
-        const role = normalizeRole(profile.role);
-        if (normalizeStatus(profile.status) !== "aktif") {
-            await signOut(firebaseAuth);
-            throw new Error("Akun ini sedang nonaktif.");
-        }
-        if (expectedRole && role !== normalizeRole(expectedRole)) {
-            await signOut(firebaseAuth);
-            throw new Error("Peran akun tidak sesuai dengan mode masuk yang dipilih.");
-        }
-
-        session = sessionFromProfile(credential.user, profile);
+    const profile = await ensureInitialAdminProfile(credential.user, username);
+    const role = normalizeRole(profile.role);
+    if (normalizeStatus(profile.status) !== "aktif") {
+        await signOut(firebaseAuth);
+        throw new Error("Akun ini sedang nonaktif.");
+    }
+    if (expectedRole && role !== normalizeRole(expectedRole)) {
+        await signOut(firebaseAuth);
+        throw new Error("Peran akun tidak sesuai dengan mode masuk yang dipilih.");
     }
 
+    const session = sessionFromProfile(credential.user, profile);
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    localStorage.setItem("kasirpro_role", session.role);
-    localStorage.setItem("kasirpro_last_user", session.name);
     return session;
 }
 
@@ -180,25 +134,11 @@ export function waitForFirebaseUser() {
     if (firebaseAuth.currentUser) {
         return Promise.resolve(firebaseAuth.currentUser);
     }
-    const localSess = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(SESSION_KEY);
-    if (localSess) {
-        try {
-            const parsed = JSON.parse(localSess);
-            if (parsed && parsed.username) {
-                return Promise.resolve({
-                    uid: parsed.userId || "supabase-admin-uid",
-                    email: parsed.firebaseEmail || ADMIN_EMAIL,
-                    displayName: parsed.name || parsed.username
-                });
-            }
-        } catch (_) {}
-    }
     return new Promise((resolve) => {
         const unsubscribe = onAuthStateChanged(firebaseAuth, (user) => {
             unsubscribe();
             resolve(user || null);
         });
-        setTimeout(() => resolve(null), 1500);
     });
 }
 

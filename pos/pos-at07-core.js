@@ -82,8 +82,7 @@ function settings(){
 }
 
 function validate(){
-    try{session=JSON.parse(sessionStorage.getItem(SESSION_KEY)||localStorage.getItem(SESSION_KEY)||"null")}catch{}
-    if(session&&!sessionStorage.getItem(SESSION_KEY)){try{sessionStorage.setItem(SESSION_KEY,JSON.stringify(session))}catch{}}
+    try{session=JSON.parse(sessionStorage.getItem(SESSION_KEY)||"null")}catch{}
     if(!session||!["admin","cashier"].includes(session.role)){
         location.replace("../index.html");
         return false;

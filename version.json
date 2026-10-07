@@ -1,14 +1,14 @@
 {
-  "version": "2.2.21",
-  "build": "20261007.01",
+  "version": "2.2.22",
+  "build": "20261007.03",
   "releaseDate": "07 Oktober 2026",
-  "title": "New Firebase Project kasirpro-v2",
-  "description": "Migrated Firebase backend to brand-new project kasirpro-v2 with freshly reset daily quotas.",
+  "title": "Inisialisasi Instan Dashboard 0ms & Firebase kasirpro-v2",
+  "description": "Render instan KPI dashboard 0ms, anti-stall IndexedDB, non-blocking cloud Firestore, dan integrasi penuh project Firebase kasirpro-v2.",
   "changelog": [
-    "Migrate to new Firebase project",
-    "Update project to kasirpro-v2",
-    "Fresh cloud Firestore database",
-    "Reset daily quotas to zero",
-    "Clean start for pharmacy"
+    "Inisialisasi modul UI dan kartu dashboard instan 0ms",
+    "Anti-stall timeout guard pada pembukaan IndexedDB cache",
+    "Penanganan koneksi Firestore non-blocking dan graceful degradation",
+    "Pembaruan Service Worker cache v75 dengan auto-skipWaiting",
+    "Integrasi project Firebase baru kasirpro-v2"
   ]
 }

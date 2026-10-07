@@ -1,4 +1,5 @@
 import { signInKasirPro } from "./modules/database/auth.js";
+import { readStore } from "./modules/database/database-store.js";
 
 const roleButtons = document.querySelectorAll(".role-card");
 const roleSelection = document.querySelector(".role-selection");
@@ -34,8 +35,7 @@ function init() {
 async function loadVersionInfo() {
   const versionEl = document.getElementById("login-app-version");
   const dateEl = document.getElementById("login-app-updated");
-  if (versionEl) versionEl.textContent = "v2.2.21";
-  if (dateEl) dateEl.textContent = "Diperbarui 06 Okt 2026";
+  if (!versionEl && !dateEl) return;
 
   try {
     const res = await fetch(`version.json?t=${Date.now()}`, { cache: "no-store" });
@@ -53,15 +53,14 @@ async function updateLoginStoreName() {
   const node = document.getElementById("login-store-name");
   if (!node) return;
   try {
-    const raw = localStorage.getItem("kasirpro_store_settings") || localStorage.getItem("kasirpro_master_store_v1");
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      const rows = parsed?.pengaturan_toko || parsed?.pengaturanToko || parsed;
-      const settings = Array.isArray(rows) ? rows[0] : rows;
-      const name = String(settings?.store_name || settings?.["Nama Toko"] || "").trim().replace(/\s+v\.?\s*2(?:\.0)?$/i, "").trim();
-      if (name) node.textContent = name;
-    }
-  } catch (_) {}
+    const master = readStore("kasirpro_master_store_v1", {}) || {};
+    const rows = master?.pengaturan_toko || master?.pengaturanToko || master?.pengaturan || [];
+    const settings = Array.isArray(rows) ? rows[0] : rows;
+    const name = String(settings?.["Nama Toko"] || "").trim().replace(/\s+v\.?\s*2(?:\.0)?$/i, "").trim();
+    if (name) node.textContent = name;
+  } catch (error) {
+    console.warn("Nama toko lokal belum dapat dibaca:", error);
+  }
 }
 
 function disableLegacyLoader() {
@@ -74,18 +73,12 @@ function disableLegacyLoader() {
 }
 
 function getSession() {
-  const raw = sessionStorage.getItem("kasirpro_session") || localStorage.getItem("kasirpro_session");
+  const raw = sessionStorage.getItem("kasirpro_session");
   if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed && !sessionStorage.getItem("kasirpro_session")) {
-      sessionStorage.setItem("kasirpro_session", raw);
-    }
-    return parsed;
-  } catch (error) {
+  try { return JSON.parse(raw); }
+  catch (error) {
     console.error("Session tidak valid:", error);
     sessionStorage.removeItem("kasirpro_session");
-    localStorage.removeItem("kasirpro_session");
     return null;
   }
 }
@@ -102,11 +95,6 @@ function bindEvents() {
   backRoleButton?.addEventListener("click", () => selectRole("admin"));
   togglePasswordButton?.addEventListener("click", togglePasswordVisibility);
   loginForm?.addEventListener("submit", handleLoginSubmit);
-  loginSubmit?.addEventListener("click", (e) => {
-    if (!isSubmitting) {
-      handleLoginSubmit(e);
-    }
-  });
 }
 
 function selectRole(role) {
@@ -145,33 +133,28 @@ function togglePasswordVisibility() {
 }
 
 async function handleLoginSubmit(event) {
-  if (event) {
-    if (typeof event.preventDefault === "function") event.preventDefault();
-    if (typeof event.stopPropagation === "function") event.stopPropagation();
-  }
-  if (isSubmitting) return false;
+  event.preventDefault();
+  if (isSubmitting) return;
   clearMessage();
   setButtonLoading(true);
   try {
-    const username = (usernameInput?.value || "").trim();
-    const password = passwordInput?.value || "";
-    if (!username) throw new Error("Silakan masukkan username.");
-    if (!password) throw new Error("Silakan masukkan password.");
-
     if (selectedRole === "admin") {
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
       await signInKasirPro({ username, password, expectedRole: "admin" });
       window.location.replace("management/index.html");
-      return false;
+      return;
     }
 
+    const username = usernameInput.value.trim();
+    if (!username) throw new Error("Silakan masukkan username kasir.");
+    const password = passwordInput.value;
     await signInKasirPro({ username, password, expectedRole: "cashier" });
     window.location.replace("pos/index.html");
-    return false;
   } catch (error) {
     console.error("Login gagal:", error);
     showLoginError(firebaseLoginMessage(error));
     setButtonLoading(false);
-    return false;
   }
 }
 
