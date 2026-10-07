@@ -1,13 +1,14 @@
 {
-  "version": "2.2.24",
-  "build": "20261007.02",
+  "version": "2.2.21",
+  "build": "20261007.01",
   "releaseDate": "07 Oktober 2026",
-  "title": "Inisialisasi Instan Dashboard & Anti-Stall Controller",
-  "description": "Dashboard KPI render instan 0ms tanpa menunggu database, perlindungan IndexedDB timeout, dan auto-sinkronisasi Supabase PostgreSQL.",
+  "title": "New Firebase Project kasirpro-v2",
+  "description": "Migrated Firebase backend to brand-new project kasirpro-v2 with freshly reset daily quotas.",
   "changelog": [
-    "Inisialisasi modul dan KPI Dashboard instan (0ms)",
-    "Anti-stall Promise IndexedDB dengan batas toleransi",
-    "Sinkronisasi Supabase PostgreSQL berjalan mulus di latar belakang",
-    "Seluruh metrik dan angka dashboard langsung aktif"
+    "Migrate to new Firebase project",
+    "Update project to kasirpro-v2",
+    "Fresh cloud Firestore database",
+    "Reset daily quotas to zero",
+    "Clean start for pharmacy"
   ]
 }

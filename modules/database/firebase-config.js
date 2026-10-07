@@ -1,9 +1,10 @@
 export const firebaseConfig = Object.freeze({
-    apiKey: "AIzaSyCt-klYcp8tWdkwlmseBIJrRzLlpuToaH0",
-    authDomain: "kasir-project-dd99a.firebaseapp.com",
-    projectId: "kasir-project-dd99a",
-    messagingSenderId: "555658865729",
-    appId: "1:555658865729:web:a803bc790c9183430c2ac0"
+    apiKey: "AIzaSyDHcfmveSawqarN6eyWQXVaPXfqCwv2ySM",
+    authDomain: "kasirpro-v2.firebaseapp.com",
+    projectId: "kasirpro-v2",
+    storageBucket: "kasirpro-v2.firebasestorage.app",
+    messagingSenderId: "140427073262",
+    appId: "1:140427073262:web:4a50b0d211264fedfc05ff"
 });
 
 export const kasirProFirebase = Object.freeze({

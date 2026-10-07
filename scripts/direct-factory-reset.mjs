@@ -9,8 +9,8 @@
  * node scripts/direct-factory-reset.mjs <password-admin>
  */
 
-const API_KEY = "AIzaSyCt-klYcp8tWdkwlmseBIJrRzLlpuToaH0";
-const PROJECT_ID = "kasir-project-dd99a";
+const API_KEY = "AIzaSyDHcfmveSawqarN6eyWQXVaPXfqCwv2ySM";
+const PROJECT_ID = "kasirpro-v2";
 const ADMIN_EMAIL = "apotekdoaibu.v2@gmail.com";
 
 // Subkoleksi yang wajib dibersihkan total sampai ke akar
