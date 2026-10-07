@@ -110,16 +110,18 @@ export function renderDashboard() {
   }, 0);
 
   const purchaseInvoiceValue = filteredInvoices.reduce((sum, invoice) => sum + num(invoice?.total), 0);
-  const stockValue = products.reduce((sum, product) => {
+
+  let stockValue = 0;
+  let totalItems = 0;
+  for (let i = 0; i < products.length; i++) {
+    const product = products[i];
     const code = product["Kode Produk"] || product.id;
     const stock = readCurrentStock(code);
-    return sum + (stock * num(product?.["Harga Beli Terakhir"] ?? product?.["Harga Beli"] ?? 0));
-  }, 0);
-
-  const totalItems = products.reduce((sum, product) => {
-    const code = product["Kode Produk"] || product.id;
-    return sum + readCurrentStock(code);
-  }, 0);
+    if (stock > 0) {
+      totalItems += stock;
+      stockValue += (stock * num(product?.["Harga Beli Terakhir"] ?? product?.["Harga Beli"] ?? 0));
+    }
+  }
 
   const todaySales = completed.filter((sale) => dashboardDateMatches(sale?.at || sale?.createdAt, "today")).length;
 

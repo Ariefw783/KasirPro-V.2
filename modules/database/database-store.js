@@ -533,16 +533,15 @@ export function readStore(key, fallback = null) {
 }
 
 /**
- * Ambil stok produk terkini
+ * Ambil stok produk terkini (O(1) Ultra-fast Hash Map)
  */
 export function readCurrentStock(productCode) {
   const code = norm(productCode);
+  if (!code) return 0;
   if (activeStockIndex.has(code)) {
     return activeStockIndex.get(code);
   }
-  const prods = inMemory.get(STORE_KEYS.master)?.produk || [];
-  const found = prods.find(p => norm(p["Kode Produk"]) === code);
-  return found ? num(found["Stok Awal"]) : 0;
+  return 0;
 }
 
 /**
@@ -554,6 +553,16 @@ export async function writeStore(key, value, onProgress) {
 
   // Tulis ke IndexedDB
   if (key === STORE_KEYS.master) {
+    // Perbarui active stock index secara instan untuk 10.000+ produk
+    if (Array.isArray(value?.produk)) {
+      activeStockIndex.clear();
+      for (let i = 0; i < value.produk.length; i++) {
+        const p = value.produk[i];
+        const c = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
+        if (c) activeStockIndex.set(c, num(p["Stok Awal"] ?? p.stock ?? 0));
+      }
+    }
+
     if (typeof onProgress === "function") {
       onProgress({
         step: "indexeddb",

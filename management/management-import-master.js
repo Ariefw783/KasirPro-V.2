@@ -73,12 +73,34 @@ function bindEvents() {
   // Result Panel Navigation
   $("import-another-master")?.addEventListener("click", resetFileSelection);
   $("btn-result-to-dashboard")?.addEventListener("click", () => {
-    resetFileSelection();
-    if (window.switchView) window.switchView("dashboard");
+    const btn = $("btn-result-to-dashboard");
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyiapkan Dashboard...';
+    }
+    setTimeout(() => {
+      resetFileSelection();
+      if (window.switchView) window.switchView("dashboard");
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-gauge-high"></i> Kembali ke Dashboard';
+      }
+    }, 40);
   });
   $("btn-result-to-products")?.addEventListener("click", () => {
-    resetFileSelection();
-    if (window.switchView) window.switchView("products");
+    const btn = $("btn-result-to-products");
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyiapkan Produk...';
+    }
+    setTimeout(() => {
+      resetFileSelection();
+      if (window.switchView) window.switchView("products");
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-boxes-stacked"></i> Lihat Daftar Produk';
+      }
+    }, 40);
   });
 
   // Search filter di preview step 2

@@ -164,7 +164,8 @@ function updateSummaryKpis() {
   let totalStock = 0;
   let lowStockCount = 0;
 
-  currentProducts.forEach(p => {
+  for (let i = 0; i < currentProducts.length; i++) {
+    const p = currentProducts[i];
     const code = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
     const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
     const min = num(p["Stok Minimum"]);
@@ -172,7 +173,7 @@ function updateSummaryKpis() {
     if (stock <= 0 || (min > 0 && stock <= min)) {
       lowStockCount++;
     }
-  });
+  }
 
   const totalEl = $("product-total-count");
   if (totalEl) totalEl.textContent = formatNumber(total);
