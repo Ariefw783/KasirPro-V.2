@@ -963,10 +963,8 @@
                         >
 
                             <legend>
-                                Jika Kode Produk
-                                sudah ada
+                                Jika Produk Sudah Terdaftar
                             </legend>
-
 
                             <label class="radio-option">
 
@@ -980,18 +978,16 @@
                                 <span>
 
                                     <strong>
-                                        Perbarui Data Lama
+                                        Perbarui Informasi
                                     </strong>
 
                                     <small>
-                                        Data sistem diperbarui
-                                        menggunakan isi Excel.
+                                        Perbarui data profil produk dengan data dari file.
                                     </small>
 
                                 </span>
 
                             </label>
-
 
                             <label class="radio-option">
 
@@ -1004,12 +1000,11 @@
                                 <span>
 
                                     <strong>
-                                        Lewati Data Lama
+                                        Lewati
                                     </strong>
 
                                     <small>
-                                        Data yang sudah ada
-                                        tidak diubah.
+                                        Pertahankan data yang sudah tersimpan di sistem.
                                     </small>
 
                                 </span>
@@ -1017,7 +1012,6 @@
                             </label>
 
                         </fieldset>
-
 
                         <div
                             class="module-header"
@@ -1027,22 +1021,16 @@
                             <div>
 
                                 <h2>
-                                    Data Perlu Ditinjau
+                                    Verifikasi Data Serupa
                                 </h2>
 
                                 <p>
-                                    Jika Kode Produk tidak cocok,
-                                    tetapi Nama Produk sama dengan
-                                    data lama, sistem
-                                    <strong>tidak akan mengimportnya otomatis</strong>.
-                                    Data tersebut ditahan untuk
-                                    diperiksa Admin.
+                                    Produk dengan nama serupa namun kode berbeda ditahan untuk memastikan tidak terjadi duplikasi.
                                 </p>
 
                             </div>
 
                         </div>
-
 
                         <div
                             class="table-wrapper"
@@ -1058,7 +1046,7 @@
                                         <th>Baris</th>
                                         <th>Identitas</th>
                                         <th>Status</th>
-                                        <th>Dasar Pencocokan</th>
+                                        <th>Keterangan</th>
                                     </tr>
 
                                 </thead>
@@ -1069,13 +1057,11 @@
 
                         </div>
 
-
                         <div class="preview-note" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;">
 
                             <i class="fa-solid fa-shield-halved" style="color:#2563eb;"></i>
 
-                            Data transaksi dan stok fisik saat ini tidak akan diubah atau direset.
-                            Perubahan master langsung disimpan ke IndexedDB dan disinkronkan ke Firestore cloud.
+                            Transaksi dan saldo stok berjalan tetap terlindungi.
 
                         </div>
 
@@ -1124,7 +1110,7 @@
                             </h3>
 
                             <p id="master-import-result-text" style="color:#475569;font-size:14px;max-width:560px;margin:8px auto 20px;">
-                                Seluruh perubahan master data telah berhasil disimpan dan disinkronkan ke database.
+                                Master data berhasil diperbarui.
                             </p>
 
 
@@ -1403,7 +1389,7 @@
                     <input
                         type="search"
                         id="product-search"
-                        placeholder="Cari kode atau nama produk..."
+                        placeholder="Cari nama obat, kode, atau barcode..."
                     >
 
                 </div>
@@ -1438,10 +1424,10 @@
                         class="button button-secondary"
                         aria-label="Filter status produk"
                     >
-                        <option value="">Semua Status</option>
-                        <option value="aktif">Aktif (Siap Jual)</option>
-                        <option value="belum aktif">Belum Aktif (Perlu Harga Jual)</option>
-                        <option value="tidak aktif">Tidak Aktif</option>
+                        <option value="aktif" selected>Aktif (Siap Jual)</option>
+                        <option value="belum aktif">Perlu Harga Jual</option>
+                        <option value="tidak aktif">Katalog Acuan</option>
+                        <option value="">Semua Produk</option>
                     </select>
 
                     <button

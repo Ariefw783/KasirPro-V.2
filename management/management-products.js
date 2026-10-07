@@ -59,7 +59,7 @@ function bindEvents() {
     const supFilter = $("product-supplier-filter");
     if (supFilter) supFilter.value = "";
     const stFilter = $("product-status-filter");
-    if (stFilter) stFilter.value = "";
+    if (stFilter) stFilter.value = "aktif";
     currentPage = 1;
     applyFilters();
   });
@@ -141,17 +141,21 @@ function populateFilterDropdowns(master) {
     supFilter.value = currentVal;
   }
 
-  // Pastikan status filter punya 3 opsi resmi KasirPro (+ 1 Semua Status)
+  // Pastikan status filter punya 3 opsi resmi KasirPro (+ 1 Semua Produk)
   const statusFilter = $("product-status-filter");
-  if (statusFilter && (!statusFilter.querySelector('option[value="tidak aktif"]') || statusFilter.querySelector('option[value="nonaktif"]'))) {
-    const curVal = statusFilter.value;
+  if (statusFilter && (!statusFilter.querySelector('option[value="katalog acuan"]') || statusFilter.querySelector('option[value="nonaktif"]'))) {
+    const curVal = statusFilter.value || "aktif";
     statusFilter.innerHTML = `
-      <option value="">Semua Status</option>
       <option value="aktif">Aktif (Siap Jual)</option>
-      <option value="belum aktif">Belum Aktif (Perlu Harga Jual)</option>
-      <option value="tidak aktif">Tidak Aktif</option>
+      <option value="belum aktif">Perlu Harga Jual</option>
+      <option value="tidak aktif">Katalog Acuan</option>
+      <option value="">Semua Produk</option>
     `;
-    if (curVal && curVal !== "nonaktif") statusFilter.value = curVal;
+    if (curVal && curVal !== "nonaktif") {
+      statusFilter.value = curVal;
+    } else {
+      statusFilter.value = "aktif";
+    }
   }
 }
 
@@ -214,10 +218,12 @@ function applyFilters() {
     }
     // 2. Aktif (Siap Jual): Sudah mempunyai stok via faktur (> 0) DAN sudah diisi harga jual (> 0) -> Siap transaksi POS
     if (statusVal === "aktif") {
+      // Smart search: Jika ada input pencarian, tembuskan ke seluruh katalog acuan agar obat acuan langsung ditemukan
+      if (q) return true;
       return stock > 0 && sellPrice > 0;
     }
-    // 3. Tidak Aktif / Nonaktif: Belum mendapat stok via input faktur (stock <= 0)
-    if (statusVal === "tidak aktif" || statusVal === "nonaktif") {
+    // 3. Tidak Aktif / Katalog Acuan: Belum mendapat stok via input faktur (stock <= 0)
+    if (statusVal === "tidak aktif" || statusVal === "katalog acuan" || statusVal === "nonaktif") {
       return stock <= 0;
     }
     if (statusVal) {
@@ -229,7 +235,7 @@ function applyFilters() {
 
   const resetBtn = $("product-reset-filter");
   if (resetBtn) {
-    resetBtn.hidden = !(q || cat || sup || statusVal);
+    resetBtn.hidden = !(q || cat || sup || (statusVal && statusVal !== "aktif"));
   }
 
   renderTable();
@@ -265,7 +271,45 @@ function renderTable() {
   });
 
   if (!pageItems.length) {
-    tbody.innerHTML = `<tr><td colspan="11" class="empty-table-state" style="text-align:center;padding:24px;">Tidak ada data produk yang sesuai kriteria pencarian.</td></tr>`;
+    const q = norm($("product-search")?.value);
+    const cat = norm($("product-category-filter")?.value);
+    const sup = norm($("product-supplier-filter")?.value);
+    const statusVal = norm($("product-status-filter")?.value);
+
+    if (statusVal === "aktif" && !q && !cat && !sup) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="11" class="empty-table-state" style="text-align:center;padding:36px 20px;">
+            <div style="max-width:480px;margin:0 auto;color:#64748b;">
+              <i class="fa-solid fa-store" style="font-size:36px;color:#94a3b8;margin-bottom:12px;display:block;"></i>
+              <h4 style="font-size:15px;color:#1e293b;margin-bottom:6px;font-weight:700;">Etalase Siap Jual Masih Kosong</h4>
+              <p style="font-size:13px;line-height:1.5;margin:0 0 16px 0;">
+                Katalog acuan obat Anda telah tersimpan rapi. Produk akan otomatis masuk ke etalase ini segera setelah stok dicatat via faktur pembelian.
+              </p>
+              <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                <a href="../pembelian/index.html" class="button button-primary button-small" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+                  <i class="fa-solid fa-file-invoice"></i> Input Faktur Pembelian
+                </a>
+                <button type="button" class="button button-secondary button-small" id="btn-view-all-catalogs" style="display:inline-flex;align-items:center;gap:6px;">
+                  <i class="fa-solid fa-book-open"></i> Buka Katalog Acuan
+                </button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      `;
+      setTimeout(() => {
+        document.getElementById("btn-view-all-catalogs")?.addEventListener("click", () => {
+          const sf = $("product-status-filter");
+          if (sf) {
+            sf.value = "tidak aktif";
+            sf.dispatchEvent(new Event("change"));
+          }
+        });
+      }, 0);
+    } else {
+      tbody.innerHTML = `<tr><td colspan="11" class="empty-table-state" style="text-align:center;padding:24px;">Tidak ada data produk yang sesuai kriteria pencarian.</td></tr>`;
+    }
   } else {
     tbody.innerHTML = pageItems.map((p, idx) => {
       const code = p["Kode Produk"] || p["Kode Produk Internal"] || "—";
@@ -289,11 +333,11 @@ function renderTable() {
 
       let priceDisplayHtml = "";
       if (stock <= 0) {
-        // Status Tidak Aktif: Belum disentuh faktur -> Kunci ikon edit
+        // Status Katalog Acuan: Belum disentuh faktur -> Kunci ikon edit
         priceDisplayHtml = `
           <div style="display:flex;align-items:center;gap:6px;">
-            <span style="color:#94a3b8;font-size:11px;font-style:italic;">— (Menunggu Faktur)</span>
-            <button type="button" class="button button-small" disabled style="opacity:0.5;cursor:not-allowed;background:#f1f5f9;color:#94a3b8;border:1px solid #cbd5e1;padding:4px 7px;" title="Terkunci: Input faktur pembelian terlebih dahulu untuk menentukan harga jual">
+            <span style="color:#94a3b8;font-size:11px;font-style:italic;">— (Katalog Acuan)</span>
+            <button type="button" class="button button-small" disabled style="opacity:0.5;cursor:not-allowed;background:#f1f5f9;color:#94a3b8;border:1px solid #cbd5e1;padding:4px 7px;" title="Terkunci: Harga jual ditetapkan saat faktur pembelian dicatat">
               <i class="fa-solid fa-lock"></i>
             </button>
           </div>
@@ -379,11 +423,11 @@ function renderTable() {
 function getStatusBadge(rawStatus, sellPrice, stock = 0) {
   if (stock > 0) {
     if (sellPrice <= 0) {
-      return `<span class="badge badge-warning" style="background:#fff7ed;color:#ea580c;border:1px solid #ffedd5;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Produk sudah mempunyai stok via faktur tetapi belum diatur harga jualnya"><i class="fa-solid fa-triangle-exclamation"></i> Belum Aktif (Perlu Harga Jual)</span>`;
+      return `<span class="badge badge-warning" style="background:#fff7ed;color:#ea580c;border:1px solid #ffedd5;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Stok fisik tersedia dari faktur, menunggu penentuan harga jual"><i class="fa-solid fa-triangle-exclamation"></i> Perlu Harga Jual</span>`;
     }
-    return `<span class="badge badge-success" style="background:#ecfdf5;color:#059669;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Produk memiliki stok via faktur dan harga jual, siap ditransaksikan di POS"><i class="fa-solid fa-circle-check"></i> Aktif (Siap Jual)</span>`;
+    return `<span class="badge badge-success" style="background:#ecfdf5;color:#059669;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Produk siap ditransaksikan di kasir"><i class="fa-solid fa-circle-check"></i> Aktif (Siap Jual)</span>`;
   }
-  return `<span class="badge badge-secondary" style="background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Belum mendapat stok via input faktur (belum disentuh dari master data)"><i class="fa-solid fa-clock"></i> Tidak Aktif</span>`;
+  return `<span class="badge badge-secondary" style="background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;" title="Referensi katalog obat supplier (otomatis aktif saat faktur pembelian dicatat)"><i class="fa-solid fa-book-bookmark"></i> Katalog Acuan</span>`;
 }
 
 /**

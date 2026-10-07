@@ -1,14 +1,14 @@
 {
-  "version": "2.2.27",
-  "build": "20261007.08",
+  "version": "2.2.28",
+  "build": "20261007.09",
   "releaseDate": "07 Oktober 2026",
-  "title": "Migrasi Database Lokal V3 & Pemusnahan Residu Data Ponsel",
-  "description": "Menaikkan basis database lokal ke KasirProLocalDB_v3 dan memusnahkan database versi lama di perangkat ponsel agar tidak ada data residu 7499 produk.",
+  "title": "Optimasi Etalase Opsi B & Standarisasi Bahasa Profesional",
+  "description": "Menerapkan etalase default aktif dan pencarian cerdas untuk menangani 10.000 katalog obat dengan sangat ringan dan cepat di ponsel serta menyelaraskan bahasa antarmuka menjadi profesional.",
   "changelog": [
-    "Upgrade local database to v3",
-    "Wipe legacy local cached data",
-    "Align local cache with cloud",
-    "Sync fresh zero item state",
-    "Update service worker cache v80"
+    "Default active ready storefront view",
+    "Smart search across full catalog",
+    "Support ten thousand supplier products",
+    "Professional concise interface copywriting",
+    "Update service worker cache v81"
   ]
 }
