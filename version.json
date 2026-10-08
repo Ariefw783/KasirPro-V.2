@@ -1,14 +1,14 @@
 {
-  "version": "2.2.37",
-  "build": "20261008.03",
+  "version": "2.2.38",
+  "build": "20261008.04",
   "releaseDate": "08 Oktober 2026",
-  "title": "Area Input Faktur Full Width & Header Soft Gradient",
-  "description": "Melebarkan area kartu dialog modal input faktur manual menjadi full width dan full height yang sangat leluasa, serta mengubah header menjadi lebih soft dan bergradasi profesional.",
+  "title": "Full-Canvas Invoice Modal & Dynamic Product Filter Pills",
+  "description": "Memperlebar modal faktur manual ke seluruh kanvas, memperlebar modal tambah produk menjadi 2 kolom lega, dan menghadirkan quick filter pills bergradasi lembut pada halaman produk.",
   "changelog": [
-    "Expand manual invoice modal width",
-    "Add soft gradient invoice header",
-    "Maximize desktop grid viewport space",
-    "Enable full bleed mobile layout",
-    "Update service worker cache v90"
+    "Widen manual invoice full canvas",
+    "Widen product form two columns",
+    "Add soft gradient filter pills",
+    "Rearrange responsive product search layout",
+    "Update service worker cache v91"
   ]
 }

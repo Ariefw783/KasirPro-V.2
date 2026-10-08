@@ -588,41 +588,58 @@
     color: #475569 !important;
   }
 
-  /* Tampilan Full-Bleed Dialog pada Layar Ponsel */
-  #modal-manual-invoice.product-detail-overlay {
-    padding: 0 !important;
+  /* Product Toolbar & Pills di Mobile */
+  .product-toolbar-panel {
+    padding: 12px 10px !important;
+  }
+
+  .product-toolbar-top {
+    flex-direction: column !important;
     align-items: stretch !important;
-    justify-content: stretch !important;
+    gap: 8px !important;
   }
 
-  .manual-invoice-dialog {
-    width: 100vw !important;
-    max-width: 100vw !important;
-    height: 100% !important;
-    min-height: 100dvh !important;
-    max-height: 100dvh !important;
-    border-radius: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
+  .product-toolbar-top .preview-search {
+    width: 100% !important;
+    min-width: 0 !important;
   }
 
-  .manual-invoice-header {
-    padding: 12px 14px !important;
+  .product-toolbar-top .preview-filter-actions {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
   }
 
-  .manual-invoice-header h2 {
-    font-size: 1.1rem !important;
+  .product-toolbar-top .preview-filter-actions select {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 11.5px !important;
+    padding: 6px 8px !important;
   }
 
-  .manual-invoice-header p {
-    font-size: 0.74rem !important;
+  .product-toolbar-bottom {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    margin-top: 10px !important;
+    padding-top: 10px !important;
   }
 
-  .manual-invoice-body {
-    padding: 10px 8px !important;
+  .product-status-pills {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    padding-bottom: 4px !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    gap: 6px !important;
   }
 
-  .manual-invoice-footer {
-    padding: 10px 12px !important;
+  .prod-pill-btn {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    font-size: 11.5px !important;
+    padding: 5px 11px !important;
   }
 }
+

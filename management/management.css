@@ -163,113 +163,11 @@
     background-color: #f8fafc;
 }
 
-/* =========================================================
-   MANUAL INVOICE FULL-WIDTH DIALOG & SOFT GRADIENT HEADER
-   ========================================================= */
-#modal-manual-invoice.product-detail-overlay {
-    padding: 10px 14px !important;
-    background: rgba(15, 23, 42, 0.65) !important;
-    backdrop-filter: blur(4px);
-    z-index: 2500 !important;
-}
-
-.manual-invoice-dialog {
-    width: calc(100vw - 28px) !important;
-    max-width: calc(100vw - 28px) !important;
-    height: calc(100vh - 20px) !important;
-    max-height: calc(100vh - 20px) !important;
-    margin: auto !important;
-    border-radius: 14px !important;
-    border: 1px solid rgba(226, 232, 240, 0.8) !important;
-    box-shadow: 0 25px 70px -15px rgba(15, 23, 42, 0.45) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    background: #ffffff !important;
-}
-
-.manual-invoice-header {
-    background: linear-gradient(135deg, #1e293b 0%, #1e3a8a 38%, #0284c7 80%, #0f766e 100%) !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
-    padding: 16px 24px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    flex-shrink: 0 !important;
-}
-
-.manual-invoice-header .product-detail-label {
-    color: #7dd3fc !important;
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.05em !important;
-    text-transform: uppercase !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    margin-bottom: 2px !important;
-}
-
-.manual-invoice-header h2 {
-    color: #ffffff !important;
-    font-size: 1.35rem !important;
-    font-weight: 800 !important;
-    margin: 2px 0 3px 0 !important;
-    letter-spacing: -0.02em !important;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
-}
-
-.manual-invoice-header p {
-    color: #e2e8f0 !important;
-    font-size: 0.82rem !important;
-    margin: 0 !important;
-    opacity: 0.95 !important;
-}
-
-.manual-invoice-header .product-detail-close {
-    background: rgba(255, 255, 255, 0.12) !important;
-    border: 1px solid rgba(255, 255, 255, 0.25) !important;
-    color: #ffffff !important;
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 8px !important;
-    cursor: pointer !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 16px !important;
-    transition: all 0.2s ease !important;
-}
-
-.manual-invoice-header .product-detail-close:hover {
-    background: rgba(239, 68, 68, 0.9) !important;
-    border-color: rgba(239, 68, 68, 1) !important;
-    color: #ffffff !important;
-    transform: scale(1.05);
-}
-
-.manual-invoice-body {
-    flex: 1 1 auto !important;
-    height: 100% !important;
-    max-height: unset !important;
-    overflow-y: auto !important;
-    padding: 18px 24px !important;
-    background: #f8fafc !important;
-    box-sizing: border-box !important;
-}
-
-.manual-invoice-footer {
-    flex-shrink: 0 !important;
-    padding: 14px 24px !important;
-    background: #ffffff !important;
-    border-top: 1px solid #e2e8f0 !important;
-}
-
 /* Desktop: Sticky Header & Frozen Columns */
 @media (min-width: 769px) {
     .manual-invoice-grid-wrapper {
-        min-height: 340px;
-        max-height: calc(100vh - 410px);
+        max-height: calc(88vh - 260px);
+        min-height: 420px;
         overflow: auto;
         position: relative;
     }
@@ -400,6 +298,104 @@
     background: #fef2f2 !important;
     border: 1px solid #fecaca !important;
     color: #991b1b !important;
+}
+
+/* =========================================================
+   PRODUCT STATUS PILLS BERGRADASI SOFT & DINAMIS
+   ========================================================= */
+.product-toolbar-panel {
+    transition: box-shadow 0.2s ease;
+}
+
+.product-status-pills {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.prod-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    outline: none;
+    user-select: none;
+}
+
+.prod-pill-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
+}
+
+.prod-pill-indicator {
+    width: 7.5px;
+    height: 7.5px;
+    border-radius: 50%;
+    display: inline-block;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.prod-pill-btn:hover .prod-pill-indicator {
+    transform: scale(1.25);
+}
+
+.indicator-green { background: #10b981; }
+.indicator-amber { background: #f59e0b; }
+.indicator-sky   { background: #0284c7; }
+.indicator-slate { background: #64748b; }
+
+/* Status Aktif dengan Soft Gradient & Ring Halus */
+.prod-pill-btn.active[data-status="aktif"] {
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
+    color: #ffffff !important;
+    border-color: #059669 !important;
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3) !important;
+}
+.prod-pill-btn.active[data-status="aktif"] .prod-pill-indicator {
+    background: #ffffff !important;
+}
+
+.prod-pill-btn.active[data-status="belum aktif"] {
+    background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%) !important;
+    color: #ffffff !important;
+    border-color: #d97706 !important;
+    box-shadow: 0 3px 10px rgba(245, 158, 11, 0.3) !important;
+}
+.prod-pill-btn.active[data-status="belum aktif"] .prod-pill-indicator {
+    background: #ffffff !important;
+}
+
+.prod-pill-btn.active[data-status="tidak aktif"] {
+    background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%) !important;
+    color: #ffffff !important;
+    border-color: #0284c7 !important;
+    box-shadow: 0 3px 10px rgba(2, 132, 199, 0.3) !important;
+}
+.prod-pill-btn.active[data-status="tidak aktif"] .prod-pill-indicator {
+    background: #ffffff !important;
+}
+
+.prod-pill-btn.active[data-status=""] {
+    background: linear-gradient(135deg, #334155 0%, #64748b 100%) !important;
+    color: #ffffff !important;
+    border-color: #334155 !important;
+    box-shadow: 0 3px 10px rgba(71, 85, 105, 0.3) !important;
+}
+.prod-pill-btn.active[data-status=""] .prod-pill-indicator {
+    background: #ffffff !important;
 }
 
 /* ==============================================================================

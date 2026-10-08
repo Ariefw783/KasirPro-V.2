@@ -46,9 +46,22 @@ function bindEvents() {
     applyFilters();
   });
 
+  // Quick Status Filter Pills
+  document.querySelectorAll(".prod-pill-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const targetStatus = btn.dataset.status ?? "";
+      const stFilter = $("product-status-filter");
+      if (stFilter) {
+        stFilter.value = targetStatus;
+        stFilter.dispatchEvent(new Event("change"));
+      }
+    });
+  });
+
   $("product-status-filter")?.addEventListener("change", () => {
     currentPage = 1;
     applyFilters();
+    syncProductStatusPills();
   });
 
   $("product-reset-filter")?.addEventListener("click", () => {
@@ -62,6 +75,7 @@ function bindEvents() {
     if (stFilter) stFilter.value = "aktif";
     currentPage = 1;
     applyFilters();
+    syncProductStatusPills();
   });
 
   window.addEventListener("kasirpro:stock-updated", () => {
@@ -109,7 +123,16 @@ export function renderProducts() {
   populateFilterDropdowns(master);
 
   applyFilters();
+  syncProductStatusPills();
   updateSummaryKpis();
+}
+
+function syncProductStatusPills() {
+  const currentVal = norm($("product-status-filter")?.value || "");
+  document.querySelectorAll(".prod-pill-btn").forEach(btn => {
+    const s = norm(btn.dataset.status ?? "");
+    btn.classList.toggle("active", s === currentVal);
+  });
 }
 
 function populateFilterDropdowns(master) {
@@ -1211,123 +1234,140 @@ function installProductModal() {
   const modalHtml = `
     <div id="modal-product-form" class="kp-dialog-v4" hidden>
       <div class="kp-dialog-v4__backdrop"></div>
-      <section class="kp-dialog-v4__card" style="width:min(94vw,560px);max-height:90vh;overflow-y:auto;" role="dialog">
-        <header style="padding:16px 20px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+      <section class="kp-dialog-v4__card" style="width:min(96vw,860px);max-height:92vh;overflow-y:auto;border-radius:14px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);" role="dialog">
+        <header style="padding:16px 24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#ffffff;">
           <h2 style="font-size:16px;font-weight:800;margin:0;color:#0f2a43;">
-            <i class="fa-solid fa-box-open" style="color:#0284c7;margin-right:6px;"></i> Tambah Produk Baru
+            <i class="fa-solid fa-box-open" style="color:#0284c7;margin-right:6px;"></i> Tambah Master Produk Baru
           </h2>
-          <button type="button" id="close-modal-product" class="button button-small button-secondary" style="padding:4px 8px;"><i class="fa-solid fa-xmark"></i></button>
+          <button type="button" id="close-modal-product" class="button button-small button-secondary" style="padding:4px 8px;" title="Tutup"><i class="fa-solid fa-xmark"></i></button>
         </header>
 
-        <form id="product-form-inner" style="padding:20px;display:grid;gap:14px;text-align:left;">
-          <!-- Supplier (Pemicu Kode Otomatis) -->
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <label style="font-size:13px;font-weight:700;color:#1e293b;">
-                Supplier / Distributor <span class="text-danger">*</span>
-              </label>
-              <button type="button" id="btn-quick-add-supplier" class="button button-small button-secondary" style="font-size:11px;padding:2px 8px;">
-                <i class="fa-solid fa-plus"></i> Supplier Baru
-              </button>
+        <form id="product-form-inner" style="padding:20px 24px;display:grid;grid-template-columns:repeat(auto-fit, minmax(360px, 1fr));gap:16px;text-align:left;background:#f8fafc;">
+          <!-- Kolom 1: Identitas & Klasifikasi -->
+          <div style="display:flex;flex-direction:column;gap:12px;background:#ffffff;padding:16px;border-radius:10px;border:1px solid #e2e8f0;">
+            <div style="font-size:12.5px;font-weight:700;color:#0f2a43;border-bottom:1px dashed #cbd5e1;padding-bottom:6px;">
+              <i class="fa-solid fa-id-card text-primary" style="margin-right:5px;"></i> 1. Identitas &amp; Klasifikasi
             </div>
-            <select id="input-prod-supplier" required style="width:100%;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;background:#fff;">
-              <option value="">-- Pilih Supplier --</option>
-            </select>
-          </div>
 
-          <!-- Kode Produk (Otomatis & Editable) -->
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <label style="font-size:13px;font-weight:700;color:#1e293b;">
-                Kode Produk Internal <span class="text-danger">*</span>
-              </label>
-              <span style="font-size:11px;color:#0284c7;font-weight:600;">Otomatis: [Supplier-PRD-xxx]</span>
-            </div>
-            <input type="text" id="input-prod-code" required style="width:100%;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;font-weight:700;color:#0f2a43;background:#f8fafc;" placeholder="Pilih supplier terlebih dahulu">
-          </div>
-
-          <!-- Nama Produk & Barcode -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-            <div style="grid-column: span 2;">
-              <label style="display:block;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">
-                Nama Produk <span class="text-danger">*</span>
-              </label>
-              <input type="text" id="input-prod-name" required style="width:100%;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;" placeholder="Contoh: Paracetamol 500 mg Box 100 Tab">
-            </div>
+            <!-- Supplier (Pemicu Kode Otomatis) -->
             <div>
-              <label style="display:block;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">
-                Barcode Fisik
-              </label>
-              <input type="text" id="input-prod-barcode" style="width:100%;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;" placeholder="Nomor EAN / UPC">
-            </div>
-            <div>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                <label style="font-size:13px;font-weight:700;color:#1e293b;">
-                  Kategori <span class="text-danger">*</span>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                <label style="font-size:12px;font-weight:700;color:#1e293b;">
+                  Supplier / Distributor <span class="text-danger">*</span>
                 </label>
-                <button type="button" id="btn-quick-add-category" class="button button-small button-secondary" style="font-size:11px;padding:2px 8px;">
-                  <i class="fa-solid fa-plus"></i> Kategori Baru
+                <button type="button" id="btn-quick-add-supplier" class="button button-small button-secondary" style="font-size:11px;padding:2px 8px;">
+                  <i class="fa-solid fa-plus"></i> Supplier Baru
                 </button>
               </div>
-              <select id="input-prod-category" required style="width:100%;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;background:#fff;">
-                <option value="">-- Pilih Kategori --</option>
+              <select id="input-prod-supplier" required style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:#fff;">
+                <option value="">-- Pilih Supplier --</option>
               </select>
             </div>
+
+            <!-- Kode Produk (Otomatis & Editable) -->
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                <label style="font-size:12px;font-weight:700;color:#1e293b;">
+                  Kode Produk Internal <span class="text-danger">*</span>
+                </label>
+                <span style="font-size:10.5px;color:#0284c7;font-weight:600;">Otomatis: [Supplier-PRD-xxx]</span>
+              </div>
+              <input type="text" id="input-prod-code" required style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;font-weight:700;color:#0f2a43;background:#f8fafc;" placeholder="Pilih supplier terlebih dahulu">
+            </div>
+
+            <!-- Nama Produk -->
+            <div>
+              <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:5px;">
+                Nama Produk <span class="text-danger">*</span>
+              </label>
+              <input type="text" id="input-prod-name" required style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" placeholder="Contoh: Paracetamol 500 mg Box 100 Tab">
+            </div>
+
+            <!-- Barcode & Kategori -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:5px;">
+                  Barcode Fisik
+                </label>
+                <input type="text" id="input-prod-barcode" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" placeholder="Nomor EAN / UPC">
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+                  <label style="font-size:12px;font-weight:700;color:#1e293b;">
+                    Kategori <span class="text-danger">*</span>
+                  </label>
+                  <button type="button" id="btn-quick-add-category" class="button button-small button-secondary" style="font-size:10px;padding:1px 6px;">
+                    <i class="fa-solid fa-plus"></i> Baru
+                  </button>
+                </div>
+                <select id="input-prod-category" required style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:#fff;">
+                  <option value="">-- Kategori --</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          <!-- Satuan & Konversi 3 Tingkat -->
-          <div style="padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:12px;">
-            <div style="font-size:12px;font-weight:700;color:#0369a1;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-              <i class="fa-solid fa-boxes-stacked"></i> Konversi Kemasan (3 Tingkat Wadah)
+          <!-- Kolom 2: Satuan, Konversi Kemasan & Finansial -->
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <!-- Satuan & Konversi 3 Tingkat -->
+            <div style="background:#ffffff;padding:16px;border-radius:10px;border:1px solid #e2e8f0;">
+              <div style="font-size:12.5px;font-weight:700;color:#0369a1;border-bottom:1px dashed #cbd5e1;padding-bottom:6px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-boxes-stacked"></i> 2. Konversi Kemasan (3 Tingkat)
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px;">1. Satuan Beli</label>
+                  <input type="text" id="input-prod-buy-unit" style="width:100%;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;" placeholder="Box" value="Box">
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px;">2. Satuan Sedang</label>
+                  <input type="text" id="input-prod-mid-unit" style="width:100%;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;" placeholder="Strip (opsi)">
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px;">3. Satuan Dasar <span class="text-danger">*</span></label>
+                  <input type="text" id="input-prod-base-unit" required style="width:100%;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;" placeholder="Pcs / Tab" value="Pcs">
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+                <div>
+                  <label style="display:block;font-size:11px;color:#64748b;margin-bottom:2px;">Isi per Satuan Sedang</label>
+                  <input type="number" id="input-prod-mid-qty" min="1" step="1" style="width:100%;min-height:34px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;" value="1">
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;color:#64748b;margin-bottom:2px;">Total Isi dlm 1 Box <span class="text-danger">*</span></label>
+                  <input type="number" id="input-prod-conversion" min="1" step="1" style="width:100%;min-height:34px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;font-weight:700;color:#0284c7;" value="1">
+                </div>
+              </div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
-              <div>
-                <label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;">1. Satuan Besar (Beli)</label>
-                <input type="text" id="input-prod-buy-unit" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" placeholder="Box / Dus / Pak" value="Box">
-              </div>
-              <div>
-                <label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;">2. Satuan Sedang (Opsional)</label>
-                <input type="text" id="input-prod-mid-unit" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" placeholder="Strip / Blister">
-              </div>
-              <div>
-                <label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;">3. Satuan Terkecil (Ecer) <span class="text-danger">*</span></label>
-                <input type="text" id="input-prod-base-unit" required style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" placeholder="Tablet / Kaplet / Botol / Pcs" value="Pcs">
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
-              <div>
-                <label style="display:block;font-size:11px;color:#64748b;margin-bottom:2px;">Isi per Satuan Sedang (misal: 1 Strip = N Terkecil)</label>
-                <input type="number" id="input-prod-mid-qty" min="1" step="1" style="width:100%;min-height:32px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;" value="1">
-              </div>
-              <div>
-                <label style="display:block;font-size:11px;color:#64748b;margin-bottom:2px;">Total Isi per Satuan Besar (Total Terkecil dlm 1 Box) <span class="text-danger">*</span></label>
-                <input type="number" id="input-prod-conversion" min="1" step="1" style="width:100%;min-height:32px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;font-weight:700;color:#0284c7;" value="1">
-              </div>
-            </div>
-          </div>
 
-          <!-- Harga Beli, Margin, Harga Jual & Stok Min -->
-          <div style="display:grid;grid-template-columns:1fr 90px 1fr 85px;gap:10px;">
-            <div>
-              <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Harga Beli (Rp)</label>
-              <input type="text" inputmode="numeric" id="input-prod-buy-price" style="width:100%;min-height:38px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;" placeholder="0">
-            </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Margin (%)</label>
-              <input type="number" id="input-prod-margin" min="0" max="1000" step="1" style="width:100%;min-height:38px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;" placeholder="20">
-            </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Harga Jual (Rp) <span class="text-danger">*</span></label>
-              <input type="text" inputmode="numeric" id="input-prod-sell-price" style="width:100%;min-height:38px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;font-weight:700;color:#0369a1;" placeholder="0">
-            </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Stok Min</label>
-              <input type="number" id="input-prod-min-stock" min="0" step="1" style="width:100%;min-height:38px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;" value="10">
+            <!-- Harga Beli, Margin, Harga Jual & Stok Min -->
+            <div style="background:#ffffff;padding:16px;border-radius:10px;border:1px solid #e2e8f0;">
+              <div style="font-size:12.5px;font-weight:700;color:#059669;border-bottom:1px dashed #cbd5e1;padding-bottom:6px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-tags"></i> 3. Harga &amp; Stok Minimum
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 85px 1fr 80px;gap:8px;">
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:700;color:#1e293b;margin-bottom:4px;">Harga Beli (Rp)</label>
+                  <input type="text" inputmode="numeric" id="input-prod-buy-price" style="width:100%;min-height:36px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" placeholder="0">
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:700;color:#1e293b;margin-bottom:4px;">Margin (%)</label>
+                  <input type="number" id="input-prod-margin" min="0" max="1000" step="1" style="width:100%;min-height:36px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" placeholder="20">
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:700;color:#1e293b;margin-bottom:4px;">Harga Jual (Rp) <span class="text-danger">*</span></label>
+                  <input type="text" inputmode="numeric" id="input-prod-sell-price" style="width:100%;min-height:36px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;font-weight:700;color:#0369a1;" placeholder="0">
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:700;color:#1e293b;margin-bottom:4px;">Stok Min</label>
+                  <input type="number" id="input-prod-min-stock" min="0" step="1" style="width:100%;min-height:36px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;" value="10">
+                </div>
+              </div>
             </div>
           </div>
         </form>
 
-        <footer style="padding:12px 20px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:8px;">
+        <footer style="padding:14px 24px;background:#ffffff;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:10px;">
           <button type="button" id="cancel-product-form" class="button button-secondary">Batal</button>
           <button type="button" id="save-product-form" class="button button-primary"><i class="fa-solid fa-floppy-disk"></i> Simpan Produk</button>
         </footer>
