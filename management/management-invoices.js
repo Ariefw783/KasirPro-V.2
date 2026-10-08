@@ -776,18 +776,54 @@ function processTsvData(rawText) {
     const rawBatch = cols[1] || "";
     const rawExp = parseExpDate(cols[2] || "");
     const rawBuyUnit = cols[3] || "";
-    const rawMidUnit = cols[4] || "";
-    const rawBaseUnit = cols[5] || "";
-    const rawConv = num(cols[6]) || 0;
-    const rawQty = num(cols[7]) || 1;
-    // Kolom 8 adalah total masuk (dihitung otomatis Qty Beli × Konversi)
-    const rawBuyPrice = num(cols[9] || 0);
-    const rawDiscPct = num(cols[10] || 0);
-    let rawDiscRp = num(cols[11] || 0);
+
+    let rawMidUnit = "";
+    let rawMidQty = "";
+    let rawBaseUnit = "";
+    let rawConv = 0;
+    let rawQty = 1;
+    let rawBuyPrice = 0;
+    let rawDiscPct = 0;
+    let rawDiscRp = 0;
+    let rawSubtotal = 0;
+
+    // Deteksi Cerdas: Apakah format 14 kolom (Satuan Sedang dipecah 2 sel: Opsional dan Isi)
+    const isCols5Number = cols[5] !== undefined && cols[5] !== "" && /^[0-9]+$/.test(cols[5].trim());
+    const isCols6NonNumber = cols[6] !== undefined && isNaN(Number(cols[6].trim()));
+    const is14ColFormat = cols.length >= 14 || (isCols5Number && isCols6NonNumber);
+
+    if (is14ColFormat) {
+      // 14 Kolom Akurat
+      rawMidUnit = cols[4] || "";
+      rawMidQty = num(cols[5]) || (rawMidUnit ? 1 : "");
+      rawBaseUnit = cols[6] || "";
+      rawConv = num(cols[7]) || 0;
+      rawQty = num(cols[8]) || 1;
+      // cols[9] adalah Total Masuk (dihitung: Qty Beli x Konversi)
+      rawBuyPrice = num(cols[10] || 0);
+      rawDiscPct = num(cols[11] || 0);
+      rawDiscRp = num(cols[12] || 0);
+      rawSubtotal = num(cols[13] || 0);
+    } else {
+      // 13 Kolom Lama
+      rawMidUnit = cols[4] || "";
+      rawMidQty = "";
+      rawBaseUnit = cols[5] || "";
+      rawConv = num(cols[6]) || 0;
+      rawQty = num(cols[7]) || 1;
+      // cols[8] adalah Total Masuk
+      rawBuyPrice = num(cols[9] || 0);
+      rawDiscPct = num(cols[10] || 0);
+      rawDiscRp = num(cols[11] || 0);
+      rawSubtotal = num(cols[12] || 0);
+    }
+
     if (!rawDiscRp && rawDiscPct > 0) {
       rawDiscRp = Math.round((rawQty * rawBuyPrice * rawDiscPct) / 100);
     }
-    const rawSubtotal = Math.max(0, Math.round((rawQty * rawBuyPrice) - rawDiscRp));
+    if (!rawSubtotal) {
+      rawSubtotal = Math.max(0, Math.round((rawQty * rawBuyPrice) - rawDiscRp));
+    }
 
     // Smart Product Matching dengan Pre-indexed Master Data
     const normRaw = norm(rawName);
@@ -842,7 +878,7 @@ function processTsvData(rawText) {
     let mUnit = rawMidUnit;
     let bUnit = rawBaseUnit;
     let convRatio = rawConv;
-    let mQty = 1;
+    let mQty = rawMidQty || 1;
 
     if (match.matchType === "exact" && match.product) {
       finalCode = match.product["Kode Produk"] || match.product["Kode Produk Internal"] || match.product.id || "";
@@ -859,6 +895,8 @@ function processTsvData(rawText) {
       if (!mUnit && match.product["Satuan Antara"]) {
         mUnit = match.product["Satuan Antara"];
         mQty = num(match.product["Isi Satuan Antara"]) || 1;
+      } else if (rawMidQty) {
+        mQty = rawMidQty;
       }
     } else if (match.matchType === "fuzzy" && match.product) {
       finalCode = match.product["Kode Produk"] || match.product["Kode Produk Internal"] || match.product.id || "";
