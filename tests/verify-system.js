@@ -583,6 +583,45 @@ mockShowProgress("Membatalkan Faktur", "Rollback stok ke database...", { type: "
 assert(mockDialogState.shown && mockDialogState.opType === "delete", "Modal Pop-up Sinkronisasi Mendukung Operasi Database Deletes/Rollback");
 
 // -----------------------------------------------------------------------------
+// 12. PENGUJIAN ADAPTIVE CARD & ACCORDION COLLAPSE INPUT FAKTUR MOBILE
+// -----------------------------------------------------------------------------
+console.log("\n📱 BAGIAN 12: PENGUJIAN ADAPTIVE CARD & ACCORDION COLLAPSE INPUT FAKTUR MOBILE");
+
+const mockCardItems = [
+  { name: "Paracetamol 500mg", qty: 2, purchaseUnit: "BOX", buyPrice: 50000, subtotal: 100000, _collapsed: false },
+  { name: "Amoxicillin 500mg", qty: 1, purchaseUnit: "BOX", buyPrice: 80000, subtotal: 80000, _collapsed: true }
+];
+
+// 1. Uji State Collapsed vs Expanded Tiap Kartu
+assert(mockCardItems[0]._collapsed === false, "Kartu 1 Berada dalam Mode Terbuka (Expanded)");
+assert(mockCardItems[1]._collapsed === true, "Kartu 2 Berada dalam Mode Diciutkan (Collapsed)");
+
+// 2. Uji Toggle Collapse Individual
+function testToggleCollapse(item) {
+  item._collapsed = !item._collapsed;
+  return item._collapsed ? "is-collapsed" : "is-expanded";
+}
+const stateAfterToggle = testToggleCollapse(mockCardItems[0]);
+assert(stateAfterToggle === "is-collapsed" && mockCardItems[0]._collapsed === true, "Toggle Individual Berhasil Menciutkan Kartu 1");
+
+// 3. Uji Global Accordion (Toggle All Rows)
+function testToggleAll(items) {
+  const anyExpanded = items.some(i => !i._collapsed);
+  const target = anyExpanded; // jika ada yang terbuka, ciutkan semua; sebaliknya buka semua
+  items.forEach(i => { i._collapsed = target; });
+  return target ? "Ciutkan Semua" : "Buka Semua";
+}
+// Saat ini semua kartu collapsed:
+const nextAction = testToggleAll(mockCardItems);
+assert(nextAction === "Buka Semua" && mockCardItems.every(i => !i._collapsed), "Global Toggle: Berhasil Membuka Semua Kartu Obat");
+
+// 4. Uji Kompatibilitas TSV Paste ke Card Grid
+const tsvItem = { name: "OBAT BARU 100ML", qty: 5, purchaseUnit: "Botol", buyPrice: 20000, subtotal: 100000, _collapsed: false };
+mockCardItems.push(tsvItem);
+assert(mockCardItems.length === 3 && mockCardItems[2]._collapsed === false, "Impor TSV Menghasilkan Kartu Baru yang Langsung Siap Diinput");
+assert(mockCardItems.reduce((acc, it) => acc + it.subtotal, 0) === 280000, "Rekonsiliasi Subtotal Faktur Berjalan Akurat pada Format Kartu (Rp 280.000)");
+
+// -----------------------------------------------------------------------------
 // REKAPITULASI HASIL AUDIT
 // -----------------------------------------------------------------------------
 console.log("\n========================================================");

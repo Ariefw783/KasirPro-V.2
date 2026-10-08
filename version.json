@@ -1,14 +1,14 @@
 {
-  "version": "2.2.41",
-  "build": "20261008.07",
+  "version": "2.2.42",
+  "build": "20261008.08",
   "releaseDate": "08 Oktober 2026",
-  "title": "Modal Loading Dinamis & Navigasi Cepat Tanpa Gangguan",
-  "description": "Menyempurnakan pemicu modal pop up loading agar dinamis dan hanya muncul pada saat aksi kritis yang memerlukan proteksi. Pembacaan cache lokal dan sinkronisasi background diubah menjadi senyap (silent) sehingga perpindahan antar modul (Management dan POS) kembali instan tanpa gangguan.",
+  "title": "Kartu Vertikal & Akordion Input Faktur Mobile",
+  "description": "Mengubah tata letak Daftar Obat & Wadah Konversi pada Input Faktur Manual di perangkat seluler menjadi kartu vertikal yang responsif dan dapat diciutkan (accordion), menghilangkan scroll kiri-kanan serta mempertahankan tampilan grid leluasa pada komputer desktop.",
   "changelog": [
-    "Make sync modal display dynamic",
-    "Enable silent instant page navigation",
-    "Suppress background cache load modals",
-    "Accelerate modal dismissal timing",
-    "Update service worker cache v94"
+    "Add mobile invoice item cards",
+    "Enable vertical collapsible row accordion",
+    "Add global accordion toggle button",
+    "Eliminate mobile horizontal grid scrolling",
+    "Update service worker cache v95"
   ]
 }

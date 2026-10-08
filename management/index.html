@@ -14,10 +14,10 @@
     <link rel="icon" type="image/png" sizes="192x192" href="../assets/icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="../assets/apple-touch-icon-180.png">
 
-    <link rel="stylesheet" href="management.css?v=20261007-v76">
-    <link rel="stylesheet" href="management-mobile.css?v=20261007-v76">
-    <link rel="stylesheet" href="../ui-modal.css?v=20261007-v76">
-    <link rel="stylesheet" href="../modules/diagnostic-reporter.css?v=20261007-v76">
+    <link rel="stylesheet" href="management.css?v=20261008-v95">
+    <link rel="stylesheet" href="management-mobile.css?v=20261008-v95">
+    <link rel="stylesheet" href="../ui-modal.css?v=20261008-v95">
+    <link rel="stylesheet" href="../modules/diagnostic-reporter.css?v=20261008-v95">
 
     <link
         rel="stylesheet"
@@ -2022,23 +2022,26 @@
 
                             <!-- Bagian 2: Tabel Grid Item Faktur & Wadah Konversi -->
                             <div class="manual-invoice-card" style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e2e8f0;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                                <div class="manual-inv-actions-toolbar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
                                     <div>
                                         <strong style="font-size:13px;color:#0f172a;"><i class="fa-solid fa-boxes-stacked text-primary"></i> 2. Daftar Obat / Barang &amp; Wadah Konversi</strong>
                                         <p style="font-size:11px;color:#64748b;margin:2px 0 0 0;">Ketik nama produk untuk mencari. Jika belum ada, pilih <strong>[+ Daftarkan Produk Baru]</strong> untuk membuka wadah registrasi.</p>
                                     </div>
-                                    <div style="display:flex;gap:8px;">
+                                    <div class="manual-inv-actions-btn-group" style="display:flex;gap:8px;flex-wrap:wrap;">
                                         <button type="button" id="btn-manual-add-row" class="button button-small button-primary" style="padding:6px 14px;">
                                             <i class="fa-solid fa-plus"></i> Tambah Baris Obat
                                         </button>
                                         <button type="button" id="btn-paste-tsv-inv" class="button button-small button-secondary" style="padding:6px 14px;background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;" title="Tempel data tabel dari Excel / TSV (Ctrl + V)">
                                             <i class="fa-solid fa-clipboard text-primary"></i> Tempel TSV
                                         </button>
+                                        <button type="button" id="btn-toggle-all-inv-rows" class="button button-small button-secondary" style="padding:6px 12px;background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;" title="Lipat / Buka Semua Kartu Obat">
+                                            <i class="fa-solid fa-chevron-up" id="icon-toggle-all-inv-rows"></i> <span id="label-toggle-all-inv-rows">Ciutkan Semua</span>
+                                        </button>
                                     </div>
                                 </div>
 
-                                <div class="table-wrapper manual-invoice-grid-wrapper" style="overflow-x:auto;border:1px solid #cbd5e1;border-radius:8px;">
-                                    <table class="data-table manual-grid-table" style="min-width:1320px;font-size:12.5px;width:100%;border-collapse:collapse;">
+                                <div class="table-wrapper manual-invoice-grid-wrapper">
+                                    <table class="data-table manual-grid-table">
                                         <thead style="background:#f1f5f9;border-bottom:2px solid #cbd5e1;">
                                             <tr>
                                                 <th class="col-num" style="width:36px;text-align:center;">#</th>

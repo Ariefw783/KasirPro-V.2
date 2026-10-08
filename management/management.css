@@ -159,17 +159,55 @@
     vertical-align: middle;
 }
 
+.manual-grid-table tbody td.col-mobile-header {
+    display: none;
+}
+
 .manual-grid-table tr:hover td {
     background-color: #f8fafc;
 }
 
 /* Desktop: Sticky Header & Frozen Columns */
 @media (min-width: 769px) {
+    #btn-toggle-all-inv-rows {
+        display: none !important;
+    }
+
     .manual-invoice-grid-wrapper {
         max-height: calc(88vh - 260px);
         min-height: 420px;
         overflow: auto;
         position: relative;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+    }
+
+    .manual-grid-table {
+        min-width: 1320px;
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+        display: table;
+    }
+
+    .manual-grid-table thead {
+        display: table-header-group;
+    }
+
+    .manual-grid-table tbody {
+        display: table-row-group;
+    }
+
+    .manual-grid-table tbody tr {
+        display: table-row;
+    }
+
+    .manual-grid-table tbody td {
+        display: table-cell;
+    }
+
+    .manual-grid-table tbody td.col-mobile-header {
+        display: none !important;
     }
 
     .manual-grid-table thead th {

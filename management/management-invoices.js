@@ -42,6 +42,7 @@ function bindEvents() {
   $("btn-cancel-manual-inv")?.addEventListener("click", closeManualInvoiceModal);
   $("btn-manual-add-row")?.addEventListener("click", () => addManualInvoiceRow());
   $("btn-paste-tsv-inv")?.addEventListener("click", handleTriggerPasteTsv);
+  $("btn-toggle-all-inv-rows")?.addEventListener("click", toggleAllManualInvoiceRows);
   $("btn-close-paste-tsv-modal")?.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1071,7 +1072,8 @@ function addManualInvoiceRow(prefill = {}) {
     discountRp: prefill.discountRp !== undefined && prefill.discountRp !== null ? prefill.discountRp : "",
     subtotal: prefill.subtotal || 0,
     batch: prefill.batch || "",
-    expiryDate: prefill.expiryDate || ""
+    expiryDate: prefill.expiryDate || "",
+    _collapsed: false
   });
   renderManualInvoiceItems();
   calculateManualInvoiceTotals();
@@ -1123,6 +1125,7 @@ function renderManualInvoiceItems() {
     const qtyStr = (item.qty !== undefined && item.qty !== null && item.qty !== "") ? item.qty : "";
     const convStr = (item.conversionRatio !== undefined && item.conversionRatio !== null && item.conversionRatio !== "") ? item.conversionRatio : "";
     const midQtyStr = (item.intermediateQty !== undefined && item.intermediateQty !== null && item.intermediateQty !== "" && item.intermediateUnit) ? item.intermediateQty : "";
+    const isCollapsed = !!item._collapsed;
 
     let matchBadgeHtml = "";
     if (item.matchStatus === "exact" && item.productCode) {
@@ -1159,7 +1162,25 @@ function renderManualInvoiceItems() {
     }
 
     return `
-      <tr data-index="${idx}">
+      <tr data-index="${idx}" class="manual-inv-row ${isCollapsed ? 'is-collapsed' : 'is-expanded'}">
+        <td class="col-mobile-header" data-index="${idx}">
+          <div class="mobile-row-header-left" style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">
+            <span class="mobile-row-badge" style="background:#0284c7;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;flex-shrink:0;">#${idx + 1}</span>
+            <div style="min-width:0;flex:1;">
+              <div class="mobile-row-title" style="font-size:12.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(item.name || '(Obat Baru)')}</div>
+              <div class="mobile-row-summary" style="font-size:11px;color:#0369a1;font-weight:600;margin-top:1px;">${qNum ? `${qNum} ${escapeHtml(item.purchaseUnit || '')} • ` : ''}${rupiah(item.subtotal || 0)}</div>
+            </div>
+          </div>
+          <div class="mobile-row-header-actions" style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <button type="button" class="btn-toggle-row button button-small button-secondary" data-index="${idx}" style="padding:4px 9px;font-size:11.5px;display:inline-flex;align-items:center;gap:4px;background:#f8fafc;border:1px solid #cbd5e1;color:#334155;" title="${isCollapsed ? 'Buka detail baris obat' : 'Ciutkan baris obat'}">
+              <i class="fa-solid ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'}"></i>
+              <span class="toggle-text">${isCollapsed ? 'Buka' : 'Ciutkan'}</span>
+            </button>
+            <button type="button" class="btn-remove-row button button-small button-secondary" data-index="${idx}" style="color:#ef4444;background:#fef2f2;border:1px solid #fecaca;padding:4px 8px;font-size:11.5px;" title="Hapus baris ini">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        </td>
         <td class="col-num" data-mobile-label="#" style="text-align:center;font-weight:700;color:#64748b;">${idx + 1}</td>
         <td class="col-prod inv-prod-cell" data-mobile-label="Nama Produk">
           <div style="display:flex;flex-direction:column;gap:3px;">
@@ -1219,6 +1240,84 @@ function renderManualInvoiceItems() {
   }).join("");
 
   bindManualItemRowEvents();
+  updateToggleAllButtonState();
+}
+
+function toggleManualInvoiceRowCollapse(idx) {
+  const item = manualInvoiceItems[idx];
+  if (!item) return;
+  item._collapsed = !item._collapsed;
+
+  const row = document.querySelector(`tr[data-index="${idx}"]`);
+  if (!row) return;
+
+  if (item._collapsed) {
+    row.classList.remove("is-expanded");
+    row.classList.add("is-collapsed");
+  } else {
+    row.classList.remove("is-collapsed");
+    row.classList.add("is-expanded");
+  }
+
+  const toggleBtn = row.querySelector(".btn-toggle-row");
+  if (toggleBtn) {
+    toggleBtn.innerHTML = `
+      <i class="fa-solid ${item._collapsed ? 'fa-chevron-down' : 'fa-chevron-up'}"></i>
+      <span class="toggle-text">${item._collapsed ? 'Buka' : 'Ciutkan'}</span>
+    `;
+    toggleBtn.title = item._collapsed ? "Buka detail baris obat" : "Ciutkan baris obat";
+  }
+
+  updateToggleAllButtonState();
+}
+
+function toggleAllManualInvoiceRows() {
+  if (!manualInvoiceItems.length) return;
+  const anyExpanded = manualInvoiceItems.some(i => !i._collapsed);
+  const targetCollapsed = anyExpanded;
+
+  manualInvoiceItems.forEach((item, idx) => {
+    item._collapsed = targetCollapsed;
+    const row = document.querySelector(`tr[data-index="${idx}"]`);
+    if (row) {
+      if (targetCollapsed) {
+        row.classList.remove("is-expanded");
+        row.classList.add("is-collapsed");
+      } else {
+        row.classList.remove("is-collapsed");
+        row.classList.add("is-expanded");
+      }
+      const toggleBtn = row.querySelector(".btn-toggle-row");
+      if (toggleBtn) {
+        toggleBtn.innerHTML = `
+          <i class="fa-solid ${targetCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'}"></i>
+          <span class="toggle-text">${targetCollapsed ? 'Buka' : 'Ciutkan'}</span>
+        `;
+        toggleBtn.title = targetCollapsed ? "Buka detail baris obat" : "Ciutkan baris obat";
+      }
+    }
+  });
+
+  updateToggleAllButtonState();
+}
+
+function updateToggleAllButtonState() {
+  const btn = $("btn-toggle-all-inv-rows");
+  if (!btn) return;
+  const anyExpanded = manualInvoiceItems.some(i => !i._collapsed);
+  const icon = $("icon-toggle-all-inv-rows");
+  const label = $("label-toggle-all-inv-rows");
+  if (icon && label) {
+    if (anyExpanded) {
+      icon.className = "fa-solid fa-chevron-up";
+      label.textContent = "Ciutkan Semua";
+      btn.title = "Ciutkan Semua Kartu Obat";
+    } else {
+      icon.className = "fa-solid fa-chevron-down";
+      label.textContent = "Buka Semua";
+      btn.title = "Buka Semua Kartu Obat";
+    }
+  }
 }
 
 function checkAutoUnitFallback(idx) {
@@ -1257,6 +1356,11 @@ function bindManualItemRowEvents() {
   tbody.querySelectorAll(".row-prod-search").forEach(input => {
     input.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.index, 10);
+      const row = tbody.querySelector(`tr[data-index="${idx}"]`);
+      if (row) {
+        const titleEl = row.querySelector(".mobile-row-title");
+        if (titleEl) titleEl.textContent = e.target.value.trim() || "(Obat Baru)";
+      }
       clearTimeout(prodSearchDebounceTimer);
       prodSearchDebounceTimer = setTimeout(() => {
         showProductSuggestions(e.target, idx, e.target.value);
@@ -1378,9 +1482,29 @@ function bindManualItemRowEvents() {
     });
   });
 
+  // Toggle collapse baris per kartu di tampilan mobile
+  tbody.querySelectorAll(".btn-toggle-row").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.index, 10);
+      toggleManualInvoiceRowCollapse(idx);
+    });
+  });
+
+  tbody.querySelectorAll(".col-mobile-header").forEach(header => {
+    header.addEventListener("click", (e) => {
+      if (e.target.closest(".btn-remove-row") || e.target.closest(".btn-toggle-row")) return;
+      const idx = parseInt(header.dataset.index, 10);
+      toggleManualInvoiceRowCollapse(idx);
+    });
+  });
+
   // Tombol Hapus
   tbody.querySelectorAll(".btn-remove-row").forEach(b => {
-    b.addEventListener("click", () => {
+    b.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       const idx = parseInt(b.dataset.index, 10);
       removeManualInvoiceRow(idx);
     });
@@ -1585,6 +1709,14 @@ function recalculateRow(idx, fullRender = false) {
       if (baseEl) {
         const totalBase = q * (num(item.conversionRatio) || 1);
         baseEl.innerHTML = `${totalBase} <small style="font-size:10px;">${escapeHtml(item.baseUnit || '')}</small>`;
+      }
+      const mobileSummary = row.querySelector(".mobile-row-summary");
+      if (mobileSummary) {
+        mobileSummary.textContent = `${q ? `${q} ${escapeHtml(item.purchaseUnit || '')} • ` : ''}${rupiah(item.subtotal)}`;
+      }
+      const mobileTitle = row.querySelector(".mobile-row-title");
+      if (mobileTitle && item.name) {
+        mobileTitle.textContent = item.name;
       }
     }
   }
