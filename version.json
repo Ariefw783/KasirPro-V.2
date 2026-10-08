@@ -1,14 +1,14 @@
 {
-  "version": "2.2.35",
-  "build": "20261008.01",
+  "version": "2.2.36",
+  "build": "20261008.02",
   "releaseDate": "08 Oktober 2026",
-  "title": "Pembaruan Parser TSV 14 Kolom Faktur Multi-Satuan",
-  "description": "Memperbaiki parser TSV agar memetakan anak kolom Satuan Sedang (Opsional dan Isi) secara presisi ke 14 kolom data faktur tanpa menggeser kolom Satuan Terkecil, Konversi, dan Qty.",
+  "title": "Tampilan Input Faktur Responsif Desktop & Mobile",
+  "description": "Menghadirkan freeze column dan header collapsible pada desktop, serta transformasi otomatis menjadi kartu obat adaptif pada layar ponsel.",
   "changelog": [
-    "Fix TSV multi-unit column parser",
-    "Prevent invoice grid column shift",
-    "Map intermediate unit quantity accurately",
-    "Enhance manual invoice reconciliation precision",
-    "Update service worker cache v88"
+    "Add responsive invoice grid cards",
+    "Enable desktop freeze columns feature",
+    "Add collapsible invoice header accordion",
+    "Improve mobile numeric keyboard inputs",
+    "Update service worker cache v89"
   ]
 }

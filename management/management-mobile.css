@@ -420,8 +420,8 @@
     padding: 12px 10px !important;
   }
 
-  .table-wrapper > .data-table,
-  .table-wrapper > table {
+  .table-wrapper > .data-table:not(.manual-grid-table),
+  .table-wrapper > table:not(.manual-grid-table) {
     min-width: 820px !important;
   }
 
@@ -433,5 +433,158 @@
 
   .data-table th {
     font-size: 0.64rem !important;
+  }
+}
+
+/* ==========================================================================
+   MANUAL INVOICE: ADAPTIVE CARD-BASED GRID UNTUK LAYAR PONSEL / TABLET
+   ========================================================================== */
+@media (max-width: 768px) {
+  .manual-invoice-grid-wrapper {
+    overflow-x: visible !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  .manual-grid-table {
+    min-width: 100% !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    display: block !important;
+    border: none !important;
+  }
+
+  .manual-grid-table thead {
+    display: none !important;
+  }
+
+  .manual-grid-table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    width: 100% !important;
+  }
+
+  .manual-grid-table tbody tr[data-index] {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px 10px !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 12px !important;
+    padding: 14px 12px 12px 12px !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+    position: relative !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .manual-grid-table tbody tr[data-index]:hover {
+    background-color: #ffffff !important;
+  }
+
+  .manual-grid-table tbody td {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    padding: 0 !important;
+    border: none !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+  }
+
+  .manual-grid-table tbody td::before {
+    content: attr(data-mobile-label);
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    display: block;
+    line-height: 1.2;
+  }
+
+  .manual-grid-table tbody td.col-num::before,
+  .manual-grid-table tbody td.col-action::before {
+    display: none !important;
+  }
+
+  /* Badge Nomor di pojok kiri atas kartu */
+  .manual-grid-table tbody td.col-num {
+    position: absolute !important;
+    top: 10px !important;
+    left: 12px !important;
+    width: auto !important;
+    height: auto !important;
+    background: #e2e8f0 !important;
+    color: #1e293b !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    padding: 2px 8px !important;
+    border-radius: 999px !important;
+    line-height: 1.2 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Tombol Hapus di pojok kanan atas kartu */
+  .manual-grid-table tbody td.col-action {
+    position: absolute !important;
+    top: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  .manual-grid-table tbody td.col-action .btn-remove-row {
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+  }
+
+  /* Nama Produk: Lebar penuh dengan margin-top untuk badge & tombol aksi */
+  .manual-grid-table tbody td.col-prod {
+    grid-column: 1 / -1 !important;
+    margin-top: 18px !important;
+  }
+
+  .manual-grid-table tbody td.col-prod input.row-prod-search {
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+  }
+
+  /* Satuan Sedang / Isi unit */
+  .manual-grid-table tbody td.col-unit-mid > div {
+    display: flex !important;
+    gap: 4px !important;
+  }
+
+  /* Kolom Total Masuk Unit Kecil */
+  .manual-grid-table tbody td.col-total-base {
+    background: #f0f9ff !important;
+    border: 1px solid #bae6fd !important;
+    border-radius: 6px !important;
+    padding: 4px 6px !important;
+    justify-content: center !important;
+  }
+
+  /* Subtotal: Banner penuh di bawah kartu */
+  .manual-grid-table tbody td.col-subtotal {
+    grid-column: 1 / -1 !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    background: #f8fafc !important;
+    border: 1px dashed #cbd5e1 !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    font-size: 13.5px !important;
+    margin-top: 4px !important;
+  }
+
+  .manual-grid-table tbody td.col-subtotal::before {
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    color: #475569 !important;
   }
 }

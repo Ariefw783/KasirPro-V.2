@@ -115,6 +115,9 @@ function bindEvents() {
   $("manual-inv-date")?.addEventListener("change", handleInvoiceDateChange);
   $("manual-inv-discount-type")?.addEventListener("change", handleDiscountTypeChange);
   $("manual-inv-ppn-rate")?.addEventListener("change", handlePpnRateChange);
+  $("btn-toggle-inv-header")?.addEventListener("click", () => toggleManualInvoiceHeader());
+  $("manual-inv-number")?.addEventListener("input", updateManualInvoiceHeaderSummary);
+  $("manual-inv-due-date")?.addEventListener("change", updateManualInvoiceHeaderSummary);
 
   // Auto format titik live pada input header mata uang
   const setupLiveCurrencyInput = (elId) => {
@@ -125,6 +128,7 @@ function bindEvents() {
       const valNum = parseInt(digits, 10) || 0;
       e.target.value = valNum ? formatNumber(valNum) : "";
       calculateManualInvoiceTotals();
+      updateManualInvoiceHeaderSummary();
     });
     el.addEventListener("focus", (e) => e.target.select());
   };
@@ -519,6 +523,8 @@ export function openManualInvoiceModal() {
   }
 
   calculateManualInvoiceTotals();
+  toggleManualInvoiceHeader(false);
+  updateManualInvoiceHeaderSummary();
   modal.hidden = false;
   setTimeout(() => $("manual-inv-number")?.focus(), 60);
 }
@@ -526,6 +532,61 @@ export function openManualInvoiceModal() {
 export function closeManualInvoiceModal() {
   const modal = $("modal-manual-invoice");
   if (modal) modal.hidden = true;
+}
+
+function updateManualInvoiceHeaderSummary() {
+  const summaryEl = $("manual-inv-header-summary");
+  if (!summaryEl) return;
+
+  const supplier = text($("manual-inv-supplier")?.value) || "Belum dipilih";
+  const invNum = text($("manual-inv-number")?.value) || "-";
+  const invDate = $("manual-inv-date")?.value || "-";
+  const payType = $("manual-inv-payment-type")?.value === "tunai" ? "Tunai" : "Tempo";
+  const dueDate = $("manual-inv-due-date")?.value || "-";
+  const printedTotal = $("manual-inv-printed-total")?.value || "0";
+
+  summaryEl.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:12px;">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;">
+        <span><strong>Supplier:</strong> <span class="text-primary" style="font-weight:700;">${escapeHtml(supplier)}</span></span>
+        <span><strong>No. Faktur:</strong> <span style="font-weight:700;">${escapeHtml(invNum)}</span></span>
+        <span><strong>Tgl:</strong> ${escapeHtml(invDate)}</span>
+        <span><strong>Bayar:</strong> ${payType}${payType === "Tempo" && dueDate !== "-" ? ` (Tempo: ${escapeHtml(dueDate)})` : ""}</span>
+        <span><strong>Total Fisik:</strong> <span style="font-weight:800;color:#991b1b;">Rp ${escapeHtml(printedTotal)}</span></span>
+      </div>
+      <button type="button" id="btn-edit-header-from-summary" class="button button-small button-secondary" style="font-size:11px;padding:2px 8px;border:1px solid #cbd5e1;background:#fff;">
+        <i class="fa-solid fa-pen-to-square"></i> Buka Header
+      </button>
+    </div>
+  `;
+
+  $("btn-edit-header-from-summary")?.addEventListener("click", () => {
+    toggleManualInvoiceHeader(false);
+  });
+}
+
+function toggleManualInvoiceHeader(forceCollapse) {
+  const body = $("manual-inv-header-body");
+  const summary = $("manual-inv-header-summary");
+  const icon = $("icon-toggle-inv-header");
+  const label = $("label-toggle-inv-header");
+  if (!body || !summary) return;
+
+  const isCurrentlyVisible = body.style.display !== "none";
+  const shouldCollapse = forceCollapse !== undefined ? forceCollapse : isCurrentlyVisible;
+
+  if (shouldCollapse) {
+    updateManualInvoiceHeaderSummary();
+    body.style.display = "none";
+    summary.style.display = "block";
+    if (icon) icon.className = "fa-solid fa-chevron-down";
+    if (label) label.textContent = "Buka Detail";
+  } else {
+    body.style.display = "block";
+    summary.style.display = "none";
+    if (icon) icon.className = "fa-solid fa-chevron-up";
+    if (label) label.textContent = "Ciutkan";
+  }
 }
 
 function populateManualInvoiceSupplierDropdown() {
@@ -598,6 +659,7 @@ function handlePaymentTypeChange() {
     }
     if (label) label.innerHTML = 'Jatuh Tempo <span class="text-danger" id="manual-inv-due-date-required">*</span>';
   }
+  updateManualInvoiceHeaderSummary();
 }
 
 function handleInvoiceDateChange() {
@@ -608,6 +670,7 @@ function handleInvoiceDateChange() {
     const dueInput = $("manual-inv-due-date");
     if (dueInput) dueInput.value = invDate;
   }
+  updateManualInvoiceHeaderSummary();
 }
 
 function handleDiscountTypeChange() {
@@ -1034,6 +1097,7 @@ function removeManualInvoiceRow(idx) {
 function handleSupplierChange() {
   renderManualInvoiceItems();
   hideGlobalAc();
+  updateManualInvoiceHeaderSummary();
 }
 
 function hideGlobalAc() {
@@ -1096,8 +1160,8 @@ function renderManualInvoiceItems() {
 
     return `
       <tr data-index="${idx}">
-        <td style="text-align:center;font-weight:700;color:#64748b;">${idx + 1}</td>
-        <td class="inv-prod-cell">
+        <td class="col-num" data-mobile-label="#" style="text-align:center;font-weight:700;color:#64748b;">${idx + 1}</td>
+        <td class="col-prod inv-prod-cell" data-mobile-label="Nama Produk">
           <div style="display:flex;flex-direction:column;gap:3px;">
             <input type="text" class="row-prod-search" data-index="${idx}" value="${escapeHtml(item.name)}" 
               placeholder="${supSelected ? 'Ketik nama obat / scan barcode...' : 'Pilih Supplier terlebih dahulu...'}" 
@@ -1106,46 +1170,46 @@ function renderManualInvoiceItems() {
             ${matchBadgeHtml}
           </div>
         </td>
-        <td>
+        <td class="col-batch" data-mobile-label="No. Batch">
           <input type="text" class="row-batch" data-index="${idx}" value="${escapeHtml(item.batch || '')}" placeholder="No. Batch" style="font-weight:600;">
         </td>
-        <td>
+        <td class="col-exp" data-mobile-label="Exp Date">
           <input type="date" class="row-exp" data-index="${idx}" value="${escapeHtml(item.expiryDate || '')}" style="font-size:11.5px;">
         </td>
-        <td>
+        <td class="col-unit-buy" data-mobile-label="Satuan Besar">
           <input type="text" class="row-purchase-unit" data-index="${idx}" value="${escapeHtml(item.purchaseUnit || '')}" placeholder="BOX / BTL">
         </td>
-        <td>
+        <td class="col-unit-mid" data-mobile-label="Satuan Sedang">
           <div style="display:flex;align-items:center;gap:4px;">
             <input type="text" class="row-mid-unit" data-index="${idx}" value="${escapeHtml(item.intermediateUnit || '')}" placeholder="Opsional" style="flex:1;">
-            <input type="number" class="row-mid-qty" data-index="${idx}" min="1" step="1" value="${midQtyStr}" title="Isi per Satuan Sedang" style="width:48px;" placeholder="Isi">
+            <input type="number" inputmode="numeric" class="row-mid-qty" data-index="${idx}" min="1" step="1" value="${midQtyStr}" title="Isi per Satuan Sedang" style="width:48px;" placeholder="Isi">
           </div>
         </td>
-        <td>
+        <td class="col-unit-base" data-mobile-label="Satuan Terkecil">
           <input type="text" class="row-base-unit" data-index="${idx}" value="${escapeHtml(item.baseUnit || '')}" placeholder="TAB / BTL">
         </td>
-        <td>
-          <input type="number" class="row-conversion" data-index="${idx}" min="1" step="1" value="${convStr}" title="Total Satuan Terkecil dalam 1 Satuan Besar" style="font-weight:800;color:#0369a1;" placeholder="1">
+        <td class="col-conv" data-mobile-label="Isi Konversi">
+          <input type="number" inputmode="numeric" class="row-conversion" data-index="${idx}" min="1" step="1" value="${convStr}" title="Total Satuan Terkecil dalam 1 Satuan Besar" style="font-weight:800;color:#0369a1;" placeholder="1">
         </td>
-        <td>
-          <input type="number" class="row-qty" data-index="${idx}" min="0.01" step="any" value="${qtyStr}" style="font-weight:700;" placeholder="1">
+        <td class="col-qty" data-mobile-label="Qty Beli">
+          <input type="number" inputmode="decimal" class="row-qty" data-index="${idx}" min="0.01" step="any" value="${qtyStr}" style="font-weight:700;" placeholder="1">
         </td>
-        <td class="row-total-base-cell" style="text-align:center;font-weight:700;color:#0369a1;background:#f0f9ff;border-radius:4px;">
+        <td class="col-total-base row-total-base-cell" data-mobile-label="Total Masuk" style="text-align:center;font-weight:700;color:#0369a1;background:#f0f9ff;border-radius:4px;">
           ${totalBase > 0 ? totalBase : '—'} <small style="font-size:10px;">${escapeHtml(item.baseUnit || '')}</small>
         </td>
-        <td>
+        <td class="col-buy-price" data-mobile-label="Harga Beli">
           <input type="text" inputmode="numeric" class="row-buy-price" data-index="${idx}" value="${buyPriceStr}" placeholder="0" style="font-weight:600;">
         </td>
-        <td>
-          <input type="number" class="row-disc-pct" data-index="${idx}" min="0" max="100" step="0.1" value="${discPctStr}" placeholder="0">
+        <td class="col-disc-pct" data-mobile-label="Diskon (%)">
+          <input type="number" inputmode="decimal" class="row-disc-pct" data-index="${idx}" min="0" max="100" step="0.1" value="${discPctStr}" placeholder="0">
         </td>
-        <td>
+        <td class="col-disc-rp" data-mobile-label="Diskon (Rp)">
           <input type="text" inputmode="numeric" class="row-disc-rp" data-index="${idx}" value="${discRpStr}" placeholder="0">
         </td>
-        <td class="row-subtotal-cell" style="text-align:right;font-weight:800;color:#0f172a;">
+        <td class="col-subtotal row-subtotal-cell" data-mobile-label="Subtotal" style="text-align:right;font-weight:800;color:#0f172a;">
           ${rupiah(item.subtotal || 0)}
         </td>
-        <td style="text-align:center;">
+        <td class="col-action" style="text-align:center;">
           <button type="button" class="btn-remove-row button button-small button-secondary" data-index="${idx}" style="color:#ef4444;padding:4px 8px;" title="Hapus baris ini">
             <i class="fa-solid fa-trash-can"></i>
           </button>
@@ -1409,12 +1473,17 @@ function showProductSuggestions(inputEl, idx, query) {
 
   acBox.innerHTML = html;
 
-  // Posisikan secara fixed relatif terhadap input
+  // Posisikan secara fixed relatif terhadap input secara responsif
   const rect = inputEl.getBoundingClientRect();
+  const screenW = window.innerWidth || document.documentElement.clientWidth || 360;
+  const targetW = Math.min(Math.max(rect.width, 360), screenW - 20);
+  const leftPos = Math.max(10, Math.min(rect.left, screenW - targetW - 10));
+
   acBox.style.position = "fixed";
   acBox.style.top = `${rect.bottom + 3}px`;
-  acBox.style.left = `${rect.left}px`;
-  acBox.style.width = `${Math.max(rect.width, 380)}px`;
+  acBox.style.left = `${leftPos}px`;
+  acBox.style.width = `${targetW}px`;
+  acBox.style.maxWidth = "calc(100vw - 20px)";
   acBox.style.zIndex = "999999";
   acBox.style.display = "block";
 
@@ -1644,6 +1713,8 @@ async function handleResetManualInvoice() {
 
   addManualInvoiceRow();
   calculateManualInvoiceTotals();
+  toggleManualInvoiceHeader(false);
+  updateManualInvoiceHeaderSummary();
 }
 
 async function handleConfirmManualInvoice() {

@@ -163,6 +163,83 @@
     background-color: #f8fafc;
 }
 
+/* Desktop: Sticky Header & Frozen Columns */
+@media (min-width: 769px) {
+    .manual-invoice-grid-wrapper {
+        max-height: 520px;
+        overflow: auto;
+        position: relative;
+    }
+
+    .manual-grid-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: #f1f5f9;
+        box-shadow: inset 0 -1px 0 #cbd5e1;
+    }
+
+    /* Sticky Kolom Kiri: # dan Nama Produk */
+    .manual-grid-table thead th.col-num,
+    .manual-grid-table tbody td.col-num {
+        position: sticky;
+        left: 0;
+        background: #f8fafc;
+        z-index: 21;
+    }
+    .manual-grid-table tbody td.col-num {
+        background: #ffffff;
+        z-index: 10;
+    }
+
+    .manual-grid-table thead th.col-prod,
+    .manual-grid-table tbody td.col-prod {
+        position: sticky;
+        left: 36px;
+        background: #f8fafc;
+        z-index: 21;
+        box-shadow: 3px 0 6px -2px rgba(0, 0, 0, 0.08);
+    }
+    .manual-grid-table tbody td.col-prod {
+        background: #ffffff;
+        z-index: 10;
+    }
+    .manual-grid-table tr:hover td.col-num,
+    .manual-grid-table tr:hover td.col-prod {
+        background: #f8fafc;
+    }
+
+    /* Sticky Kolom Kanan: Subtotal dan Aksi Hapus */
+    .manual-grid-table thead th.col-subtotal,
+    .manual-grid-table tbody td.col-subtotal {
+        position: sticky;
+        right: 42px;
+        background: #f8fafc;
+        z-index: 21;
+        box-shadow: -3px 0 6px -2px rgba(0, 0, 0, 0.08);
+    }
+    .manual-grid-table tbody td.col-subtotal {
+        background: #ffffff;
+        z-index: 10;
+    }
+
+    .manual-grid-table thead th.col-action,
+    .manual-grid-table tbody td.col-action {
+        position: sticky;
+        right: 0;
+        background: #f8fafc;
+        z-index: 21;
+    }
+    .manual-grid-table tbody td.col-action {
+        background: #ffffff;
+        z-index: 10;
+    }
+    .manual-grid-table tr:hover td.col-subtotal,
+    .manual-grid-table tr:hover td.col-action {
+        background: #f8fafc;
+    }
+}
+
 .inv-prod-cell {
     position: relative;
 }

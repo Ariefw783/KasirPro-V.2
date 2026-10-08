@@ -1923,70 +1923,82 @@
                         <div class="product-detail-body manual-invoice-body" style="padding:16px 20px;max-height:calc(88vh - 140px);overflow-y:auto;background:#f8fafc;">
                             <!-- Bagian 1: Header Faktur Fisik -->
                             <div class="manual-invoice-card" style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e2e8f0;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                                <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;">
+                                <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
                                     <span><i class="fa-solid fa-building-columns text-primary"></i> 1. Informasi Supplier &amp; Faktur Fisik</span>
-                                    <span style="font-size:11px;font-weight:500;color:#64748b;">* Wajib mencocokkan total fisik di kertas faktur</span>
-                                </div>
-                                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;">
-                                    <div>
-                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Nama Supplier <span class="text-danger">*</span></label>
-                                        <div style="display:flex;gap:6px;">
-                                            <select id="manual-inv-supplier" style="flex:1;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;background:#fff;font-weight:600;">
-                                                <option value="">-- Pilih Supplier --</option>
-                                            </select>
-                                            <button type="button" id="btn-quick-add-supplier-inv" class="button button-small button-secondary" title="Tambah Supplier Baru" style="padding:0 10px;">
-                                                <i class="fa-solid fa-plus"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">No. Faktur Fisik <span class="text-danger">*</span></label>
-                                        <input type="text" id="manual-inv-number" placeholder="Contoh: 26-026281" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;font-weight:700;letter-spacing:0.5px;">
-                                    </div>
-                                    <div>
-                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Tanggal Faktur <span class="text-danger">*</span></label>
-                                        <input type="date" id="manual-inv-date" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;">
-                                    </div>
-                                    <div>
-                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Metode Pembayaran <span class="text-danger">*</span></label>
-                                        <select id="manual-inv-payment-type" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;background:#fff;font-weight:600;">
-                                            <option value="tempo">Tempo (Kredit / Berjangka)</option>
-                                            <option value="tunai">Tunai (Cash / Lunas Langsung)</option>
-                                        </select>
-                                    </div>
-                                    <div id="manual-inv-due-date-wrapper">
-                                        <label id="manual-inv-due-date-label" style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Jatuh Tempo <span class="text-danger" id="manual-inv-due-date-required">*</span></label>
-                                        <input type="date" id="manual-inv-due-date" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;">
+                                    <div style="display:flex;align-items:center;gap:10px;">
+                                        <span style="font-size:11px;font-weight:500;color:#64748b;">* Wajib mencocokkan total fisik di kertas faktur</span>
+                                        <button type="button" id="btn-toggle-inv-header" class="button button-small button-secondary" style="font-size:11px;padding:3px 8px;display:inline-flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #cbd5e1;" title="Lipat / Buka Detail Header">
+                                            <i class="fa-solid fa-chevron-up" id="icon-toggle-inv-header"></i> <span id="label-toggle-inv-header">Ciutkan</span>
+                                        </button>
                                     </div>
                                 </div>
 
-                                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-top:12px;padding-top:12px;border-top:1px dashed #e2e8f0;">
-                                    <div>
-                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Metode Diskon Faktur</label>
-                                        <select id="manual-inv-discount-type" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:#fff;">
-                                            <option value="item">Diskon Tercetak per Baris Item (Standar PBF)</option>
-                                            <option value="global">Diskon Tambahan di Footer Faktur</option>
-                                        </select>
+                                <div id="manual-inv-header-summary" style="display:none;padding:10px 14px;background:#f8fafc;border-radius:8px;border:1px solid #cbd5e1;margin-bottom:4px;">
+                                    <!-- Ringkasan satu baris otomatis saat dilipat -->
+                                </div>
+
+                                <div id="manual-inv-header-body">
+                                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;">
+                                        <div>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Nama Supplier <span class="text-danger">*</span></label>
+                                            <div style="display:flex;gap:6px;">
+                                                <select id="manual-inv-supplier" style="flex:1;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;background:#fff;font-weight:600;">
+                                                    <option value="">-- Pilih Supplier --</option>
+                                                </select>
+                                                <button type="button" id="btn-quick-add-supplier-inv" class="button button-small button-secondary" title="Tambah Supplier Baru" style="padding:0 10px;">
+                                                    <i class="fa-solid fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">No. Faktur Fisik <span class="text-danger">*</span></label>
+                                            <input type="text" id="manual-inv-number" placeholder="Contoh: 26-026281" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;font-weight:700;letter-spacing:0.5px;">
+                                        </div>
+                                        <div>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Tanggal Faktur <span class="text-danger">*</span></label>
+                                            <input type="date" id="manual-inv-date" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;">
+                                        </div>
+                                        <div>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Metode Pembayaran <span class="text-danger">*</span></label>
+                                            <select id="manual-inv-payment-type" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;background:#fff;font-weight:600;">
+                                                <option value="tempo">Tempo (Kredit / Berjangka)</option>
+                                                <option value="tunai">Tunai (Cash / Lunas Langsung)</option>
+                                            </select>
+                                        </div>
+                                        <div id="manual-inv-due-date-wrapper">
+                                            <label id="manual-inv-due-date-label" style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Jatuh Tempo <span class="text-danger" id="manual-inv-due-date-required">*</span></label>
+                                            <input type="date" id="manual-inv-due-date" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;">
+                                        </div>
                                     </div>
-                                    <div id="manual-inv-global-discount-box" hidden>
-                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Diskon Footer Faktur (Rp)</label>
-                                        <input type="text" inputmode="numeric" id="manual-inv-global-discount-rp" placeholder="0" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
-                                    </div>
-                                    <div>
-                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">PPN Faktur (%)</label>
-                                        <select id="manual-inv-ppn-rate" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:#fff;">
-                                            <option value="11" selected>11% (PPN Standar)</option>
-                                            <option value="0">0% (Bebas PPN / Non-PKP)</option>
-                                            <option value="custom">Kustom Nominal PPN</option>
-                                        </select>
-                                    </div>
-                                    <div id="manual-inv-custom-ppn-box" hidden>
-                                        <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Nominal PPN Tercetak (Rp)</label>
-                                        <input type="text" inputmode="numeric" id="manual-inv-custom-ppn-rp" placeholder="0" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
-                                    </div>
-                                    <div>
-                                        <label style="display:block;font-size:12px;font-weight:700;color:#b91c1c;margin-bottom:4px;">Total Akhir Tercetak di Kertas (Rp) <span class="text-danger">*</span></label>
-                                        <input type="text" inputmode="numeric" id="manual-inv-printed-total" placeholder="Angka Total di Kertas Faktur" style="width:100%;min-height:36px;padding:6px 10px;border:2px solid #f87171;border-radius:6px;font-size:14px;font-weight:800;color:#991b1b;background:#fff5f5;">
+
+                                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-top:12px;padding-top:12px;border-top:1px dashed #e2e8f0;">
+                                        <div>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Metode Diskon Faktur</label>
+                                            <select id="manual-inv-discount-type" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:#fff;">
+                                                <option value="item">Diskon Tercetak per Baris Item (Standar PBF)</option>
+                                                <option value="global">Diskon Tambahan di Footer Faktur</option>
+                                            </select>
+                                        </div>
+                                        <div id="manual-inv-global-discount-box" hidden>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Diskon Footer Faktur (Rp)</label>
+                                            <input type="text" inputmode="numeric" id="manual-inv-global-discount-rp" placeholder="0" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+                                        </div>
+                                        <div>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">PPN Faktur (%)</label>
+                                            <select id="manual-inv-ppn-rate" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:#fff;">
+                                                <option value="11" selected>11% (PPN Standar)</option>
+                                                <option value="0">0% (Bebas PPN / Non-PKP)</option>
+                                                <option value="custom">Kustom Nominal PPN</option>
+                                            </select>
+                                        </div>
+                                        <div id="manual-inv-custom-ppn-box" hidden>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Nominal PPN Tercetak (Rp)</label>
+                                            <input type="text" inputmode="numeric" id="manual-inv-custom-ppn-rp" placeholder="0" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+                                        </div>
+                                        <div>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#b91c1c;margin-bottom:4px;">Total Akhir Tercetak di Kertas (Rp) <span class="text-danger">*</span></label>
+                                            <input type="text" inputmode="numeric" id="manual-inv-printed-total" placeholder="Angka Total di Kertas Faktur" style="width:100%;min-height:36px;padding:6px 10px;border:2px solid #f87171;border-radius:6px;font-size:14px;font-weight:800;color:#991b1b;background:#fff5f5;">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2012,21 +2024,21 @@
                                     <table class="data-table manual-grid-table" style="min-width:1320px;font-size:12.5px;width:100%;border-collapse:collapse;">
                                         <thead style="background:#f1f5f9;border-bottom:2px solid #cbd5e1;">
                                             <tr>
-                                                <th style="width:36px;text-align:center;">#</th>
-                                                <th style="min-width:240px;">Nama Produk &amp; Pencarian</th>
-                                                <th style="width:105px;" title="Nomor batch fisik dari pabrik">No. Batch</th>
-                                                <th style="width:125px;" title="Tanggal kedaluwarsa fisik obat">Exp. Date</th>
-                                                <th style="width:85px;" title="Satuan Beli saat pesan ke supplier">Satuan Besar</th>
-                                                <th style="width:115px;" title="Satuan Antara (misal Strip / Blister)">Satuan Sedang</th>
-                                                <th style="width:100px;" title="Unit terkecil stok apotek (Tablet, Kaplet, Botol, Pcs)">Satuan Terkecil</th>
-                                                <th style="width:80px;" title="Total Satuan Terkecil dalam 1 Satuan Besar">Isi Konversi</th>
-                                                <th style="width:65px;">Qty Beli</th>
-                                                <th style="width:80px;" title="Jumlah stok satuan terkecil yang masuk">Total Masuk</th>
-                                                <th style="width:100px;">Harga Beli (Rp)</th>
-                                                <th style="width:70px;">Disc (%)</th>
-                                                <th style="width:80px;">Disc (Rp)</th>
-                                                <th style="width:105px;text-align:right;">Subtotal</th>
-                                                <th style="width:38px;text-align:center;">Aksi</th>
+                                                <th class="col-num" style="width:36px;text-align:center;">#</th>
+                                                <th class="col-prod" style="min-width:240px;">Nama Produk &amp; Pencarian</th>
+                                                <th class="col-batch" style="width:105px;" title="Nomor batch fisik dari pabrik">No. Batch</th>
+                                                <th class="col-exp" style="width:125px;" title="Tanggal kedaluwarsa fisik obat">Exp. Date</th>
+                                                <th class="col-unit-buy" style="width:85px;" title="Satuan Beli saat pesan ke supplier">Satuan Besar</th>
+                                                <th class="col-unit-mid" style="width:115px;" title="Satuan Antara (misal Strip / Blister)">Satuan Sedang</th>
+                                                <th class="col-unit-base" style="width:100px;" title="Unit terkecil stok apotek (Tablet, Kaplet, Botol, Pcs)">Satuan Terkecil</th>
+                                                <th class="col-conv" style="width:80px;" title="Total Satuan Terkecil dalam 1 Satuan Besar">Isi Konversi</th>
+                                                <th class="col-qty" style="width:65px;">Qty Beli</th>
+                                                <th class="col-total-base" style="width:80px;" title="Jumlah stok satuan terkecil yang masuk">Total Masuk</th>
+                                                <th class="col-buy-price" style="width:100px;">Harga Beli (Rp)</th>
+                                                <th class="col-disc-pct" style="width:70px;">Disc (%)</th>
+                                                <th class="col-disc-rp" style="width:80px;">Disc (Rp)</th>
+                                                <th class="col-subtotal" style="width:105px;text-align:right;">Subtotal</th>
+                                                <th class="col-action" style="width:38px;text-align:center;">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody id="manual-invoice-items-body"></tbody>
