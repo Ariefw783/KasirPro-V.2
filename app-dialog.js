@@ -19,25 +19,31 @@ function install(){
   .kp-dialog-v4__actions{display:flex;justify-content:flex-end;gap:9px;padding:14px 18px;background:#f8fafc;border-top:1px solid #e2e8f0}.kp-dialog-v4__button{min-height:40px;padding:0 16px;border-radius:9px;border:1px solid #cbd5e1;background:#fff;color:#334155;font:inherit;font-size:12px;font-weight:800;cursor:pointer}.kp-dialog-v4__button.primary{border-color:#2563eb;background:#2563eb;color:#fff}.kp-dialog-v4[data-type=error] .kp-dialog-v4__button.primary{border-color:#dc2626;background:#dc2626}.kp-dialog-v4[data-type=success] .kp-dialog-v4__button.primary{border-color:#059669;background:#059669}
   @media(max-width:520px){.kp-dialog-v4__body{padding:21px 18px 16px}.kp-dialog-v4__actions{display:grid;grid-template-columns:1fr 1fr}.kp-dialog-v4__actions .kp-dialog-v4__button:only-child{grid-column:1/-1}}
 
-  /* Progress Loading Modal */
-  .kp-dialog-progress{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:20px}.kp-dialog-progress[hidden]{display:none!important}
-  .kp-dialog-progress__backdrop{position:absolute;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(4px)}
-  .kp-dialog-progress__card{position:relative;width:min(94vw,430px);overflow:hidden;border:1px solid #e2e8f0;border-radius:18px;background:#fff;box-shadow:0 28px 90px rgba(15,23,42,.35);padding:26px 24px 22px;text-align:center}
-  .kp-dialog-progress__icon{width:56px;height:56px;margin:0 auto 14px;border-radius:16px;display:grid;place-items:center;font-size:24px;background:#eff6ff;color:#2563eb}
-  .kp-dialog-progress__icon i{animation:kp-spin 1s linear infinite}
+  /* Progress Loading Modal — Tema KasirPro Elegan */
+  .kp-dialog-progress{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:20px;transition:opacity .2s ease}.kp-dialog-progress[hidden]{display:none!important}
+  .kp-dialog-progress__backdrop{position:absolute;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+  .kp-dialog-progress__card{position:relative;width:min(94vw,420px);overflow:hidden;border:1px solid #e2e8f0;border-radius:20px;background:#ffffff;box-shadow:0 25px 70px -10px rgba(15,23,42,.35),0 0 0 1px rgba(255,255,255,.8) inset;padding:28px 24px 22px;text-align:center}
+  .kp-dialog-progress__header{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px}
+  .kp-dialog-progress__badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.3px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;text-transform:uppercase}
+  .kp-dialog-progress__badge.write{background:#ecfdf5;color:#059669;border-color:#a7f3d0}
+  .kp-dialog-progress__badge.delete{background:#fef2f2;color:#dc2626;border-color:#fecaca}
+  .kp-dialog-progress__badge.read{background:#f0fdf4;color:#16a34a;border-color:#bbf7d0}
+  .kp-dialog-progress__icon{width:58px;height:58px;margin:0 auto 14px;border-radius:18px;display:grid;place-items:center;font-size:24px;background:linear-gradient(135deg,#eff6ff,#dbeafe);color:#2563eb;box-shadow:0 8px 18px rgba(37,99,235,.15)}
+  .kp-dialog-progress__icon.spin i{animation:kp-spin .9s cubic-bezier(.4,0,.2,1) infinite}
   .kp-dialog-progress h2{margin:0;color:#0f172a;font-size:18px;line-height:1.3;font-weight:750}
   .kp-dialog-progress__message{margin:8px 0 14px;color:#475569;font-size:13px;line-height:1.55;white-space:pre-line;overflow-wrap:anywhere}
   .kp-dialog-progress__bar-container{width:100%;height:8px;background:#f1f5f9;border-radius:999px;overflow:hidden;margin:12px 0 8px;border:1px solid #e2e8f0}
   .kp-dialog-progress__bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#2563eb,#38bdf8);border-radius:999px;transition:width .25s ease}
   .kp-dialog-progress__stats{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:#64748b;font-weight:600}
-  .kp-dialog-progress__hint{margin-top:14px;padding:8px 12px;background:#f8fafc;border-radius:8px;color:#94a3b8;font-size:11px;display:flex;align-items:center;justify-content:center;gap:6px}
+  .kp-dialog-progress__hint{margin-top:14px;padding:9px 12px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9;color:#64748b;font-size:11.5px;display:flex;align-items:center;justify-content:center;gap:7px}
+  .kp-dialog-progress__hint i{color:#2563eb}
   @keyframes kp-spin{to{transform:rotate(360deg)}}
   `;
   document.head.appendChild(style);
   const root=document.createElement('div');root.id='kp-dialog-v4';root.className='kp-dialog-v4';root.hidden=true;root.innerHTML=`<div class="kp-dialog-v4__backdrop"></div><section class="kp-dialog-v4__card" role="dialog" aria-modal="true" aria-labelledby="kp-dialog-v4-title"><div class="kp-dialog-v4__body"><div class="kp-dialog-v4__icon"><i class="fa-solid fa-circle-info"></i></div><h2 id="kp-dialog-v4-title"></h2><p class="kp-dialog-v4__message"></p><div class="kp-dialog-v4__input-wrap" hidden><label for="kp-dialog-v4-input"></label><input id="kp-dialog-v4-input" class="kp-dialog-v4__input"></div></div><footer class="kp-dialog-v4__actions"><button type="button" class="kp-dialog-v4__button cancel">Batal</button><button type="button" class="kp-dialog-v4__button primary">Mengerti</button></footer></section>`;
   document.body.appendChild(root);
 
-  const progRoot=document.createElement('div');progRoot.id='kp-dialog-progress';progRoot.className='kp-dialog-progress';progRoot.hidden=true;progRoot.setAttribute('role','status');progRoot.setAttribute('aria-live','polite');progRoot.innerHTML=`<div class="kp-dialog-progress__backdrop"></div><section class="kp-dialog-progress__card"><div class="kp-dialog-progress__icon"><i class="fa-solid fa-arrows-rotate"></i></div><h2 id="kp-dialog-progress-title">Memproses Data</h2><p id="kp-dialog-progress-msg" class="kp-dialog-progress__message">Mohon tunggu, proses sedang berjalan...</p><div class="kp-dialog-progress__bar-container"><div id="kp-dialog-progress-bar" class="kp-dialog-progress__bar-fill" style="width:0%"></div></div><div class="kp-dialog-progress__stats"><span id="kp-dialog-progress-detail">Menyiapkan...</span><span id="kp-dialog-progress-pct">0%</span></div><div class="kp-dialog-progress__hint"><i class="fa-solid fa-circle-notch fa-spin"></i><span>Mohon jangan menutup atau memuat ulang halaman selama proses berjalan.</span></div></section>`;
+  const progRoot=document.createElement('div');progRoot.id='kp-dialog-progress';progRoot.className='kp-dialog-progress';progRoot.hidden=true;progRoot.setAttribute('role','status');progRoot.setAttribute('aria-live','polite');progRoot.innerHTML=`<div class="kp-dialog-progress__backdrop"></div><section class="kp-dialog-progress__card"><div class="kp-dialog-progress__header"><span id="kp-dialog-progress-badge" class="kp-dialog-progress__badge"><i class="fa-solid fa-database"></i> Database Sync</span></div><div class="kp-dialog-progress__icon spin"><i id="kp-dialog-progress-icon" class="fa-solid fa-arrows-rotate"></i></div><h2 id="kp-dialog-progress-title">Memproses Data</h2><p id="kp-dialog-progress-msg" class="kp-dialog-progress__message">Mohon tunggu, proses sedang berjalan...</p><div class="kp-dialog-progress__bar-container"><div id="kp-dialog-progress-bar" class="kp-dialog-progress__bar-fill" style="width:0%"></div></div><div class="kp-dialog-progress__stats"><span id="kp-dialog-progress-detail">Menyiapkan...</span><span id="kp-dialog-progress-pct">0%</span></div><div class="kp-dialog-progress__hint"><i class="fa-solid fa-circle-notch fa-spin"></i><span>Sinkronisasi database sedang berjalan, mohon jangan tutup halaman.</span></div></section>`;
   document.body.appendChild(progRoot);
 }
 
@@ -61,6 +67,8 @@ function showProgress(title, message, options = {}) {
   const barEl = document.getElementById('kp-dialog-progress-bar');
   const pctEl = document.getElementById('kp-dialog-progress-pct');
   const detailEl = document.getElementById('kp-dialog-progress-detail');
+  const iconEl = document.getElementById('kp-dialog-progress-icon');
+  const badgeEl = document.getElementById('kp-dialog-progress-badge');
 
   if (titleEl) titleEl.textContent = title || 'Memproses Data';
   if (msgEl) msgEl.textContent = message || 'Mohon tunggu...';
@@ -68,10 +76,34 @@ function showProgress(title, message, options = {}) {
   if (barEl) barEl.style.width = `${pct}%`;
   if (pctEl) pctEl.textContent = `${pct}%`;
   if (detailEl) detailEl.textContent = options.detail || 'Memproses...';
+
+  // Format Ikon & Badge dinamis
+  if (iconEl) {
+    const iconClass = options.icon || 'fa-arrows-rotate';
+    iconEl.className = `fa-solid ${iconClass}`;
+  }
+  if (badgeEl) {
+    const opType = options.type || options.opType || 'sync';
+    badgeEl.className = `kp-dialog-progress__badge ${opType}`;
+    const badgeText = options.badgeText || (
+      opType === 'read' ? 'IndexedDB / Firestore Read' :
+      opType === 'write' ? 'Database Write' :
+      opType === 'delete' ? 'Database Delete' :
+      'Database Sync'
+    );
+    const badgeIcon = (
+      opType === 'read' ? 'fa-book-open' :
+      opType === 'write' ? 'fa-cloud-arrow-up' :
+      opType === 'delete' ? 'fa-trash-can' :
+      'fa-database'
+    );
+    badgeEl.innerHTML = `<i class="fa-solid ${badgeIcon}"></i> ${badgeText}`;
+  }
+
   root.hidden = false;
 }
 
-function updateProgress({ title, message, percent, detail } = {}) {
+function updateProgress({ title, message, percent, detail, badgeText, icon, opType } = {}) {
   const root = document.getElementById('kp-dialog-progress');
   if (!root || root.hidden) return;
   if (title !== undefined) {
@@ -92,6 +124,17 @@ function updateProgress({ title, message, percent, detail } = {}) {
   if (detail !== undefined) {
     const el = document.getElementById('kp-dialog-progress-detail');
     if (el) el.textContent = detail;
+  }
+  if (icon !== undefined) {
+    const iconEl = document.getElementById('kp-dialog-progress-icon');
+    if (iconEl) iconEl.className = `fa-solid ${icon}`;
+  }
+  if (badgeText !== undefined || opType !== undefined) {
+    const badgeEl = document.getElementById('kp-dialog-progress-badge');
+    if (badgeEl) {
+      if (opType) badgeEl.className = `kp-dialog-progress__badge ${opType}`;
+      if (badgeText) badgeEl.innerHTML = `<i class="fa-solid fa-database"></i> ${badgeText}`;
+    }
   }
 }
 

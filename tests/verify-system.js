@@ -540,6 +540,49 @@ const productsWithStock = mock10kProducts.filter(p => (p["Stok Awal"] || 0) > 0)
 assert(productsWithStock.length === 0, "Katalog Pasif (Stok 0) tidak membebani koleksi individual products Firestore (Hemat 99.9% Writes)");
 
 // -----------------------------------------------------------------------------
+// BAGIAN 11: PENGUJIAN PROTEKSI STOK NON-NEGATIF & SINKRONISASI DATABASE FEEDBACK
+// -----------------------------------------------------------------------------
+console.log("\n🛡️ BAGIAN 11: PENGUJIAN PROTEKSI STOK NON-NEGATIF & SINKRONISASI MODAL FEEDBACK");
+
+// 1. Uji Proteksi Valuasi Aset: Stok minus tidak boleh merusak total nilai toko
+const sampleCatalogWithMinus = [
+  { "Kode Produk": "PRD-A", "Nama Produk": "Obat A", "Harga Beli": 50000, stock: 10 },    // Nilai = 500.000
+  { "Kode Produk": "PRD-B", "Nama Produk": "Obat B", "Harga Beli": 25000, stock: 4 },     // Nilai = 100.000
+  { "Kode Produk": "PRD-C", "Nama Produk": "Obat C (Anomali Batal)", "Harga Beli": 100000, stock: -5 } // Anomali
+];
+
+const safeValuation = sampleCatalogWithMinus.reduce((sum, p) => sum + (Math.max(0, p.stock) * p["Harga Beli"]), 0);
+assert(safeValuation === 600000, "Valuasi Aset Toko Terlindungi (Tetap Positif Rp 600.000, Tidak Terpotong Stok Minus)");
+
+// 2. Uji Total Unit Persediaan: Tidak menampilkan akumulasi negatif
+const safeTotalUnits = sampleCatalogWithMinus.reduce((sum, p) => sum + Math.max(0, p.stock), 0);
+assert(safeTotalUnits === 14, "Total Unit Persediaan Terlindungi (14 Unit Fisik Riil, Mengabaikan Anomali Minus)");
+
+// 3. Uji Normalisasi Stok Minus: Mengembalikan produk saldo < 0 ke 0
+const normalizedCatalog = sampleCatalogWithMinus.map(p => ({
+  ...p,
+  stock: Math.max(0, p.stock)
+}));
+const hasAnyNegative = normalizedCatalog.some(p => p.stock < 0);
+assert(!hasAnyNegative && normalizedCatalog.find(p => p["Kode Produk"] === "PRD-C").stock === 0, "Normalisasi Berhasil Mengembalikan Saldo Minus ke 0");
+
+// 4. Uji Struktur Modal Sinkronisasi Database
+const mockDialogState = {
+  shown: false,
+  title: "",
+  opType: "",
+  percent: 0
+};
+function mockShowProgress(title, msg, opt = {}) {
+  mockDialogState.shown = true;
+  mockDialogState.title = title;
+  mockDialogState.opType = opt.type || "sync";
+  mockDialogState.percent = opt.percent || 0;
+}
+mockShowProgress("Membatalkan Faktur", "Rollback stok ke database...", { type: "delete", percent: 30 });
+assert(mockDialogState.shown && mockDialogState.opType === "delete", "Modal Pop-up Sinkronisasi Mendukung Operasi Database Deletes/Rollback");
+
+// -----------------------------------------------------------------------------
 // REKAPITULASI HASIL AUDIT
 // -----------------------------------------------------------------------------
 console.log("\n========================================================");

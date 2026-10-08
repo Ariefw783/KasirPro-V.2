@@ -130,14 +130,17 @@ export function renderReports() {
   const totalUnitSold = completedSales.reduce((sum, s) => sum + (s.items || []).reduce((iSum, it) => iSum + num(it.qty), 0), 0);
   const purchaseValue = filteredInvoices.reduce((sum, inv) => sum + num(inv.total), 0);
 
-  // Estimasi Nilai Stok
+  // Estimasi Nilai Stok (Hanya menghitung stok fisik riil >= 0 agar valuasi aset tidak minus)
   let totalStockVal = 0;
   let lowStockCount = 0;
+  let negativeStockCount = 0;
   products.forEach(p => {
-    const st = readCurrentStock(p["Kode Produk"]);
+    const rawSt = readCurrentStock(p["Kode Produk"]);
+    const st = Math.max(0, rawSt);
     const buy = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
     totalStockVal += (st * buy);
-    if (st <= num(p["Stok Minimum"])) lowStockCount++;
+    if (rawSt <= num(p["Stok Minimum"])) lowStockCount++;
+    if (rawSt < 0) negativeStockCount++;
   });
 
   // Pasang nilai ke DOM KPI
@@ -163,7 +166,13 @@ export function renderReports() {
   if (stockValEl) stockValEl.textContent = rupiah(totalStockVal);
 
   const lowStockEl = $("report-low-stock-count");
-  if (lowStockEl) lowStockEl.textContent = `${lowStockCount} produk menipis/habis`;
+  if (lowStockEl) {
+    if (negativeStockCount > 0) {
+      lowStockEl.innerHTML = `<span style="color:#ef4444;font-weight:700;">⚠️ ${negativeStockCount} minus</span> · ${lowStockCount} menipis/habis`;
+    } else {
+      lowStockEl.textContent = `${lowStockCount} produk menipis/habis`;
+    }
+  }
 
   // Render Panel Aktif
   renderSalesSubReport(filteredSales);
@@ -259,8 +268,8 @@ function renderStockSubReport(products) {
         <td><strong>${formatNumber(stock)}</strong> ${escapeHtml(p["Satuan Dasar"] || 'Pcs')}</td>
         <td>${formatNumber(p["Stok Minimum"] || 0)}</td>
         <td>${rupiah(buy)}</td>
-        <td>${rupiah(stock * buy)}</td>
-        <td>${stock <= num(p["Stok Minimum"]) ? '<span class="text-danger font-bold">Menipis</span>' : 'Aman'}</td>
+        <td>${rupiah(Math.max(0, stock) * buy)}</td>
+        <td>${stock < 0 ? '<span class="text-danger font-bold">Minus</span>' : (stock <= num(p["Stok Minimum"]) ? '<span class="text-danger font-bold">Menipis</span>' : 'Aman')}</td>
       </tr>
     `;
   }).join("");

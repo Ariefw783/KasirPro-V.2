@@ -11,7 +11,7 @@
  */
 
 import { $, num, text, norm, rupiah, formatNumber, formatDateTime, escapeHtml } from "../modules/core/utils.js";
-import { STORE_KEYS, readStore, readCurrentStock } from "../modules/database/database-store.js";
+import { STORE_KEYS, readStore, readCurrentStock, normalizeNegativeStocks } from "../modules/database/database-store.js";
 import { generateStockReportPdf } from "../modules/core/pdf.js";
 
 const PAGE_SIZE = 25;
@@ -33,6 +33,8 @@ function bindEvents() {
     renderStock();
     window.KasirProDialog?.success("Berhasil", "Data stok saat ini berhasil disegarkan.");
   });
+
+  $("fix-minus-stock-btn")?.addEventListener("click", handleFixNegativeStock);
 
   $("stock-search")?.addEventListener("input", () => {
     currentStockPage = 1;
@@ -99,7 +101,8 @@ export function renderStock() {
     const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
 
     let status = "Aman";
-    if (currentStock <= 0) status = "Habis";
+    if (currentStock < 0) status = "Minus";
+    else if (currentStock === 0) status = "Habis";
     else if (minStock > 0 && currentStock <= minStock) status = "Menipis";
 
     return {
@@ -110,7 +113,7 @@ export function renderStock() {
       stock: currentStock,
       minStock,
       buyPrice,
-      totalValue: currentStock * buyPrice,
+      totalValue: Math.max(0, currentStock) * buyPrice,
       unit: p["Satuan Dasar"] || p["Satuan"] || "Pcs",
       status
     };
@@ -151,17 +154,51 @@ function populateStockFilters(master) {
 
 function updateStockKpis() {
   const totalProducts = stockList.length;
-  const totalUnits = stockList.reduce((sum, s) => sum + s.stock, 0);
-  const alertCount = stockList.filter(s => s.status === "Habis" || s.status === "Menipis").length;
+  // Hitung total unit fisik riil (floor 0 agar total stok tidak minus)
+  const totalUnits = stockList.reduce((sum, s) => sum + Math.max(0, s.stock), 0);
+  const alertCount = stockList.filter(s => s.status === "Habis" || s.status === "Menipis" || s.status === "Minus").length;
+  const minusCount = stockList.filter(s => s.status === "Minus").length;
 
   const pEl = $("stock-product-count");
   if (pEl) pEl.textContent = formatNumber(totalProducts);
 
   const uEl = $("stock-unit-count");
-  if (uEl) uEl.textContent = formatNumber(totalUnits);
+  if (uEl) {
+    if (minusCount > 0) {
+      uEl.innerHTML = `${formatNumber(totalUnits)} <small style="color:#ef4444;font-size:12px;font-weight:700;">(${minusCount} minus)</small>`;
+    } else {
+      uEl.textContent = formatNumber(totalUnits);
+    }
+  }
 
   const aEl = $("stock-alert-count");
   if (aEl) aEl.textContent = formatNumber(alertCount);
+
+  // Tampilkan/sembunyikan tombol Perbaiki Stok Minus jika terdeteksi data anomali
+  const fixBtn = $("fix-minus-stock-btn");
+  if (fixBtn) {
+    fixBtn.style.display = minusCount > 0 ? "inline-flex" : "none";
+  }
+}
+
+async function handleFixNegativeStock() {
+  const minusProds = stockList.filter(s => s.stock < 0);
+  if (!minusProds.length) {
+    return window.KasirProDialog?.info("Semua Stok Normal", "Tidak ditemukan produk dengan saldo stok minus.");
+  }
+  const ok = await window.KasirProDialog?.confirm(
+    "Perbaiki Stok Minus",
+    `Ditemukan ${minusProds.length} produk bersaldo minus (misal akibat pembatalan faktur yang salah input).\n\nApakah Anda ingin menormalkan seluruh stok produk minus ini kembali ke 0 agar data stok dan nilai aset toko 100% akurat?`
+  );
+  if (!ok) return;
+
+  try {
+    const fixedCount = await normalizeNegativeStocks();
+    window.KasirProDialog?.success("Stok Berhasil Dinormalkan", `${fixedCount} produk bersaldo minus telah berhasil dinormalkan kembali ke 0.`);
+    renderStock();
+  } catch (err) {
+    window.KasirProDialog?.error("Gagal Normalisasi Stok", err.message);
+  }
 }
 
 function applyStockFilters() {
@@ -185,6 +222,7 @@ function applyStockFilters() {
       if (statusVal === "safe" && status !== "aman") return false;
       if (statusVal === "low" && status !== "menipis") return false;
       if (statusVal === "empty" && status !== "habis") return false;
+      if (statusVal === "minus" && status !== "minus") return false;
     }
 
     return true;
@@ -247,6 +285,9 @@ function renderStockTable() {
 
 function getStockStatusBadge(status) {
   const s = norm(status);
+  if (s === "minus") {
+    return `<span class="badge badge-danger" style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid #f87171;">⚠️ Minus</span>`;
+  }
   if (s === "habis") {
     return `<span class="badge badge-danger" style="background:#fef2f2;color:#dc2626;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;">Habis</span>`;
   }

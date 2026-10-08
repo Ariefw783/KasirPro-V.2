@@ -98,6 +98,54 @@ function requireOnline() {
   }
 }
 
+// =========================================================================
+// FEEDBACK VISUAL & MODAL LOADING SINKRONISASI DATABASE (READS, WRITES, DELETES)
+// =========================================================================
+let syncLoadingDepth = 0;
+let syncCloseTimeout = null;
+
+export function startDatabaseProgress(title, message, options = {}) {
+  syncLoadingDepth++;
+  if (syncCloseTimeout) {
+    clearTimeout(syncCloseTimeout);
+    syncCloseTimeout = null;
+  }
+  if (typeof window !== "undefined" && window.KasirProDialog?.showProgress) {
+    window.KasirProDialog.showProgress(title, message, {
+      detail: options.detail || "Memproses...",
+      percent: options.percent ?? 25,
+      icon: options.icon || "fa-arrows-rotate",
+      type: options.type || "sync",
+      badgeText: options.badgeText
+    });
+  }
+}
+
+export function updateDatabaseProgress(options = {}) {
+  if (typeof window !== "undefined" && window.KasirProDialog?.updateProgress) {
+    window.KasirProDialog.updateProgress(options);
+  }
+}
+
+export function endDatabaseProgress(options = {}) {
+  syncLoadingDepth = Math.max(0, syncLoadingDepth - 1);
+  if (syncLoadingDepth === 0) {
+    if (typeof window !== "undefined" && window.KasirProDialog?.updateProgress) {
+      window.KasirProDialog.updateProgress({
+        percent: 100,
+        detail: options.detail || "Selesai",
+        badgeText: options.badgeText
+      });
+    }
+    syncCloseTimeout = setTimeout(() => {
+      if (syncLoadingDepth === 0 && typeof window !== "undefined" && window.KasirProDialog?.closeProgress) {
+        window.KasirProDialog.closeProgress();
+      }
+      syncCloseTimeout = null;
+    }, 280);
+  }
+}
+
 /**
  * Normalisasi data produk untuk memastikan field terdefinisi
  */
@@ -157,6 +205,12 @@ function normalizeProductRecord(prod) {
  * Muat data awal dari IndexedDB ke In-Memory
  */
 async function loadFromIndexedDB() {
+  startDatabaseProgress("Memuat Basis Data Lokal", "Membaca cache produk & konfigurasi dari IndexedDB...", {
+    type: "read",
+    badgeText: "IndexedDB Read",
+    percent: 30,
+    icon: "fa-database"
+  });
   try {
     // Satu kali eksekusi pembersihan total cache lokal untuk Fresh Start project baru
     if (typeof localStorage !== "undefined" && !localStorage.getItem("kasirpro_v3_fresh_reset_applied")) {
@@ -261,16 +315,23 @@ async function loadFromIndexedDB() {
     inMemory.set(STORE_KEYS.movements, movements || []);
     inMemory.set(STORE_KEYS.opnames, opnames || []);
 
-    // Bangun active stock index
+    // Bangun active stock index dengan proteksi non-negatif
     activeStockIndex.clear();
     masterObj.produk.forEach(p => {
       const code = norm(p["Kode Produk"]);
-      if (code) activeStockIndex.set(code, num(p["Stok Awal"]));
+      if (code) {
+        const s = num(p["Stok Awal"]);
+        const cleanStock = Math.max(0, s);
+        activeStockIndex.set(code, cleanStock);
+        p["Stok Awal"] = cleanStock;
+      }
     });
 
     console.log(`[DatabaseStore] Berhasil memuat cache lokal: ${masterObj.produk.length} produk, ${(sales || []).length} sales.`);
   } catch (err) {
     console.warn("[DatabaseStore] Gagal memuat dari IndexedDB:", err);
+  } finally {
+    endDatabaseProgress({ detail: "Cache Lokal Dimuat" });
   }
 }
 
@@ -299,6 +360,13 @@ async function syncFromFirestore(force = false) {
 
   isSyncInProgress = true;
   lastSyncAttempt = nowMs;
+
+  startDatabaseProgress("Sinkronisasi Cloud", "Menyinkronkan data dengan Cloud Firestore...", {
+    type: "sync",
+    badgeText: "Firestore & IndexedDB",
+    percent: 35,
+    icon: "fa-arrows-rotate"
+  });
 
   try {
     const user = await waitForFirebaseUser();
@@ -379,13 +447,14 @@ async function syncFromFirestore(force = false) {
       return Array.from(map.values());
     };
 
-    // Update stok aktif dari koleksi StokAktif
+    // Update stok aktif dari koleksi StokAktif dengan proteksi non-negatif
     const stockMap = new Map();
     firestoreStocks.forEach(s => {
       const code = norm(s.productCode || s.id);
       if (code) {
-        stockMap.set(code, num(s.quantity));
-        activeStockIndex.set(code, num(s.quantity));
+        const safeQty = Math.max(0, num(s.quantity));
+        stockMap.set(code, safeQty);
+        activeStockIndex.set(code, safeQty);
       }
     });
 
@@ -398,7 +467,9 @@ async function syncFromFirestore(force = false) {
         const normProd = normalizeProductRecord(p);
         const code = norm(normProd["Kode Produk"]);
         if (stockMap.has(code)) {
-          normProd["Stok Awal"] = stockMap.get(code);
+          normProd["Stok Awal"] = Math.max(0, stockMap.get(code));
+        } else {
+          normProd["Stok Awal"] = Math.max(0, num(normProd["Stok Awal"]));
         }
         activeStockIndex.set(code, normProd["Stok Awal"]);
         return normProd;
@@ -543,6 +614,12 @@ async function syncFromFirestore(force = false) {
     }
 
     // Simpan ke IndexedDB cache lokal
+    updateDatabaseProgress({
+      detail: "Menyimpan ke IndexedDB lokal...",
+      percent: 85,
+      message: "Memperbarui cache lokal..."
+    });
+
     if (mergedProducts.length) await indexedDBStore.putMany(STORES.PRODUCTS, mergedProducts);
     if (firestoreSuppliers.length) await indexedDBStore.putMany(STORES.SUPPLIERS, firestoreSuppliers);
     if (firestoreCategories.length) await indexedDBStore.putMany(STORES.CATEGORIES, firestoreCategories);
@@ -564,6 +641,7 @@ async function syncFromFirestore(force = false) {
     console.warn("[DatabaseStore] Sinkronisasi Firestore ditunda/dilewati:", error?.message || error);
   } finally {
     isSyncInProgress = false;
+    endDatabaseProgress({ detail: "Sinkronisasi Selesai", badgeText: "Database Sinkron" });
   }
 }
 
@@ -620,6 +698,13 @@ export function readCurrentStock(productCode) {
  */
 export async function writeStore(key, value, onProgress) {
   requireOnline();
+  startDatabaseProgress("Menyimpan Data", "Menulis ke IndexedDB lokal dan Cloud Firestore...", {
+    type: "write",
+    badgeText: "Database Write",
+    percent: 25,
+    icon: "fa-cloud-arrow-up"
+  });
+  try {
   inMemory.set(key, clone(value));
 
   // Tulis ke IndexedDB
@@ -834,6 +919,9 @@ export async function writeStore(key, value, onProgress) {
       });
     }
   }
+  } finally {
+    endDatabaseProgress({ detail: "Data Berhasil Disimpan", badgeText: "Tersimpan" });
+  }
 
   return true;
 }
@@ -847,6 +935,13 @@ export async function writeStore(key, value, onProgress) {
  */
 export async function writeMasterDelta(changes = {}) {
   requireOnline();
+  startDatabaseProgress("Menyimpan Pembaruan", "Menyinkronkan perubahan master ke Cloud Firestore & IndexedDB...", {
+    type: "write",
+    badgeText: "Master Delta Write",
+    percent: 40,
+    icon: "fa-cloud-arrow-up"
+  });
+  try {
   const now = new Date().toISOString();
 
   const prodIdOf = (p) => p.id || p["Kode Produk"] || p["Kode Produk Internal"] || readableDocumentId("prd", p["Nama Produk"]);
@@ -934,6 +1029,9 @@ export async function writeMasterDelta(changes = {}) {
       console.warn("[DatabaseStore] Peringatan commit writeMasterDelta:", commitErr.message || commitErr);
     }
   }
+  } finally {
+    endDatabaseProgress({ detail: "Perubahan Tersimpan", badgeText: "Tersimpan" });
+  }
 
   return true;
 }
@@ -947,6 +1045,13 @@ export async function writeMasterDelta(changes = {}) {
  */
 export async function deleteMasterProduct(codeOrId) {
   requireOnline();
+  startDatabaseProgress("Menghapus Produk", "Menghapus produk dari Cloud Firestore & IndexedDB...", {
+    type: "delete",
+    badgeText: "Product Delete",
+    percent: 35,
+    icon: "fa-trash-can"
+  });
+  try {
   const searchKey = norm(codeOrId);
   if (!searchKey) throw new Error("Kode atau ID produk tidak valid.");
 
@@ -1006,6 +1111,9 @@ export async function deleteMasterProduct(codeOrId) {
   } catch (err) {
     console.error("[DatabaseStore] Gagal menghapus dokumen Firestore:", err);
   }
+  } finally {
+    endDatabaseProgress({ detail: "Produk Berhasil Dihapus", badgeText: "Dihapus" });
+  }
 
   return true;
 }
@@ -1019,6 +1127,13 @@ export async function deleteMasterProduct(codeOrId) {
  */
 export async function deletePurchaseInvoice(invoiceIdOrNumber) {
   requireOnline();
+  startDatabaseProgress("Membatalkan Faktur", "Menghapus faktur & merollback stok produk ke Cloud & IndexedDB...", {
+    type: "delete",
+    badgeText: "Rollback Faktur",
+    percent: 30,
+    icon: "fa-trash-can"
+  });
+  try {
   const searchKey = norm(invoiceIdOrNumber);
   if (!searchKey) throw new Error("ID atau Nomor Faktur tidak valid.");
 
@@ -1046,10 +1161,12 @@ export async function deletePurchaseInvoice(invoiceIdOrNumber) {
   if (isConfirmed && Array.isArray(targetInv.items)) {
     for (const item of targetInv.items) {
       const code = item.matchedProductCode || item.code || item.productCode;
-      const baseQty = (num(item.qty) || 1) * (num(item.conversionRatio) || 1);
+      const conv = num(item.conversionRatio) || num(item.conversion) || num(item.isiKonversi) || 1;
+      const baseQty = (num(item.qty) || 1) * conv;
       const prod = products.find(p => norm(p["Kode Produk"]) === norm(code) || norm(p["Nama Produk"]) === norm(item.name));
       if (prod) {
         const curStock = readCurrentStock(prod["Kode Produk"]);
+        // Rollback aman: kembali ke posisi sebelum faktur (floor 0)
         const nextStock = Math.max(0, curStock - baseQty);
         activeStockIndex.set(norm(prod["Kode Produk"]), nextStock);
         prod["Stok Awal"] = nextStock;
@@ -1083,11 +1200,21 @@ export async function deletePurchaseInvoice(invoiceIdOrNumber) {
     }
   }
 
-  // Update stok produk di Firestore jika ada yang terdampak
+  // Update stok produk & activeStocks di Firestore jika ada yang terdampak
   for (const p of touchedProducts) {
     const pId = String(p.id || p["Kode Produk"]).replace(/[\/\\]/g, "_").trim();
     const pRef = doc(firebaseDb, ...documentSegments("products", pId));
     batch.set(pRef, { "Stok Awal": p["Stok Awal"], updatedAt: new Date().toISOString() }, { merge: true });
+
+    // SINKRONISASI PENTING: Koleksi activeStocks di Firestore juga diperbarui
+    const stockCode = norm(p["Kode Produk"]);
+    const stockRef = doc(firebaseDb, ...documentSegments("activeStocks", readableDocumentId("stok", stockCode)));
+    batch.set(stockRef, {
+      productCode: stockCode,
+      productName: p["Nama Produk"] || stockCode,
+      quantity: p["Stok Awal"],
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
   }
 
   await batch.commit();
@@ -1111,6 +1238,71 @@ export async function deletePurchaseInvoice(invoiceIdOrNumber) {
   }
 
   return true;
+  } finally {
+    endDatabaseProgress({ detail: "Faktur Berhasil Dibatalkan", badgeText: "Selesai" });
+  }
+}
+
+/**
+ * Normalisasi stok minus: Menormalkan kembali semua saldo produk yang < 0 ke 0.
+ * Menyinkronkan ke Master Produk, activeStockIndex, activeStocks Firestore, dan IndexedDB.
+ */
+export async function normalizeNegativeStocks() {
+  requireOnline();
+  startDatabaseProgress("Normalisasi Stok Minus", "Menormalkan saldo produk yang minus kembali ke 0...", {
+    type: "write",
+    badgeText: "Koreksi Stok",
+    percent: 30,
+    icon: "fa-wrench"
+  });
+  try {
+    const master = inMemory.get(STORE_KEYS.master) || { produk: [] };
+    const products = Array.isArray(master.produk) ? master.produk : [];
+    const negativeProds = [];
+
+    products.forEach(p => {
+      const code = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
+      const curStock = readCurrentStock(code);
+      const stockAwal = num(p["Stok Awal"]);
+      if (curStock < 0 || stockAwal < 0) {
+        p["Stok Awal"] = 0;
+        activeStockIndex.set(code, 0);
+        negativeProds.push(p);
+      }
+    });
+
+    if (!negativeProds.length) {
+      return 0;
+    }
+
+    const batch = writeBatch(firebaseDb);
+    const now = new Date().toISOString();
+    negativeProds.forEach(p => {
+      const code = norm(p["Kode Produk"] || p.id);
+      const pId = String(p.id || code).replace(/[\/\\]/g, "_").trim();
+      const pRef = doc(firebaseDb, ...documentSegments("products", pId));
+      batch.set(pRef, { "Stok Awal": 0, updatedAt: now }, { merge: true });
+
+      const stockRef = doc(firebaseDb, ...documentSegments("activeStocks", readableDocumentId("stok", code)));
+      batch.set(stockRef, {
+        productCode: code,
+        productName: p["Nama Produk"] || code,
+        quantity: 0,
+        updatedAt: now
+      }, { merge: true });
+    });
+
+    updateDatabaseProgress({ detail: "Menyimpan ke Cloud...", percent: 70 });
+    await batch.commit();
+
+    updateDatabaseProgress({ detail: "Menyimpan ke IndexedDB lokal...", percent: 90 });
+    await indexedDBStore.putMany(STORES.PRODUCTS, products);
+
+    console.log(`[DatabaseStore] Berhasil menormalkan ${negativeProds.length} produk bersaldo minus kembali ke 0.`);
+    return negativeProds.length;
+  } finally {
+    endDatabaseProgress({ detail: "Stok Berhasil Dinormalkan" });
+  }
 }
 
 /**
@@ -1172,7 +1364,13 @@ export async function writeOperationalDelta(entries = []) {
  */
 export async function writeStockTransaction(entries = []) {
   requireOnline();
-
+  startDatabaseProgress("Transaksi Database", "Mencatat transaksi atomik & mutasi stok...", {
+    type: "write",
+    badgeText: "Transaksi Atomik",
+    percent: 30,
+    icon: "fa-cubes"
+  });
+  try {
   const sourceEntries = entries.map(e => ({
     key: e.key,
     records: clone(Array.isArray(e.records) ? e.records : (Array.isArray(e.value) ? e.value : []))
@@ -1333,6 +1531,9 @@ export async function writeStockTransaction(entries = []) {
 
   window.dispatchEvent(new CustomEvent("kasirpro:stock-updated", { detail: { timestamp: Date.now() } }));
   return true;
+  } finally {
+    endDatabaseProgress({ detail: "Transaksi Stok Berhasil", badgeText: "Selesai" });
+  }
 }
 
 export async function reloadMasterCache() {

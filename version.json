@@ -1,14 +1,14 @@
 {
-  "version": "2.2.39",
-  "build": "20261008.05",
+  "version": "2.2.40",
+  "build": "20261008.06",
   "releaseDate": "08 Oktober 2026",
-  "title": "Perbaikan Hierarki Layout & Posisi Konten Menu",
-  "description": "Menyempurnakan struktur penutupan tag HTML modul produk sehingga seluruh menu Supplier, Kategori, Faktur, Stok, Laporan, Pengguna, dan Pengaturan kembali berada tepat di dalam main container tanpa scroll berlebih dan tanpa terpotong sidebar.",
+  "title": "Modal Sinkronisasi Database & Proteksi Stok Non-Negatif",
+  "description": "Menambahkan modal pop up loading bertema KasirPro untuk seluruh operasi sinkronisasi database (IndexedDB & Firestore), menyempurnakan rollback pembatalan faktur ke Cloud Firestore, melindungi nilai persediaan dari angka minus, dan menyediakan alat normalisasi stok.",
   "changelog": [
-    "Fix layout hierarchy nesting issue",
-    "Prevent sidebar content cutoff bug",
-    "Remove unintended vertical page gap",
-    "Align management view sections properly",
-    "Update service worker cache v92"
+    "Add unified database sync modal",
+    "Protect stock valuation from negative",
+    "Synchronize cloud invoice deletion rollback",
+    "Add negative stock recovery tool",
+    "Update service worker cache v93"
   ]
 }
