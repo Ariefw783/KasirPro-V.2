@@ -1,14 +1,14 @@
 {
-  "version": "2.2.38",
-  "build": "20261008.04",
+  "version": "2.2.39",
+  "build": "20261008.05",
   "releaseDate": "08 Oktober 2026",
-  "title": "Full-Canvas Invoice Modal & Dynamic Product Filter Pills",
-  "description": "Memperlebar modal faktur manual ke seluruh kanvas, memperlebar modal tambah produk menjadi 2 kolom lega, dan menghadirkan quick filter pills bergradasi lembut pada halaman produk.",
+  "title": "Perbaikan Hierarki Layout & Posisi Konten Menu",
+  "description": "Menyempurnakan struktur penutupan tag HTML modul produk sehingga seluruh menu Supplier, Kategori, Faktur, Stok, Laporan, Pengguna, dan Pengaturan kembali berada tepat di dalam main container tanpa scroll berlebih dan tanpa terpotong sidebar.",
   "changelog": [
-    "Widen manual invoice full canvas",
-    "Widen product form two columns",
-    "Add soft gradient filter pills",
-    "Rearrange responsive product search layout",
-    "Update service worker cache v91"
+    "Fix layout hierarchy nesting issue",
+    "Prevent sidebar content cutoff bug",
+    "Remove unintended vertical page gap",
+    "Align management view sections properly",
+    "Update service worker cache v92"
   ]
 }
