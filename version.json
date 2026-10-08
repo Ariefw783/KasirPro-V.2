@@ -1,14 +1,14 @@
 {
-  "version": "2.2.40",
-  "build": "20261008.06",
+  "version": "2.2.41",
+  "build": "20261008.07",
   "releaseDate": "08 Oktober 2026",
-  "title": "Modal Sinkronisasi Database & Proteksi Stok Non-Negatif",
-  "description": "Menambahkan modal pop up loading bertema KasirPro untuk seluruh operasi sinkronisasi database (IndexedDB & Firestore), menyempurnakan rollback pembatalan faktur ke Cloud Firestore, melindungi nilai persediaan dari angka minus, dan menyediakan alat normalisasi stok.",
+  "title": "Modal Loading Dinamis & Navigasi Cepat Tanpa Gangguan",
+  "description": "Menyempurnakan pemicu modal pop up loading agar dinamis dan hanya muncul pada saat aksi kritis yang memerlukan proteksi. Pembacaan cache lokal dan sinkronisasi background diubah menjadi senyap (silent) sehingga perpindahan antar modul (Management dan POS) kembali instan tanpa gangguan.",
   "changelog": [
-    "Add unified database sync modal",
-    "Protect stock valuation from negative",
-    "Synchronize cloud invoice deletion rollback",
-    "Add negative stock recovery tool",
-    "Update service worker cache v93"
+    "Make sync modal display dynamic",
+    "Enable silent instant page navigation",
+    "Suppress background cache load modals",
+    "Accelerate modal dismissal timing",
+    "Update service worker cache v94"
   ]
 }

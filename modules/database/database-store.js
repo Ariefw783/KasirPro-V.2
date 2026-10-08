@@ -142,7 +142,7 @@ export function endDatabaseProgress(options = {}) {
         window.KasirProDialog.closeProgress();
       }
       syncCloseTimeout = null;
-    }, 280);
+    }, 100);
   }
 }
 
@@ -202,15 +202,9 @@ function normalizeProductRecord(prod) {
 }
 
 /**
- * Muat data awal dari IndexedDB ke In-Memory
+ * Muat data awal dari IndexedDB ke In-Memory (Instan 0ms offline)
  */
 async function loadFromIndexedDB() {
-  startDatabaseProgress("Memuat Basis Data Lokal", "Membaca cache produk & konfigurasi dari IndexedDB...", {
-    type: "read",
-    badgeText: "IndexedDB Read",
-    percent: 30,
-    icon: "fa-database"
-  });
   try {
     // Satu kali eksekusi pembersihan total cache lokal untuk Fresh Start project baru
     if (typeof localStorage !== "undefined" && !localStorage.getItem("kasirpro_v3_fresh_reset_applied")) {
@@ -330,8 +324,6 @@ async function loadFromIndexedDB() {
     console.log(`[DatabaseStore] Berhasil memuat cache lokal: ${masterObj.produk.length} produk, ${(sales || []).length} sales.`);
   } catch (err) {
     console.warn("[DatabaseStore] Gagal memuat dari IndexedDB:", err);
-  } finally {
-    endDatabaseProgress({ detail: "Cache Lokal Dimuat" });
   }
 }
 
@@ -361,12 +353,14 @@ async function syncFromFirestore(force = false) {
   isSyncInProgress = true;
   lastSyncAttempt = nowMs;
 
-  startDatabaseProgress("Sinkronisasi Cloud", "Menyinkronkan data dengan Cloud Firestore...", {
-    type: "sync",
-    badgeText: "Firestore & IndexedDB",
-    percent: 35,
-    icon: "fa-arrows-rotate"
-  });
+  if (force) {
+    startDatabaseProgress("Sinkronisasi Cloud", "Menyinkronkan data dengan Cloud Firestore...", {
+      type: "sync",
+      badgeText: "Firestore & IndexedDB",
+      percent: 35,
+      icon: "fa-arrows-rotate"
+    });
+  }
 
   try {
     const user = await waitForFirebaseUser();
@@ -614,11 +608,13 @@ async function syncFromFirestore(force = false) {
     }
 
     // Simpan ke IndexedDB cache lokal
-    updateDatabaseProgress({
-      detail: "Menyimpan ke IndexedDB lokal...",
-      percent: 85,
-      message: "Memperbarui cache lokal..."
-    });
+    if (force) {
+      updateDatabaseProgress({
+        detail: "Menyimpan ke IndexedDB lokal...",
+        percent: 85,
+        message: "Memperbarui cache lokal..."
+      });
+    }
 
     if (mergedProducts.length) await indexedDBStore.putMany(STORES.PRODUCTS, mergedProducts);
     if (firestoreSuppliers.length) await indexedDBStore.putMany(STORES.SUPPLIERS, firestoreSuppliers);
@@ -641,7 +637,9 @@ async function syncFromFirestore(force = false) {
     console.warn("[DatabaseStore] Sinkronisasi Firestore ditunda/dilewati:", error?.message || error);
   } finally {
     isSyncInProgress = false;
-    endDatabaseProgress({ detail: "Sinkronisasi Selesai", badgeText: "Database Sinkron" });
+    if (force) {
+      endDatabaseProgress({ detail: "Sinkronisasi Selesai", badgeText: "Database Sinkron" });
+    }
   }
 }
 

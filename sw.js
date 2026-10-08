@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v93-sync-modal-and-stock-guard";
+const CACHE_VERSION = "kasirpro-pwa-v94-silent-nav-and-dynamic-modal";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
