@@ -1910,17 +1910,17 @@
 
                 <!-- MODAL INPUT FAKTUR MANUAL (GRID MODE DENGAN REKONSILIASI MATEMATIKA) -->
                 <div id="modal-manual-invoice" class="product-detail-overlay" hidden>
-                    <section class="product-detail-panel manual-invoice-dialog" role="dialog" aria-modal="true" aria-labelledby="manual-invoice-title" style="width:min(1280px, 98vw);max-width:98vw;">
-                        <header class="product-detail-header" style="background:#0f172a;color:#fff;border-bottom:1px solid #1e293b;padding:14px 20px;">
+                    <section class="product-detail-panel manual-invoice-dialog" role="dialog" aria-modal="true" aria-labelledby="manual-invoice-title">
+                        <header class="product-detail-header manual-invoice-header">
                             <div>
-                                <span class="product-detail-label" style="color:#38bdf8;"><i class="fa-solid fa-file-circle-plus"></i> Faktur Pembelian Fisik</span>
-                                <h2 id="manual-invoice-title" style="color:#f8fafc;font-size:1.25rem;font-weight:800;margin:2px 0;">Input Faktur Manual (Grid Mode)</h2>
-                                <p style="color:#94a3b8;font-size:0.8rem;margin:0;">Lengkapi data fisik faktur distributor, cek rekonsiliasi selisih, dan konfirmasi barang masuk.</p>
+                                <span class="product-detail-label" style="color:#7dd3fc;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;"><i class="fa-solid fa-file-circle-plus"></i> Faktur Pembelian Fisik</span>
+                                <h2 id="manual-invoice-title" style="color:#ffffff;font-size:1.3rem;font-weight:800;margin:3px 0;letter-spacing:-0.02em;text-shadow:0 1px 2px rgba(0,0,0,0.15);">Input Faktur Manual (Grid Mode)</h2>
+                                <p style="color:#e2e8f0;font-size:0.82rem;margin:0;opacity:0.92;">Lengkapi data fisik faktur distributor, cek rekonsiliasi selisih, dan konfirmasi barang masuk.</p>
                             </div>
-                            <button id="close-manual-invoice-modal" class="product-detail-close" type="button" style="color:#94a3b8;" title="Tutup Modal"><i class="fa-solid fa-xmark"></i></button>
+                            <button id="close-manual-invoice-modal" class="product-detail-close" type="button" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.22);color:#ffffff;border-radius:8px;" title="Tutup Modal"><i class="fa-solid fa-xmark"></i></button>
                         </header>
 
-                        <div class="product-detail-body manual-invoice-body" style="padding:16px 20px;max-height:calc(88vh - 140px);overflow-y:auto;background:#f8fafc;">
+                        <div class="product-detail-body manual-invoice-body">
                             <!-- Bagian 1: Header Faktur Fisik -->
                             <div class="manual-invoice-card" style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e2e8f0;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
                                 <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -2117,7 +2117,7 @@
                             </div>
                         </div>
 
-                        <footer class="product-detail-footer" style="padding:14px 20px;background:#fff;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+                        <footer class="product-detail-footer manual-invoice-footer" style="padding:14px 20px;background:#fff;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
                             <div style="display:flex;gap:8px;">
                                 <button type="button" id="btn-save-manual-draft" class="button button-secondary">
                                     <i class="fa-solid fa-floppy-disk"></i> Simpan Draft Lokal

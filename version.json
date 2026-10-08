@@ -1,14 +1,14 @@
 {
-  "version": "2.2.36",
-  "build": "20261008.02",
+  "version": "2.2.37",
+  "build": "20261008.03",
   "releaseDate": "08 Oktober 2026",
-  "title": "Tampilan Input Faktur Responsif Desktop & Mobile",
-  "description": "Menghadirkan freeze column dan header collapsible pada desktop, serta transformasi otomatis menjadi kartu obat adaptif pada layar ponsel.",
+  "title": "Area Input Faktur Full Width & Header Soft Gradient",
+  "description": "Melebarkan area kartu dialog modal input faktur manual menjadi full width dan full height yang sangat leluasa, serta mengubah header menjadi lebih soft dan bergradasi profesional.",
   "changelog": [
-    "Add responsive invoice grid cards",
-    "Enable desktop freeze columns feature",
-    "Add collapsible invoice header accordion",
-    "Improve mobile numeric keyboard inputs",
-    "Update service worker cache v89"
+    "Expand manual invoice modal width",
+    "Add soft gradient invoice header",
+    "Maximize desktop grid viewport space",
+    "Enable full bleed mobile layout",
+    "Update service worker cache v90"
   ]
 }
