@@ -99,6 +99,8 @@ export function renderStock() {
     const currentStock = readCurrentStock(code);
     const minStock = num(p["Stok Minimum"]);
     const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
+    const conv = num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1) || 1;
+    const unitBuyPrice = buyPrice / conv;
 
     let status = "Aman";
     if (currentStock < 0) status = "Minus";
@@ -113,7 +115,10 @@ export function renderStock() {
       stock: currentStock,
       minStock,
       buyPrice,
-      totalValue: Math.max(0, currentStock) * buyPrice,
+      conv,
+      unitBuyPrice,
+      buyUnit: p["Kemasan Beli"] || p["Satuan Pembelian"] || "",
+      totalValue: Math.max(0, currentStock) * unitBuyPrice,
       unit: p["Satuan Dasar"] || p["Satuan"] || "Pcs",
       status
     };
@@ -250,8 +255,8 @@ function renderStockTable() {
           <td>${escapeHtml(item.category)}</td>
           <td><strong style="font-size:14px;color:#0f172a;">${formatNumber(item.stock)}</strong> ${escapeHtml(item.unit)}</td>
           <td>${formatNumber(item.minStock)}</td>
-          <td>${rupiah(item.buyPrice)}</td>
-          <td>${rupiah(item.totalValue)}</td>
+          <td>${rupiah(item.unitBuyPrice)}${item.conv > 1 ? `<small style="display:block;font-size:10.5px;color:#64748b;">(${rupiah(item.buyPrice)}/${escapeHtml(item.buyUnit || 'Box')})</small>` : ''}</td>
+          <td><strong style="color:#0369a1;">${rupiah(item.totalValue)}</strong></td>
           <td>${getStockStatusBadge(item.status)}</td>
           <td>
             <button type="button" class="btn-stock-history button button-small button-secondary" data-code="${escapeHtml(item.code)}" title="Lihat Histori Masuk/Batch">

@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v95-mobile-card-grid-invoice";
+const CACHE_VERSION = "kasirpro-pwa-v96-stock-valuation-conversion";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

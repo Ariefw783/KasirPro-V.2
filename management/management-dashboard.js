@@ -119,7 +119,10 @@ export function renderDashboard() {
     const stock = readCurrentStock(code);
     if (stock > 0) {
       totalItems += stock;
-      stockValue += (stock * num(product?.["Harga Beli Terakhir"] ?? product?.["Harga Beli"] ?? 0));
+      const conv = num(product?.["Konversi"] ?? product?.["Isi Kemasan"] ?? 1) || 1;
+      const buyPrice = num(product?.["Harga Beli Terakhir"] ?? product?.["Harga Beli"] ?? 0);
+      const unitBuyPrice = buyPrice / conv;
+      stockValue += (stock * unitBuyPrice);
     }
   }
 

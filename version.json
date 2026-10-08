@@ -1,14 +1,14 @@
 {
-  "version": "2.2.42",
-  "build": "20261008.08",
+  "version": "2.2.43",
+  "build": "20261008.09",
   "releaseDate": "08 Oktober 2026",
-  "title": "Kartu Vertikal & Akordion Input Faktur Mobile",
-  "description": "Mengubah tata letak Daftar Obat & Wadah Konversi pada Input Faktur Manual di perangkat seluler menjadi kartu vertikal yang responsif dan dapat diciutkan (accordion), menghilangkan scroll kiri-kanan serta mempertahankan tampilan grid leluasa pada komputer desktop.",
+  "title": "Koreksi Valuasi Konversi Satuan Stok",
+  "description": "Menyesuaikan valuasi total nilai stok di Dashboard, Menu Stok, dan Laporan Keuangan dengan rasio konversi satuan obat agar tidak terjadi pembengkakan nilai akibat perkalian kuantitas satuan terkecil dengan harga beli kemasan besar.",
   "changelog": [
-    "Add mobile invoice item cards",
-    "Enable vertical collapsible row accordion",
-    "Add global accordion toggle button",
-    "Eliminate mobile horizontal grid scrolling",
-    "Update service worker cache v95"
+    "Fix stock valuation unit conversion",
+    "Eliminate multi unit asset inflation",
+    "Display base unit actual cost",
+    "Verify comprehensive system audit tests",
+    "Update service worker cache v96"
   ]
 }

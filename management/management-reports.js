@@ -137,8 +137,10 @@ export function renderReports() {
   products.forEach(p => {
     const rawSt = readCurrentStock(p["Kode Produk"]);
     const st = Math.max(0, rawSt);
+    const conv = num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1) || 1;
     const buy = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
-    totalStockVal += (st * buy);
+    const unitBuy = buy / conv;
+    totalStockVal += (st * unitBuy);
     if (rawSt <= num(p["Stok Minimum"])) lowStockCount++;
     if (rawSt < 0) negativeStockCount++;
   });
@@ -258,7 +260,10 @@ function renderStockSubReport(products) {
   tbody.innerHTML = products.slice(0, 100).map(p => {
     const code = p["Kode Produk"] || p.id;
     const stock = readCurrentStock(code);
+    const conv = num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1) || 1;
     const buy = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
+    const unitBuy = buy / conv;
+    const buyUnit = p["Kemasan Beli"] || p["Satuan Pembelian"] || "";
 
     return `
       <tr>
@@ -267,8 +272,8 @@ function renderStockSubReport(products) {
         <td>${escapeHtml(p["Kategori"] || '—')}</td>
         <td><strong>${formatNumber(stock)}</strong> ${escapeHtml(p["Satuan Dasar"] || 'Pcs')}</td>
         <td>${formatNumber(p["Stok Minimum"] || 0)}</td>
-        <td>${rupiah(buy)}</td>
-        <td>${rupiah(Math.max(0, stock) * buy)}</td>
+        <td>${rupiah(unitBuy)}${conv > 1 ? `<small style="display:block;font-size:10px;color:#64748b;">(${rupiah(buy)}/${escapeHtml(buyUnit || 'Box')})</small>` : ''}</td>
+        <td>${rupiah(Math.max(0, stock) * unitBuy)}</td>
         <td>${stock < 0 ? '<span class="text-danger font-bold">Minus</span>' : (stock <= num(p["Stok Minimum"]) ? '<span class="text-danger font-bold">Menipis</span>' : 'Aman')}</td>
       </tr>
     `;
@@ -289,14 +294,18 @@ function handlePrintActiveReport() {
     generatePurchaseReportPdf(invoices, { periodLabel }, settings, "Administrator");
   } else if (activeReportTab === "stock") {
     const prods = Array.isArray(master.produk) ? master.produk : [];
-    const stockList = prods.map(p => ({
-      code: p["Kode Produk"] || p.id,
-      name: p["Nama Produk"],
-      category: p["Kategori"],
-      stock: readCurrentStock(p["Kode Produk"]),
-      minStock: p["Stok Minimum"],
-      buyPrice: p["Harga Beli Terakhir"] || p["Harga Beli"]
-    }));
+    const stockList = prods.map(p => {
+      const conv = num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1) || 1;
+      const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
+      return {
+        code: p["Kode Produk"] || p.id,
+        name: p["Nama Produk"],
+        category: p["Kategori"],
+        stock: readCurrentStock(p["Kode Produk"]),
+        minStock: p["Stok Minimum"],
+        buyPrice: buyPrice / conv
+      };
+    });
     generateStockReportPdf(stockList, settings, "Administrator");
   }
 }

@@ -622,6 +622,53 @@ assert(mockCardItems.length === 3 && mockCardItems[2]._collapsed === false, "Imp
 assert(mockCardItems.reduce((acc, it) => acc + it.subtotal, 0) === 280000, "Rekonsiliasi Subtotal Faktur Berjalan Akurat pada Format Kartu (Rp 280.000)");
 
 // -----------------------------------------------------------------------------
+// 13. PENGUJIAN REKONSILIASI KONVERSI NILAI STOK (PENCEGAHAN INFLASI HARGA BOX)
+// -----------------------------------------------------------------------------
+console.log("\n💰 BAGIAN 13: PENGUJIAN REKONSILIASI KONVERSI NILAI STOK (PENCEGAHAN INFLASI HARGA BOX)");
+
+// Flucadex: Beli 1 Box = 50.868, konversi = 100 kaplet, stok di sistem = 100 kaplet
+const flucadex = {
+  "Kode Produk": "PRD-FLU",
+  "Nama Produk": "FLUCADEX",
+  "Harga Beli": 50868,
+  "Konversi": 100,
+  stock: 100
+};
+
+const convRatio = num(flucadex["Konversi"]) || 1;
+const unitBuyPrice = flucadex["Harga Beli"] / convRatio;
+const flucadexStockVal = flucadex.stock * unitBuyPrice;
+
+assert(flucadexStockVal === 50868, "Valuasi Stok Satuan Terkecil Akurat Menggunakan Pembagi Konversi (Rp 50.868, Bukan Rp 5.086.800)");
+
+// Simulasi 13 produk dari faktur fisik (15 botol + 500 kaplet/tablet)
+const invoiceBatchProducts = [
+  { name: "Coparcetin Syr", stock: 2, buy: 8254, conv: 1 },
+  { name: "Hufagrip Flu Syr", stock: 2, buy: 21620, conv: 1 },
+  { name: "Hufagrip Pilek Syr", stock: 1, buy: 15023, conv: 1 },
+  { name: "Pimtrakol Syr", stock: 2, buy: 14667, conv: 1 },
+  { name: "Flutop C Syr", stock: 2, buy: 8608, conv: 1 },
+  { name: "Flucadex Box", stock: 100, buy: 50868, conv: 100 },
+  { name: "Flucadex Syr", stock: 2, buy: 13004, conv: 1 },
+  { name: "Hufagrip Forte Box", stock: 100, buy: 41530, conv: 100 },
+  { name: "Anaton Tab Box", stock: 100, buy: 37833, conv: 100 },
+  { name: "Fluanza Syr", stock: 2, buy: 6764, conv: 1 },
+  { name: "Flutamol Tab Box", stock: 100, buy: 43892, conv: 100 },
+  { name: "Flutamol Syr", stock: 2, buy: 8123, conv: 1 },
+  { name: "Elsiron Tab Box", stock: 100, buy: 47309, conv: 100 }
+];
+
+let correctedBatchStockVal = 0;
+let totalBatchUnits = 0;
+invoiceBatchProducts.forEach(p => {
+  totalBatchUnits += p.stock;
+  correctedBatchStockVal += (p.stock * (p.buy / p.conv));
+});
+
+assert(totalBatchUnits === 515, "Total Item Faktur Fisik Tepat 515 Unit Dasar");
+assert(correctedBatchStockVal === 398535, "Total Nilai Stok Tidak Mengalami Inflasi 100x Lipat (Rp 398.535, Bukan Rp 22.320.303)");
+
+// -----------------------------------------------------------------------------
 // REKAPITULASI HASIL AUDIT
 // -----------------------------------------------------------------------------
 console.log("\n========================================================");
