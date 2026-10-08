@@ -682,6 +682,7 @@ function processTsvData(rawText) {
   }
 
   // 1. Deteksi Baris Header (lewati jika baris 1 adalah judul kolom)
+  let detected14Col = false;
   const firstLineNorm = lines[0].toLowerCase();
   if (
     firstLineNorm.includes("nama produk") ||
@@ -693,6 +694,10 @@ function processTsvData(rawText) {
     firstLineNorm.includes("subtotal") ||
     firstLineNorm.includes("harga beli")
   ) {
+    const hCols = lines[0].split("\t").map(c => c.trim().toLowerCase());
+    if (hCols.length >= 14 || hCols.some(c => c.includes("isi satuan sedang") || c.includes("isi sedang"))) {
+      detected14Col = true;
+    }
     lines.shift();
   }
 
@@ -787,19 +792,31 @@ function processTsvData(rawText) {
     let rawDiscRp = 0;
     let rawSubtotal = 0;
 
-    // Deteksi Cerdas: Apakah format 14 kolom (Satuan Sedang dipecah 2 sel: Opsional dan Isi)
-    const isCols5Number = cols[5] !== undefined && cols[5] !== "" && /^[0-9]+$/.test(cols[5].trim());
-    const isCols6NonNumber = cols[6] !== undefined && isNaN(Number(cols[6].trim()));
-    const is14ColFormat = cols.length >= 14 || (isCols5Number && isCols6NonNumber);
+    // Deteksi Format Baris:
+    // Pada format 14 kolom:
+    // cols[3] = Satuan Besar
+    // cols[4] = Satuan Sedang (Opsional)
+    // cols[5] = Isi Satuan Sedang (Isi: angka seperti 10, 28, atau kosong)
+    // cols[6] = Satuan Terkecil (Nama satuan: KAPLET, TABLET, BOTOL, PCS)
+    // cols[7] = Isi Konversi (angka konversi total)
+    // cols[8] = Qty Beli
+    // cols[9] = Total Masuk (teks/angka: Qty x Konversi)
+    // cols[10] = Harga Beli (Rp)
+    // cols[11] = Disc (%)
+    // cols[12] = Disc (Rp)
+    // cols[13] = Subtotal
+    const isCols5Number = cols[5] !== undefined && cols[5] !== "" && /^[0-9.]+$/.test(cols[5]);
+    const isCols6NonNumber = cols[6] !== undefined && isNaN(Number(cols[6]));
+    const is14ColFormat = detected14Col || cols.length >= 14 || (isCols5Number && isCols6NonNumber);
 
     if (is14ColFormat) {
-      // 14 Kolom Akurat
+      // 14 Kolom Akurat (Memetakan Opsional & Isi pada Satuan Sedang)
       rawMidUnit = cols[4] || "";
       rawMidQty = num(cols[5]) || (rawMidUnit ? 1 : "");
       rawBaseUnit = cols[6] || "";
       rawConv = num(cols[7]) || 0;
       rawQty = num(cols[8]) || 1;
-      // cols[9] adalah Total Masuk (dihitung: Qty Beli x Konversi)
+      // cols[9] adalah Total Masuk (dihitung otomatis: Qty Beli x Konversi)
       rawBuyPrice = num(cols[10] || 0);
       rawDiscPct = num(cols[11] || 0);
       rawDiscRp = num(cols[12] || 0);
@@ -909,6 +926,12 @@ function processTsvData(rawText) {
       if (!pUnit) pUnit = match.product["Kemasan Beli"] || match.product["Satuan Pembelian"] || "Box";
       if (!bUnit) bUnit = match.product["Satuan Dasar"] || match.product["Satuan"] || "Pcs";
       if (!convRatio) convRatio = num(match.product["Konversi"] ?? match.product["Isi Kemasan"] ?? 1) || 1;
+      if (!mUnit && match.product["Satuan Antara"]) {
+        mUnit = match.product["Satuan Antara"];
+        mQty = num(match.product["Isi Satuan Antara"]) || 1;
+      } else if (rawMidQty) {
+        mQty = rawMidQty;
+      }
     } else {
       matchStatus = "new";
       matchScore = 0;
@@ -932,7 +955,7 @@ function processTsvData(rawText) {
       barcode: finalBarcode,
       purchaseUnit: pUnit,
       intermediateUnit: mUnit,
-      intermediateQty: mQty > 1 ? mQty : "",
+      intermediateQty: mUnit ? (mQty || "") : "",
       baseUnit: bUnit,
       conversionRatio: convRatio,
       qty: rawQty,

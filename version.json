@@ -1,14 +1,14 @@
 {
-  "version": "2.2.34",
-  "build": "20261007.15",
-  "releaseDate": "07 Oktober 2026",
-  "title": "Stabilisasi Konsistensi Angka Produk & Pembersihan Kunci Duplikat Lokal",
-  "description": "Menghilangkan fluktuasi angka produk dengan membersihkan residu kunci orphan pada IndexedDB sehingga tampilan angka selalu konsisten 10.186 sejak milidetik pertama hingga selesai sinkronisasi.",
+  "version": "2.2.35",
+  "build": "20261008.01",
+  "releaseDate": "08 Oktober 2026",
+  "title": "Pembaruan Parser TSV 14 Kolom Faktur Multi-Satuan",
+  "description": "Memperbaiki parser TSV agar memetakan anak kolom Satuan Sedang (Opsional dan Isi) secara presisi ke 14 kolom data faktur tanpa menggeser kolom Satuan Terkecil, Konversi, dan Qty.",
   "changelog": [
-    "Eliminate local orphan key duplicates",
-    "Stabilize catalog count across refreshes",
-    "Ensure consistent product count displays",
-    "Clean IndexedDB legacy key residues",
-    "Update service worker cache v87"
+    "Fix TSV multi-unit column parser",
+    "Prevent invoice grid column shift",
+    "Map intermediate unit quantity accurately",
+    "Enhance manual invoice reconciliation precision",
+    "Update service worker cache v88"
   ]
 }

@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v87-clean-slate";
+const CACHE_VERSION = "kasirpro-pwa-v88-clean-slate";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
