@@ -36,10 +36,7 @@ async function bootManagement() {
   setupMobileSidebar();
   setupLogout();
 
-  // 3. Sembunyikan loader awal
-  hideInitialLoader();
-
-  // 4. Inisialisasi Seluruh Domain Controller secara aman & terisolasi (Instan 0ms)
+  // 3. Inisialisasi Seluruh Domain Controller secara aman & terisolasi (Instan 0ms)
   const modulesToInit = [
     { name: "Dashboard", fn: initDashboardModule },
     { name: "Products", fn: initProductsModule },
@@ -158,10 +155,13 @@ function validateAdminSession() {
 
 function hideInitialLoader() {
   const loader = $("app-loading");
-  if (loader) {
-    loader.hidden = true;
-    loader.style.display = "none";
-    loader.style.pointerEvents = "none";
+  if (loader && !loader.hidden && loader.style.display !== "none") {
+    loader.classList.add("fade-out");
+    setTimeout(() => {
+      loader.hidden = true;
+      loader.style.display = "none";
+      loader.style.pointerEvents = "none";
+    }, 280);
   }
   const overlay = $("sidebar-overlay");
   if (overlay) {
@@ -301,8 +301,8 @@ function setupLogout() {
   });
 }
 
-// Tutup loader & overlay seawal mungkin
-hideInitialLoader();
+// Fallback timer: pastikan loader tidak macet bila ada kendala jaringan
+setTimeout(hideInitialLoader, 4000);
 
 // Jalankan saat dokumen siap
 if (document.readyState === "loading") {

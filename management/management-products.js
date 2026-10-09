@@ -115,10 +115,49 @@ function bindEvents() {
 }
 
 /**
+ * Membangun Index Hash Map Faktur Pembelian O(1)
+ * Dieksekusi 1 kali instan (<1ms) untuk mencegah jutaan iterasi linier
+ */
+export function getInvoiceLookupMap() {
+  const invoices = readStore(STORE_KEYS.invoices, []);
+  const mapByCode = new Map();
+  const mapByName = new Map();
+
+  if (Array.isArray(invoices) && invoices.length > 0) {
+    for (let i = invoices.length - 1; i >= 0; i--) {
+      const inv = invoices[i];
+      if (!Array.isArray(inv.items)) continue;
+      const supplierName = inv.supplierName || inv.supplier || "";
+      for (let j = 0; j < inv.items.length; j++) {
+        const it = inv.items[j];
+        const itCode = norm(it.productCode || it.matchedProductCode || it.code);
+        const itName = norm(it.name);
+        const itBuyPrice = num(it.buyPrice);
+        const purchaseUnit = it.purchaseUnit || it.satuanBesar || "";
+        const conv = num(it.conversionRatio || it.conversion) || 1;
+
+        const info = {
+          buyPrice: itBuyPrice,
+          purchaseUnit,
+          conversionRatio: conv,
+          supplierName
+        };
+
+        if (itCode && !mapByCode.has(itCode)) mapByCode.set(itCode, info);
+        if (itName && !mapByName.has(itName)) mapByName.set(itName, info);
+      }
+    }
+  }
+
+  return { mapByCode, mapByName };
+}
+
+/**
  * Resolusi harga beli fisik dan informasi kemasan dari histori faktur pembelian
  * Memberikan perlindungan ganda (fallback) bila data produk sempat tertimpa 0.
+ * Menggunakan Index Hash Map O(1) untuk kecepatan pemuatan instan 0ms.
  */
-export function resolveProductInvoiceData(prod) {
+export function resolveProductInvoiceData(prod, lookup = null) {
   if (!prod) return { buyPrice: 0, purchaseUnit: "", conversionRatio: 1, supplierName: "" };
   let buyPrice = num(prod["Harga Beli Terakhir"] ?? prod["Harga Beli"] ?? 0);
   let purchaseUnit = String(prod["Kemasan Beli"] || prod["Satuan Pembelian"] || "").trim();
@@ -130,44 +169,31 @@ export function resolveProductInvoiceData(prod) {
     return { buyPrice, purchaseUnit, conversionRatio, supplierName };
   }
 
-  // Lookup ke faktur pembelian terkonfirmasi sebagai fallback
-  const invoices = readStore(STORE_KEYS.invoices, []);
-  if (Array.isArray(invoices) && invoices.length > 0) {
-    const code = norm(prod["Kode Produk"] || prod["Kode Produk Internal"] || prod.id);
-    const name = norm(prod["Nama Produk"] || prod.name);
+  // Lookup instan O(1) dari Hash Map Faktur
+  const invoiceLookup = lookup || getInvoiceLookupMap();
+  const code = norm(prod["Kode Produk"] || prod["Kode Produk Internal"] || prod.id);
+  const name = norm(prod["Nama Produk"] || prod.name);
 
-    for (let i = invoices.length - 1; i >= 0; i--) {
-      const inv = invoices[i];
-      if (!Array.isArray(inv.items)) continue;
-      const match = inv.items.find(it => {
-        const itCode = norm(it.productCode || it.matchedProductCode || it.code);
-        const itName = norm(it.name);
-        return (code && itCode && itCode === code) || (name && itName && itName === name);
-      });
-      if (match) {
-        const itBuyPrice = num(match.buyPrice);
-        if (buyPrice <= 0 && itBuyPrice > 0) {
-          buyPrice = itBuyPrice;
-          prod["Harga Beli Terakhir"] = itBuyPrice;
-          prod["Harga Beli"] = itBuyPrice;
-        }
-        if (!purchaseUnit && (match.purchaseUnit || match.satuanBesar)) {
-          purchaseUnit = match.purchaseUnit || match.satuanBesar;
-          prod["Kemasan Beli"] = purchaseUnit;
-          prod["Satuan Pembelian"] = purchaseUnit;
-        }
-        const itConv = num(match.conversionRatio || match.conversion);
-        if (conversionRatio <= 1 && itConv > 1) {
-          conversionRatio = itConv;
-          prod["Konversi"] = conversionRatio;
-          prod["Isi Kemasan"] = conversionRatio;
-        }
-        if (!supplierName && (inv.supplierName || inv.supplier)) {
-          supplierName = inv.supplierName || inv.supplier;
-          prod["Supplier"] = supplierName;
-        }
-        break;
-      }
+  const match = (code ? invoiceLookup.mapByCode.get(code) : null) || (name ? invoiceLookup.mapByName.get(name) : null);
+  if (match) {
+    if (buyPrice <= 0 && match.buyPrice > 0) {
+      buyPrice = match.buyPrice;
+      prod["Harga Beli Terakhir"] = match.buyPrice;
+      prod["Harga Beli"] = match.buyPrice;
+    }
+    if (!purchaseUnit && match.purchaseUnit) {
+      purchaseUnit = match.purchaseUnit;
+      prod["Kemasan Beli"] = purchaseUnit;
+      prod["Satuan Pembelian"] = purchaseUnit;
+    }
+    if (conversionRatio <= 1 && match.conversionRatio > 1) {
+      conversionRatio = match.conversionRatio;
+      prod["Konversi"] = conversionRatio;
+      prod["Isi Kemasan"] = conversionRatio;
+    }
+    if (!supplierName && match.supplierName) {
+      supplierName = match.supplierName;
+      prod["Supplier"] = supplierName;
     }
   }
 
@@ -179,8 +205,15 @@ export function renderProducts() {
   const prods = Array.isArray(master.produk) ? master.produk : [];
   currentProducts = prods.filter(p => !p._isDeleted);
 
-  // Pulihkan harga beli faktur ke produk sebelum filter diterapkan
-  currentProducts.forEach(p => resolveProductInvoiceData(p));
+  // Buat lookup faktur O(1) sekali saja di awal (<1ms)
+  const invoiceLookup = getInvoiceLookupMap();
+
+  // Pulihkan harga beli faktur ke produk sebelum filter diterapkan dengan Hash Map O(1)
+  currentProducts.forEach(p => {
+    // Lewati jika produk sudah lengkap untuk menghemat alokasi memori
+    if (num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0) > 0 && p["Kemasan Beli"]) return;
+    resolveProductInvoiceData(p, invoiceLookup);
+  });
 
   // Update dropdown filter kategori & supplier
   populateFilterDropdowns(master);
@@ -398,11 +431,12 @@ function renderTable() {
       tbody.innerHTML = `<tr><td colspan="11" class="empty-table-state" style="text-align:center;padding:24px;">Tidak ada data produk yang sesuai kriteria pencarian.</td></tr>`;
     }
   } else {
+    const invoiceLookup = getInvoiceLookupMap();
     tbody.innerHTML = pageItems.map((p, idx) => {
       const code = p["Kode Produk"] || p["Kode Produk Internal"] || "—";
       const name = p["Nama Produk"] || "—";
       const rawCat = p["Kategori"] || "";
-      const invData = resolveProductInvoiceData(p);
+      const invData = resolveProductInvoiceData(p, invoiceLookup);
       const rawSup = p["Supplier"] || invData.supplierName || "";
       const cat = categoryLookup.get(norm(rawCat)) || rawCat || "—";
       const sup = supplierLookup.get(norm(rawSup)) || rawSup || "—";

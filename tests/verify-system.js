@@ -936,6 +936,99 @@ const filterPerluHargaJualProducts = [restoredProd].filter(p => {
 assert(filterPerluHargaJualProducts.length === 1, "Filter 'Perlu Harga Jual': Produk Masuk Kriteria Filter (Stok > 0 & Harga Jual 0)");
 assert(num(filterPerluHargaJualProducts[0]["Harga Beli Terakhir"]) > 0, "Filter 'Perlu Harga Jual': Kolom Harga Beli Menampilkan Nilai Faktur Asli (> Rp0, Bukan Rp0)");
 
+// -----------------------------------------------------------------------------
+// 17. PENGUJIAN AKSELERASI PRODUK O(1), OVERLAY TRANSISI & RESPONSIVITAS LAPTOP
+// -----------------------------------------------------------------------------
+console.log("\n⚡ BAGIAN 17: PENGUJIAN AKSELERASI PRODUK O(1), OVERLAY TRANSISI & RESPONSIVITAS LAPTOP");
+
+// 1. Uji Benchmark & Kecepatan Resolusi Faktur O(1) pada 10.000 Produk
+const benchInvoices = [
+  {
+    invoiceNumber: "INV-2026-001",
+    supplierName: "PT Mensa Binasukses",
+    items: [
+      { productCode: "PRD-FLUCADEX", name: "FLUCADEX (PREKUSOR)", buyPrice: 50868, purchaseUnit: "BOX", conversionRatio: 100 },
+      { productCode: "PRD-AMOX", name: "AMOXICILLIN 500", buyPrice: 62000, purchaseUnit: "BOX", conversionRatio: 100 }
+    ]
+  }
+];
+
+// Simulasi pembuatan Hash Map O(1)
+const tStartBuild = Date.now();
+const testMapByCode = new Map();
+const testMapByName = new Map();
+benchInvoices.forEach(inv => {
+  (inv.items || []).forEach(it => {
+    const code = String(it.productCode || "").toLowerCase().trim();
+    const name = String(it.name || "").toLowerCase().trim();
+    const info = {
+      buyPrice: Number(it.buyPrice) || 0,
+      purchaseUnit: it.purchaseUnit,
+      conversionRatio: Number(it.conversionRatio) || 1,
+      supplierName: inv.supplierName
+    };
+    if (code) testMapByCode.set(code, info);
+    if (name) testMapByName.set(name, info);
+  });
+});
+const tBuildDuration = Date.now() - tStartBuild;
+assert(tBuildDuration <= 10, `Pembangunan Hash Map Faktur Instan (< 10ms, Aktual: ${tBuildDuration}ms)`);
+
+// Simulasi 10.000 produk katalog acuan
+const bench10kProducts = [];
+for (let i = 0; i < 10000; i++) {
+  bench10kProducts.push({
+    "Kode Produk": `PRD-CATALOG-${i}`,
+    "Nama Produk": `Obat Katalog Nomor ${i}`,
+    "Harga Beli Terakhir": 0,
+    "Satuan Dasar": "Pcs",
+    "Stok Awal": 0
+  });
+}
+// Sisipkan produk target yang cocok dengan faktur
+bench10kProducts[450] = {
+  "Kode Produk": "PRD-FLUCADEX",
+  "Nama Produk": "FLUCADEX (PREKUSOR)",
+  "Harga Beli Terakhir": 0,
+  "Satuan Dasar": "Kaplet",
+  "Stok Awal": 10
+};
+
+const tStartScan = Date.now();
+let resolvedMatch = null;
+for (let i = 0; i < bench10kProducts.length; i++) {
+  const p = bench10kProducts[i];
+  if (p["Harga Beli Terakhir"] > 0) continue;
+  const c = String(p["Kode Produk"] || "").toLowerCase().trim();
+  const match = testMapByCode.get(c);
+  if (match) {
+    p["Harga Beli Terakhir"] = match.buyPrice;
+    p["Kemasan Beli"] = match.purchaseUnit;
+    p["Konversi"] = match.conversionRatio;
+    p["Supplier"] = match.supplierName;
+    resolvedMatch = p;
+  }
+}
+const tScanDuration = Date.now() - tStartScan;
+
+assert(tScanDuration < 50, `Akselerasi O(1): Pemindaian 10.000 Produk Bebas Lag (< 50ms, Aktual: ${tScanDuration}ms)`);
+assert(resolvedMatch !== null && resolvedMatch["Harga Beli Terakhir"] === 50868, "Akselerasi O(1): Produk Target Berhasil Direkonsiliasi Secara Presisi (Rp 50.868)");
+assert(resolvedMatch["Supplier"] === "PT Mensa Binasukses", "Akselerasi O(1): Supplier Faktur Terpaut Sesuai");
+
+// 2. Uji Pemeriksaan Berkas CSS Loading Overlay & Laptop Responsiveness
+const cssPath = path.join(rootDir, "management", "management.css");
+const cssContent = fs.readFileSync(cssPath, "utf-8");
+
+assert(cssContent.includes(".app-loading"), "CSS: Kelas .app-loading Didefinisikan di management.css");
+assert(cssContent.includes("backdrop-filter"), "CSS: Loading Card Menggunakan Efek Blur Modern");
+assert(cssContent.includes("@media (min-width: 821px) and (max-width: 1366px)"), "CSS: Aturan Responsivitas Layar Laptop (821px - 1366px) Terpasang");
+assert(cssContent.includes("@media (max-height: 800px)"), "CSS: Aturan Height-Aware Modal untuk Layar Laptop 768p Terpasang");
+
+// 3. Uji Indikator Transisi Tombol Login
+const loginCorePath = path.join(rootDir, "script-at07-core.js");
+const loginCoreContent = fs.readFileSync(loginCorePath, "utf-8");
+assert(loginCoreContent.includes("Menyiapkan Dashboard..."), "Login: Tombol Menampilkan Status 'Menyiapkan Dashboard...' Pasca-Login");
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

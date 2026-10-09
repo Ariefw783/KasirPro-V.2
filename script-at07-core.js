@@ -142,6 +142,7 @@ async function handleLoginSubmit(event) {
       const username = usernameInput.value.trim();
       const password = passwordInput.value;
       await signInKasirPro({ username, password, expectedRole: "admin" });
+      if (loginSubmitText) loginSubmitText.textContent = "Menyiapkan Dashboard...";
       window.location.replace("management/index.html");
       return;
     }
@@ -150,6 +151,7 @@ async function handleLoginSubmit(event) {
     if (!username) throw new Error("Silakan masukkan username kasir.");
     const password = passwordInput.value;
     await signInKasirPro({ username, password, expectedRole: "cashier" });
+    if (loginSubmitText) loginSubmitText.textContent = "Menyiapkan Kasir POS...";
     window.location.replace("pos/index.html");
   } catch (error) {
     console.error("Login gagal:", error);

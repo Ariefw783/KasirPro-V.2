@@ -1134,3 +1134,225 @@
     pointer-events: none !important;
     visibility: hidden !important;
 }
+
+/* ==============================================================================
+   OVERLAY LOADING SCREEN TRANSISI MANAGEMENT
+   ============================================================================== */
+.app-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+
+.app-loading.fade-out,
+.app-loading[hidden] {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+.app-loading-card {
+    width: min(340px, 90vw);
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    padding: 26px 22px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.4);
+    text-align: center;
+    animation: kp-loader-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.app-loading-card i {
+    color: #0284c7;
+    font-size: 2.2rem;
+    animation: kp-spin 0.85s linear infinite;
+}
+
+.app-loading-card strong {
+    color: #0f2a43;
+    font-size: 1rem;
+    font-weight: 750;
+    letter-spacing: -0.01em;
+}
+
+.app-loading-card span {
+    color: #64748b;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    max-width: 260px;
+}
+
+@keyframes kp-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes kp-loader-pop {
+    from { opacity: 0; transform: scale(0.93) translateY(8px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ==============================================================================
+   RESPONSIVITAS KHUSUS LAYAR LAPTOP & TABLET LANDSCAPE (821px - 1366px)
+   Optimal untuk resolusi 1366x768, 1280x800, serta Windows Display Scaling 125%/150%
+   ============================================================================== */
+@media (min-width: 821px) and (max-width: 1366px) {
+    :root {
+        --sidebar-width: 215px; /* Rampingkan sidebar agar area konten laptop lega */
+    }
+
+    .main-area {
+        margin-left: var(--sidebar-width) !important;
+        width: calc(100% - var(--sidebar-width)) !important;
+        max-width: calc(100% - var(--sidebar-width)) !important;
+    }
+
+    .main-content {
+        padding: 16px 14px !important;
+    }
+
+    /* 1. Dashboard Financial KPI Grid: 2 atau 3 kolom proporsional */
+    .dashboard-grid-financial {
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important;
+        gap: 12px !important;
+    }
+
+    .dashboard-grid-operational {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+        gap: 12px !important;
+    }
+
+    .dashboard-card {
+        min-height: 98px !important;
+        padding: 14px 12px !important;
+        gap: 10px !important;
+    }
+
+    .dashboard-card strong {
+        font-size: 1.15rem !important;
+        word-break: break-word;
+    }
+
+    /* 2. Summary Cards Produk, Stok, dsb */
+    .workbook-summary {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+        gap: 12px !important;
+    }
+
+    /* 3. Header Modul & Action Buttons */
+    .module-header {
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+    }
+
+    .module-header-actions {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+
+    .module-header-actions .button {
+        font-size: 12px !important;
+        padding: 6px 12px !important;
+    }
+
+    /* 4. Toolbar Filter */
+    .product-toolbar-top,
+    .stock-filter-toolbar,
+    .preview-toolbar {
+        gap: 10px !important;
+        flex-wrap: wrap !important;
+    }
+
+    .preview-search {
+        flex: 1 1 240px !important;
+        min-width: 200px !important;
+    }
+
+    .preview-filter-actions select {
+        font-size: 12.5px !important;
+        min-height: 38px !important;
+        padding: 4px 10px !important;
+    }
+
+    /* 5. Tabel Data: Scroll horizontal mulus */
+    .table-wrapper {
+        overflow-x: auto !important;
+        max-width: 100% !important;
+        border-radius: 10px !important;
+    }
+
+    .table-wrapper > table,
+    .table-wrapper > .data-table {
+        min-width: 860px !important;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 10px 10px !important;
+        font-size: 12px !important;
+    }
+}
+
+/* ==============================================================================
+   OPTIMASI TINGGI LAYAR (HEIGHT-AWARE FOR 768p LAPTOPS / max-height: 800px)
+   Memastikan modal dialog tidak terpotong di layar laptop dengan tinggi terbatas
+   ============================================================================== */
+@media (max-height: 800px) {
+    /* Modal Dialog Card: Fleksibel dengan sticky header & sticky footer */
+    .product-detail-panel,
+    .manual-invoice-dialog,
+    .app-modal-card,
+    .kp-dialog-v4__card,
+    .ops-dialog-wide {
+        max-height: 94vh !important;
+        height: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .product-detail-header,
+    .kp-dialog-v4__card header,
+    .app-modal-header {
+        padding: 12px 16px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .product-detail-body,
+    .kp-dialog-v4__card > div:not(header):not(footer),
+    .app-modal-body,
+    .manual-invoice-body {
+        overflow-y: auto !important;
+        flex: 1 1 auto !important;
+        max-height: calc(94vh - 120px) !important;
+        padding: 14px 16px !important;
+    }
+
+    .product-detail-actions,
+    .app-modal-actions,
+    .panel-actions {
+        padding: 10px 16px !important;
+        flex-shrink: 0 !important;
+        background: #ffffff !important;
+        border-top: 1px solid #e2e8f0 !important;
+    }
+
+    .topbar {
+        min-height: 52px !important;
+        height: 52px !important;
+    }
+
+    :root {
+        --topbar-height: 52px !important;
+    }
+}
