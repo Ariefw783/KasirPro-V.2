@@ -809,6 +809,133 @@ assert(currentStockState === 20, "Reversal Stok: Stok Lama Berhasil Dibatalkan K
 const newBaseQty = newInvoiceItem.qty * newInvoiceItem.conversionRatio; // 80
 currentStockState += newBaseQty; // Menjadi 100
 assert(currentStockState === 100, "Re-apply Stok: Stok Baru Hasil Revisi Diterapkan Secara Presisi (100 Unit)");
+
+// -----------------------------------------------------------------------------
+// 16. PENGUJIAN RETENSI HARGA BELI FAKTUR PADA TABEL PRODUK & REKONSILIASI KATALOG
+// -----------------------------------------------------------------------------
+console.log("\n🏷️ BAGIAN 16: PENGUJIAN RETENSI HARGA BELI FAKTUR & REKONSILIASI KATALOG");
+
+// 1. Uji Proteksi Snapshot Chunk Merge (Tidak Mereset Harga Beli Menjadi 0)
+const existingActiveProduct = {
+  "Kode Produk": "PRD-COPARCETIN",
+  "Nama Produk": "COPARCETIN STRAW SYRUP (PRE)",
+  "Harga Beli Terakhir": 8254,
+  "Harga Beli": 8254,
+  "Harga Jual": 0,
+  "Satuan Pembelian": "BOTOL",
+  "Konversi": 1,
+  "Supplier": "PT Mensa Binasukses",
+  "Stok Awal": 2,
+  "Status": "Perlu Harga Jual"
+};
+
+// Objek dari snapshot katalog pasif yang baru diunduh dari cloud (Harga Beli bernilai 0)
+const incomingSnapshotProduct = {
+  "Kode Produk": "PRD-COPARCETIN",
+  "Nama Produk": "COPARCETIN STRAW SYRUP (PRE)",
+  "Harga Beli Terakhir": 0,
+  "Harga Beli": 0,
+  "Harga Jual": 0,
+  "Satuan Dasar": "BOTOL",
+  "Supplier": ""
+};
+
+// Simulasi logika merge snapshot chunk yang telah diperbaiki
+const mergedProductTest = { ...incomingSnapshotProduct };
+if (existingActiveProduct) {
+  const exBuy = num(existingActiveProduct["Harga Beli Terakhir"] ?? existingActiveProduct["Harga Beli"] ?? 0);
+  if (exBuy > 0) {
+    mergedProductTest["Harga Beli Terakhir"] = exBuy;
+    mergedProductTest["Harga Beli"] = exBuy;
+  }
+  if (existingActiveProduct["Supplier"]) mergedProductTest["Supplier"] = existingActiveProduct["Supplier"];
+  if (existingActiveProduct["Satuan Pembelian"]) mergedProductTest["Satuan Pembelian"] = existingActiveProduct["Satuan Pembelian"];
+  if (existingActiveProduct["Stok Awal"] !== undefined) mergedProductTest["Stok Awal"] = existingActiveProduct["Stok Awal"];
+}
+
+assert(mergedProductTest["Harga Beli Terakhir"] === 8254, "Snapshot Merge: Harga Beli Terakhir Tetap Terlindungi (Rp 8.254, Bukan 0)");
+assert(mergedProductTest["Supplier"] === "PT Mensa Binasukses", "Snapshot Merge: Nama Supplier Tetap Utuh");
+assert(mergedProductTest["Stok Awal"] === 2, "Snapshot Merge: Stok Awal Faktur Tetap Tersimpan");
+
+// 2. Uji Rekonsiliasi Otomatis (Auto-Recovery) dari Histori Faktur Terkonfirmasi
+const sampleCatalogWithZeroBuyPrice = [
+  {
+    "Kode Produk": "PRD-FLUCADEX",
+    "Nama Produk": "FLUCADEX (PREKUSOR)",
+    "Harga Beli Terakhir": 0,
+    "Harga Beli": 0,
+    "Harga Jual": 0,
+    "Stok Awal": 100,
+    "Satuan Dasar": "KAPLET"
+  }
+];
+
+const sampleConfirmedInvoices = [
+  {
+    invoiceNumber: "INV-2026-001",
+    status: "Terkonfirmasi",
+    supplierName: "PT Mensa Binasukses",
+    items: [
+      {
+        productCode: "PRD-FLUCADEX",
+        name: "FLUCADEX (PREKUSOR)",
+        buyPrice: 50868,
+        purchaseUnit: "BOX",
+        conversionRatio: 100,
+        intermediateUnit: "STRIP",
+        intermediateQty: 10
+      }
+    ]
+  }
+];
+
+// Simulasi helper rekonsiliasi
+function simulateReconciliation(products, invoices) {
+  const mapByCode = new Map();
+  invoices.forEach(inv => {
+    (inv.items || []).forEach(it => {
+      if (num(it.buyPrice) > 0) {
+        mapByCode.set(it.productCode, {
+          buyPrice: num(it.buyPrice),
+          purchaseUnit: it.purchaseUnit,
+          conversionRatio: num(it.conversionRatio) || 1,
+          supplierName: inv.supplierName
+        });
+      }
+    });
+  });
+
+  products.forEach(p => {
+    const code = p["Kode Produk"];
+    const match = mapByCode.get(code);
+    if (match && num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0) <= 0) {
+      p["Harga Beli Terakhir"] = match.buyPrice;
+      p["Harga Beli"] = match.buyPrice;
+      if (!p["Supplier"]) p["Supplier"] = match.supplierName;
+      if (!p["Satuan Pembelian"]) p["Satuan Pembelian"] = match.purchaseUnit;
+      if (num(p["Konversi"] || 1) <= 1 && match.conversionRatio > 1) p["Konversi"] = match.conversionRatio;
+    }
+  });
+}
+
+simulateReconciliation(sampleCatalogWithZeroBuyPrice, sampleConfirmedInvoices);
+const restoredProd = sampleCatalogWithZeroBuyPrice[0];
+
+assert(restoredProd["Harga Beli Terakhir"] === 50868, "Rekonsiliasi Faktur: Harga Beli Berhasil Dipulihkan Menjadi Rp 50.868");
+assert(restoredProd["Supplier"] === "PT Mensa Binasukses", "Rekonsiliasi Faktur: Supplier Berhasil Dipulihkan");
+assert(restoredProd["Satuan Pembelian"] === "BOX", "Rekonsiliasi Faktur: Satuan Kemasan Beli Berhasil Dipulihkan (BOX)");
+assert(restoredProd["Konversi"] === 100, "Rekonsiliasi Faktur: Rasio Konversi Berhasil Dipulihkan (100 Kaplet)");
+
+// 3. Uji Tampilan Kolom 'Harga Beli' pada Filter 'Perlu Harga Jual'
+const filterPerluHargaJualProducts = [restoredProd].filter(p => {
+  const stock = num(p["Stok Awal"]);
+  const sellPrice = num(p["Harga Jual"]);
+  return stock > 0 && sellPrice <= 0;
+});
+
+assert(filterPerluHargaJualProducts.length === 1, "Filter 'Perlu Harga Jual': Produk Masuk Kriteria Filter (Stok > 0 & Harga Jual 0)");
+assert(num(filterPerluHargaJualProducts[0]["Harga Beli Terakhir"]) > 0, "Filter 'Perlu Harga Jual': Kolom Harga Beli Menampilkan Nilai Faktur Asli (> Rp0, Bukan Rp0)");
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

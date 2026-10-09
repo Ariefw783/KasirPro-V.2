@@ -202,6 +202,74 @@ function normalizeProductRecord(prod) {
 }
 
 /**
+ * Rekonsiliasi harga beli dan data kemasan dari histori faktur pembelian
+ * Mencegah nilai 0 pada master katalog jika produk sudah pernah diinput via faktur.
+ */
+export function reconcileProductsWithInvoices(products, invoices) {
+  if (!Array.isArray(products) || !Array.isArray(invoices) || invoices.length === 0) return;
+
+  const mapByCode = new Map();
+  const mapByName = new Map();
+
+  const sortedInvoices = [...invoices].sort((a, b) => {
+    const tA = new Date(a.confirmedAt || a.date || a.createdAt || 0).getTime();
+    const tB = new Date(b.confirmedAt || b.date || b.createdAt || 0).getTime();
+    return tA - tB;
+  });
+
+  for (const inv of sortedInvoices) {
+    if (!Array.isArray(inv.items)) continue;
+    for (const item of inv.items) {
+      const buyPrice = num(item.buyPrice);
+      if (buyPrice > 0) {
+        const payload = {
+          buyPrice,
+          purchaseUnit: item.purchaseUnit || item.satuanBesar || "",
+          conversionRatio: num(item.conversionRatio || item.conversion) || 1,
+          intermediateUnit: item.intermediateUnit || item.satuanSedang || "",
+          intermediateQty: num(item.intermediateQty) || 1,
+          baseUnit: item.baseUnit || item.satuanTerkecil || "",
+          supplierName: inv.supplierName || inv.supplier || ""
+        };
+        const c = norm(item.productCode || item.matchedProductCode || item.code);
+        if (c) mapByCode.set(c, payload);
+        const n = norm(item.name);
+        if (n) mapByName.set(n, payload);
+      }
+    }
+  }
+
+  for (const p of products) {
+    const curBuy = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
+    const code = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
+    const name = norm(p["Nama Produk"] || p.name);
+    const invMatch = (code && mapByCode.get(code)) || (name && mapByName.get(name));
+
+    if (invMatch) {
+      if (curBuy <= 0) {
+        p["Harga Beli Terakhir"] = invMatch.buyPrice;
+        p["Harga Beli"] = invMatch.buyPrice;
+      }
+      if (!p["Supplier"] && invMatch.supplierName) {
+        p["Supplier"] = invMatch.supplierName;
+      }
+      if ((!p["Satuan Pembelian"] || p["Satuan Pembelian"] === p["Satuan Dasar"]) && invMatch.purchaseUnit) {
+        p["Satuan Pembelian"] = invMatch.purchaseUnit;
+        p["Kemasan Beli"] = invMatch.purchaseUnit;
+      }
+      if ((!p["Konversi"] || num(p["Konversi"]) <= 1) && invMatch.conversionRatio > 1) {
+        p["Konversi"] = invMatch.conversionRatio;
+        p["Isi Kemasan"] = invMatch.conversionRatio;
+      }
+      if (!p["Satuan Antara"] && invMatch.intermediateUnit) {
+        p["Satuan Antara"] = invMatch.intermediateUnit;
+        p["Isi Satuan Antara"] = invMatch.intermediateQty;
+      }
+    }
+  }
+}
+
+/**
  * Muat data awal dari IndexedDB ke In-Memory (Instan 0ms offline)
  */
 async function loadFromIndexedDB() {
@@ -308,6 +376,9 @@ async function loadFromIndexedDB() {
     inMemory.set(STORE_KEYS.sales, sales || []);
     inMemory.set(STORE_KEYS.movements, movements || []);
     inMemory.set(STORE_KEYS.opnames, opnames || []);
+
+    // Pulihkan harga beli & data kemasan produk dari histori faktur jika masih 0
+    reconcileProductsWithInvoices(masterObj.produk, invoices || []);
 
     // Bangun active stock index dengan proteksi non-negatif
     activeStockIndex.clear();
@@ -521,7 +592,39 @@ async function syncFromFirestore(force = false) {
                   const existingItem = prodMap.get(key);
                   const normItem = normalizeProductRecord(item);
                   if (existingItem) {
-                    normItem["Stok Awal"] = existingItem["Stok Awal"] ?? normItem["Stok Awal"];
+                    // Pertahankan data operasional & histori harga yang sudah ada di existingItem
+                    const exBuy = num(existingItem["Harga Beli Terakhir"] ?? existingItem["Harga Beli"] ?? 0);
+                    if (exBuy > 0) {
+                      normItem["Harga Beli Terakhir"] = exBuy;
+                      normItem["Harga Beli"] = exBuy;
+                    }
+                    const exSell = num(existingItem["Harga Jual"] ?? existingItem.sellPrice ?? 0);
+                    if (exSell > 0) normItem["Harga Jual"] = exSell;
+
+                    const exSellMid = num(existingItem["Harga Jual Satuan Sedang"] ?? existingItem["Harga Jual Sedang"] ?? 0);
+                    if (exSellMid > 0) normItem["Harga Jual Satuan Sedang"] = exSellMid;
+
+                    const exSellBuy = num(existingItem["Harga Jual Satuan Besar"] ?? existingItem["Harga Jual Besar"] ?? 0);
+                    if (exSellBuy > 0) normItem["Harga Jual Satuan Besar"] = exSellBuy;
+
+                    if (existingItem["Supplier"]) normItem["Supplier"] = existingItem["Supplier"];
+                    if (existingItem["Satuan Pembelian"]) normItem["Satuan Pembelian"] = existingItem["Satuan Pembelian"];
+                    if (existingItem["Kemasan Beli"]) normItem["Kemasan Beli"] = existingItem["Kemasan Beli"];
+                    if (num(existingItem["Konversi"]) > 1) {
+                      normItem["Konversi"] = existingItem["Konversi"];
+                      normItem["Isi Kemasan"] = existingItem["Isi Kemasan"] || existingItem["Konversi"];
+                    }
+                    if (existingItem["Satuan Antara"]) normItem["Satuan Antara"] = existingItem["Satuan Antara"];
+                    if (existingItem["Isi Satuan Antara"]) normItem["Isi Satuan Antara"] = existingItem["Isi Satuan Antara"];
+                    if (existingItem["Nomor Batch"]) normItem["Nomor Batch"] = existingItem["Nomor Batch"];
+                    if (existingItem["Tanggal Kadaluarsa"]) normItem["Tanggal Kadaluarsa"] = existingItem["Tanggal Kadaluarsa"];
+                    if (existingItem["isTieredPricing"] !== undefined) normItem["isTieredPricing"] = existingItem["isTieredPricing"];
+                    if (existingItem["tieredPricing"] !== undefined) normItem["tieredPricing"] = existingItem["tieredPricing"];
+                    if (existingItem["Opsi Jual"] !== undefined) normItem["Opsi Jual"] = existingItem["Opsi Jual"];
+                    if (existingItem["Satuan Dijual"] !== undefined) normItem["Satuan Dijual"] = existingItem["Satuan Dijual"];
+                    if (existingItem["Status"]) normItem["Status"] = existingItem["Status"];
+                    if (existingItem["Status Produk"]) normItem["Status Produk"] = existingItem["Status Produk"];
+                    if (existingItem["Stok Awal"] !== undefined) normItem["Stok Awal"] = existingItem["Stok Awal"];
                   }
                   prodMap.set(key, normItem);
                 }
@@ -606,6 +709,9 @@ async function syncFromFirestore(force = false) {
         indexedDBStore.clearStore(STORES.OPNAMES)
       ]);
     }
+
+    // Rekonsiliasi harga beli dan data kemasan dari histori faktur ke mergedProducts
+    reconcileProductsWithInvoices(mergedProducts, inMemory.get(STORE_KEYS.invoices) || []);
 
     // Simpan ke IndexedDB cache lokal
     if (force) {

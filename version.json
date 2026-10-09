@@ -1,14 +1,13 @@
 {
-  "version": "2.2.46",
-  "build": "20261009.03",
+  "version": "2.2.47",
+  "build": "20261009.04",
   "releaseDate": "09 Oktober 2026",
-  "title": "Sinkronisasi Laporan Faktur & Fitur Edit Faktur",
-  "description": "Menyelaraskan badge chip jumlah faktur dan filter tanggal pada menu Laporan, serta menghadirkan fitur Edit Faktur Administratif dan Transaksional dengan rekonsiliasi reversal stok atomik.",
+  "title": "Preservasi Harga Beli Faktur & Rekonsiliasi Master Produk",
+  "description": "Menjaga keutuhan harga beli faktur fisik pada tabel Master Produk dan filter Perlu Harga Jual, serta mencegah reset harga nol saat sinkronisasi snapshot katalog acuan.",
   "changelog": [
-    "Sync invoice report count chips",
-    "Robust timezone proof date filtering",
-    "Add administrative invoice edit mode",
-    "Add transactional edit grid reversal",
-    "Update service worker cache v99"
+    "Preserve invoice buy price data",
+    "Protect snapshot chunk product merge",
+    "Auto recover product purchase prices",
+    "Update service worker cache v100"
   ]
 }

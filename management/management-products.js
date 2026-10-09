@@ -114,10 +114,73 @@ function bindEvents() {
   installProductModal();
 }
 
+/**
+ * Resolusi harga beli fisik dan informasi kemasan dari histori faktur pembelian
+ * Memberikan perlindungan ganda (fallback) bila data produk sempat tertimpa 0.
+ */
+export function resolveProductInvoiceData(prod) {
+  if (!prod) return { buyPrice: 0, purchaseUnit: "", conversionRatio: 1, supplierName: "" };
+  let buyPrice = num(prod["Harga Beli Terakhir"] ?? prod["Harga Beli"] ?? 0);
+  let purchaseUnit = String(prod["Kemasan Beli"] || prod["Satuan Pembelian"] || "").trim();
+  let conversionRatio = num(prod["Konversi"] ?? prod["Isi Kemasan"] ?? 1);
+  let supplierName = String(prod["Supplier"] || "").trim();
+
+  // Jika harga beli sudah ada > 0 dan kemasan valid, kembalikan langsung
+  if (buyPrice > 0 && purchaseUnit && conversionRatio > 1) {
+    return { buyPrice, purchaseUnit, conversionRatio, supplierName };
+  }
+
+  // Lookup ke faktur pembelian terkonfirmasi sebagai fallback
+  const invoices = readStore(STORE_KEYS.invoices, []);
+  if (Array.isArray(invoices) && invoices.length > 0) {
+    const code = norm(prod["Kode Produk"] || prod["Kode Produk Internal"] || prod.id);
+    const name = norm(prod["Nama Produk"] || prod.name);
+
+    for (let i = invoices.length - 1; i >= 0; i--) {
+      const inv = invoices[i];
+      if (!Array.isArray(inv.items)) continue;
+      const match = inv.items.find(it => {
+        const itCode = norm(it.productCode || it.matchedProductCode || it.code);
+        const itName = norm(it.name);
+        return (code && itCode && itCode === code) || (name && itName && itName === name);
+      });
+      if (match) {
+        const itBuyPrice = num(match.buyPrice);
+        if (buyPrice <= 0 && itBuyPrice > 0) {
+          buyPrice = itBuyPrice;
+          prod["Harga Beli Terakhir"] = itBuyPrice;
+          prod["Harga Beli"] = itBuyPrice;
+        }
+        if (!purchaseUnit && (match.purchaseUnit || match.satuanBesar)) {
+          purchaseUnit = match.purchaseUnit || match.satuanBesar;
+          prod["Kemasan Beli"] = purchaseUnit;
+          prod["Satuan Pembelian"] = purchaseUnit;
+        }
+        const itConv = num(match.conversionRatio || match.conversion);
+        if (conversionRatio <= 1 && itConv > 1) {
+          conversionRatio = itConv;
+          prod["Konversi"] = conversionRatio;
+          prod["Isi Kemasan"] = conversionRatio;
+        }
+        if (!supplierName && (inv.supplierName || inv.supplier)) {
+          supplierName = inv.supplierName || inv.supplier;
+          prod["Supplier"] = supplierName;
+        }
+        break;
+      }
+    }
+  }
+
+  return { buyPrice, purchaseUnit, conversionRatio, supplierName };
+}
+
 export function renderProducts() {
   const master = readStore(STORE_KEYS.master, {});
   const prods = Array.isArray(master.produk) ? master.produk : [];
   currentProducts = prods.filter(p => !p._isDeleted);
+
+  // Pulihkan harga beli faktur ke produk sebelum filter diterapkan
+  currentProducts.forEach(p => resolveProductInvoiceData(p));
 
   // Update dropdown filter kategori & supplier
   populateFilterDropdowns(master);
@@ -339,15 +402,16 @@ function renderTable() {
       const code = p["Kode Produk"] || p["Kode Produk Internal"] || "—";
       const name = p["Nama Produk"] || "—";
       const rawCat = p["Kategori"] || "";
-      const rawSup = p["Supplier"] || "";
+      const invData = resolveProductInvoiceData(p);
+      const rawSup = p["Supplier"] || invData.supplierName || "";
       const cat = categoryLookup.get(norm(rawCat)) || rawCat || "—";
       const sup = supplierLookup.get(norm(rawSup)) || rawSup || "—";
-      const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
+      const buyPrice = invData.buyPrice;
       const sellPrice = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
       const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
       const unit = p["Satuan Dasar"] || p["Satuan"] || "Pcs";
-      const buyUnit = p["Satuan Pembelian"] || unit;
-      const conv = num(p["Konversi"]) || 1;
+      const buyUnit = p["Satuan Pembelian"] || invData.purchaseUnit || unit;
+      const conv = num(p["Konversi"]) || invData.conversionRatio || 1;
       const unitLabel = norm(buyUnit) !== norm(unit) && conv > 1
         ? `<strong>${escapeHtml(buyUnit)}</strong> <small class="text-muted">(1 ${escapeHtml(buyUnit)} = ${formatNumber(conv)} ${escapeHtml(unit)})</small>`
         : `<strong>${escapeHtml(unit)}</strong>`;
@@ -945,14 +1009,15 @@ function openEditPriceModal(prod) {
   $("price-modal-name").textContent = prod["Nama Produk"] || "—";
   $("price-modal-code").textContent = prod["Kode Produk"] || prod["Kode Produk Internal"] || "—";
 
-  const buyPrice = num(prod["Harga Beli Terakhir"] ?? prod["Harga Beli"] ?? 0);
+  const invData = resolveProductInvoiceData(prod);
+  const buyPrice = invData.buyPrice;
   $("price-modal-buy").textContent = rupiah(buyPrice);
 
   const baseUnit = String(prod["Satuan Dasar"] || prod["Satuan"] || "Pcs").trim();
   const midUnit = String(prod["Satuan Antara"] || "").trim();
   const midQty = num(prod["Isi Satuan Antara"] || 1);
-  const buyUnit = String(prod["Kemasan Beli"] || prod["Satuan Pembelian"] || "").trim();
-  const conversion = num(prod["Konversi"] ?? prod["Isi Kemasan"] ?? 1);
+  const buyUnit = String(prod["Kemasan Beli"] || prod["Satuan Pembelian"] || invData.purchaseUnit || "").trim();
+  const conversion = num(prod["Konversi"] ?? prod["Isi Kemasan"] ?? invData.conversionRatio ?? 1);
 
   priceModalState = {
     mode: String(prod["Opsi Jual"] || "1"),
@@ -1176,6 +1241,11 @@ async function handleSavePriceModal() {
   target["Satuan Dijual"] = allowedUnits;
   target["Status"] = "Aktif";
   target["Status Produk"] = "Aktif";
+
+  if (priceModalState.buyPrice > 0) {
+    if (!num(target["Harga Beli Terakhir"])) target["Harga Beli Terakhir"] = priceModalState.buyPrice;
+    if (!num(target["Harga Beli"])) target["Harga Beli"] = priceModalState.buyPrice;
+  }
 
   const saveBtn = $("save-edit-price");
   if (saveBtn) saveBtn.disabled = true;
