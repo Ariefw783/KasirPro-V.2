@@ -17,7 +17,7 @@
  */
 
 import { $, num, parseMoney, text, norm, rupiah, formatNumber, escapeHtml, nowIso, uid, INVOICE_TOLERANCE_RP, normalizeProductName, findBestProductMatch, stringSimilarity } from "../modules/core/utils.js";
-import { STORE_KEYS, readStore, writeStore, writeMasterDelta, readCurrentStock, writeStockTransaction, databaseStore, deletePurchaseInvoice } from "../modules/database/database-store.js";
+import { STORE_KEYS, readStore, writeStore, writeMasterDelta, readCurrentStock, setActiveStock, writeStockTransaction, databaseStore, deletePurchaseInvoice } from "../modules/database/database-store.js";
 import { generatePurchaseInvoicePdf } from "../modules/core/pdf.js";
 
 let currentInvoices = [];
@@ -322,7 +322,7 @@ export async function executeConfirmInvoice(inv) {
         if (prod) {
           const curStock = readCurrentStock(prod["Kode Produk"]);
           const revertedStock = Math.max(0, curStock - oldBaseQty);
-          activeStockIndex.set(norm(prod["Kode Produk"]), revertedStock);
+          setActiveStock(prod["Kode Produk"], revertedStock);
           prod["Stok Awal"] = revertedStock;
           touchedProducts.set(norm(prod["Kode Produk"]), prod);
         }

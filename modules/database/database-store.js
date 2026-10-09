@@ -798,6 +798,16 @@ export function readCurrentStock(productCode) {
 }
 
 /**
+ * Set stok aktif produk pada in-memory index
+ */
+export function setActiveStock(productCode, quantity) {
+  const code = norm(productCode);
+  if (!code) return;
+  const safeQty = Math.max(0, num(quantity));
+  activeStockIndex.set(code, safeQty);
+}
+
+/**
  * Simpan data store (online wajib)
  */
 export async function writeStore(key, value, onProgress) {
