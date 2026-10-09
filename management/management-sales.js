@@ -126,54 +126,141 @@ function applySalesFilters() {
 
 function renderSalesTable() {
   const tbody = document.querySelector(".sales-table tbody") || $("sales-table-body");
-  if (!tbody) return;
+  const cardList = $("sales-card-list");
+  if (!tbody && !cardList) return;
 
   const total = filteredSales.length;
   const start = (currentSalesPage - 1) * PAGE_SIZE;
   const pageItems = filteredSales.slice(start, start + PAGE_SIZE);
 
   if (!pageItems.length) {
-    tbody.innerHTML = `<tr><td colspan="9" class="empty-table-state" style="text-align:center;padding:24px;">Tidak ada transaksi penjualan yang ditemukan.</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="empty-table-state" style="text-align:center;padding:24px;">Tidak ada transaksi penjualan yang ditemukan.</td></tr>`;
+    if (cardList) cardList.innerHTML = `<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;color:#64748b;"><i class="fa-solid fa-receipt" style="font-size:28px;margin-bottom:8px;color:#94a3b8;display:block;"></i>Tidak ada transaksi penjualan yang ditemukan.</div>`;
   } else {
-    tbody.innerHTML = pageItems.map(s => {
-      const isVoid = norm(s.status) === "void";
-      const id = s.id || s.transactionNumber;
-      const no = s.transactionNumber || s.id || "—";
-      const date = formatDateTime(s.at || s.createdAt);
-      const cashier = s.cashierName || s.cashier || "Kasir";
-      const pay = s.paymentMethod || "Cash";
-      const itemCount = (s.items || []).length;
-      const total = num(s.total);
+    // 1. Render Desktop Table Rows
+    if (tbody) {
+      tbody.innerHTML = pageItems.map(s => {
+        const isVoid = norm(s.status) === "void";
+        const id = s.id || s.transactionNumber;
+        const no = s.transactionNumber || s.id || "—";
+        const date = formatDateTime(s.at || s.createdAt);
+        const cashier = s.cashierName || s.cashier || "Kasir";
+        const pay = s.paymentMethod || "Cash";
+        const itemCount = (s.items || []).length;
+        const total = num(s.total);
 
-      return `
-        <tr style="${isVoid ? 'background:#fef2f2;color:#94a3b8;' : ''}">
-          <td>${date}</td>
-          <td><strong>${escapeHtml(no)}</strong></td>
-          <td>${escapeHtml(cashier)}</td>
-          <td>${escapeHtml(pay)}</td>
-          <td>${itemCount} item</td>
-          <td><strong>${rupiah(total)}</strong></td>
-          <td>
-            <span class="badge ${isVoid ? 'badge-danger' : 'badge-success'}" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;">
-              ${isVoid ? 'VOID' : 'Selesai'}
-            </span>
-          </td>
-          <td>
-            <button type="button" class="btn-detail-sale button button-small button-secondary" data-id="${escapeHtml(id)}">
-              <i class="fa-solid fa-eye"></i> Detail
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join("");
+        return `
+          <tr style="${isVoid ? 'background:#fef2f2;color:#94a3b8;' : ''}">
+            <td>${date}</td>
+            <td><strong>${escapeHtml(no)}</strong></td>
+            <td>${escapeHtml(cashier)}</td>
+            <td>${escapeHtml(pay)}</td>
+            <td>${itemCount} item</td>
+            <td><strong>${rupiah(total)}</strong></td>
+            <td>
+              <span class="badge ${isVoid ? 'badge-danger' : 'badge-success'}" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;">
+                ${isVoid ? 'VOID' : 'Selesai'}
+              </span>
+            </td>
+            <td>
+              <button type="button" class="btn-detail-sale button button-small button-secondary" data-id="${escapeHtml(id)}">
+                <i class="fa-solid fa-eye"></i> Detail
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
 
-    tbody.querySelectorAll(".btn-detail-sale").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const sId = btn.dataset.id;
-        const found = allSales.find(s => (s.id || s.transactionNumber) === sId);
-        if (found) openSaleDetailModal(found);
+    // 2. Render Mobile Collapsible Cards (Default Diciutkan)
+    if (cardList) {
+      cardList.innerHTML = pageItems.map(s => {
+        const isVoid = norm(s.status) === "void";
+        const id = s.id || s.transactionNumber;
+        const no = s.transactionNumber || s.id || "—";
+        const date = formatDateTime(s.at || s.createdAt);
+        const cashier = s.cashierName || s.cashier || "Kasir";
+        const pay = s.paymentMethod || "Cash";
+        const itemCount = (s.items || []).length;
+        const total = num(s.total);
+
+        return `
+          <div class="responsive-data-card ${isVoid ? 'card-danger' : 'card-success'}" data-id="${escapeHtml(id)}">
+            <div class="card-accordion-header">
+              <div class="card-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#059669,#0284c7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">
+                <i class="fa-solid fa-receipt"></i>
+              </div>
+              <div class="card-header-main">
+                <div class="card-title-row">
+                  <div class="card-title">#${escapeHtml(no)}</div>
+                  <span class="badge ${isVoid ? 'badge-danger' : 'badge-success'}" style="padding:2px 7px;border-radius:5px;font-size:10px;font-weight:700;">
+                    ${isVoid ? 'VOID' : 'Selesai'}
+                  </span>
+                </div>
+                <div class="card-subtitle-row">
+                  <span>${date}</span>
+                  <span>•</span>
+                  <span><i class="fa-solid fa-user" style="font-size:10px;color:#94a3b8;"></i> ${escapeHtml(cashier)}</span>
+                  <span>•</span>
+                  <span style="color:#059669;font-weight:700;">${rupiah(total)}</span>
+                </div>
+              </div>
+              <div class="card-toggle-icon">
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
+            </div>
+            <div class="card-accordion-body">
+              <div class="card-detail-grid">
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Nomor Transaksi</span>
+                  <span class="card-detail-value"><strong>#${escapeHtml(no)}</strong></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Kasir Pelaksana</span>
+                  <span class="card-detail-value">${escapeHtml(cashier)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Metode Pembayaran</span>
+                  <span class="card-detail-value">${escapeHtml(pay)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Jumlah Produk</span>
+                  <span class="card-detail-value">${itemCount} Produk</span>
+                </div>
+                <div class="card-detail-item" style="grid-column: 1 / -1;">
+                  <span class="card-detail-label">Total Penjualan</span>
+                  <span class="card-detail-value" style="color:#059669;font-size:0.92rem;font-weight:800;">${rupiah(total)}</span>
+                </div>
+              </div>
+              <div class="card-action-bar">
+                <button type="button" class="btn-detail-sale button button-small button-secondary" data-id="${escapeHtml(id)}">
+                  <i class="fa-solid fa-eye"></i> Detail Transaksi
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      cardList.querySelectorAll(".card-accordion-header").forEach(hdr => {
+        hdr.addEventListener("click", () => {
+          const card = hdr.closest(".responsive-data-card");
+          if (card) card.classList.toggle("is-expanded");
+        });
       });
-    });
+    }
+
+    const sContainer = document.querySelector('[data-view-section="sales"]');
+    if (sContainer) {
+      sContainer.querySelectorAll(".btn-detail-sale").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const sId = btn.dataset.id;
+          const found = allSales.find(s => (s.id || s.transactionNumber) === sId);
+          if (found) openSaleDetailModal(found);
+        });
+      });
+    }
   }
 
   const pageInfoEl = $("sales-page-info");

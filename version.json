@@ -1,12 +1,13 @@
 {
-  "version": "2.2.49",
-  "build": "20261009.07",
+  "version": "2.2.50",
+  "build": "20261009.08",
   "releaseDate": "09 Oktober 2026",
-  "title": "Perbaikan Koreksi Faktur & Export setActiveStock",
-  "description": "Memperbaiki error activeStockIndex is not defined saat koreksi faktur terverifikasi dengan mengekspor setActiveStock resmi.",
+  "title": "Deep Midnight Sidebar & Adaptive Mobile Cards",
+  "description": "Pembaruan desain sidebar bertema Deep Midnight Medical dengan floating glow pill, serta transformasi tabel utama menjadi kartu vertikal adaptif (accordion cards) di layar ponsel.",
   "changelog": [
-    "Export setActiveStock store helper",
-    "Fix invoice correction stock reversal",
-    "Update service worker cache v102"
+    "Upgrade deep midnight sidebar style",
+    "Add collapsible vertical mobile cards",
+    "Responsive switch for data tables",
+    "Update service worker cache v103"
   ]
 }

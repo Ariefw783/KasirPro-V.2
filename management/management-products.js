@@ -429,9 +429,14 @@ function renderTable() {
       }, 0);
     } else {
       tbody.innerHTML = `<tr><td colspan="11" class="empty-table-state" style="text-align:center;padding:24px;">Tidak ada data produk yang sesuai kriteria pencarian.</td></tr>`;
+      const cardList = $("products-card-list");
+      if (cardList) cardList.innerHTML = `<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;color:#64748b;"><i class="fa-solid fa-boxes-stacked" style="font-size:28px;margin-bottom:8px;color:#94a3b8;display:block;"></i>Tidak ada data produk yang sesuai kriteria pencarian.</div>`;
     }
   } else {
     const invoiceLookup = getInvoiceLookupMap();
+    const cardList = $("products-card-list");
+
+    // 1. Render Desktop Table Rows
     tbody.innerHTML = pageItems.map((p, idx) => {
       const code = p["Kode Produk"] || p["Kode Produk Internal"] || "—";
       const name = p["Nama Produk"] || "—";
@@ -509,22 +514,136 @@ function renderTable() {
       `;
     }).join("");
 
-    // Bind event Edit Harga Jual per row
-    tbody.querySelectorAll(".btn-edit-price").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const code = btn.dataset.code;
-        const prod = currentProducts.find(p => norm(p["Kode Produk"]) === norm(code));
-        if (prod) openEditPriceModal(prod);
-      });
-    });
+    // 2. Render Mobile Collapsible Cards (Default Diciutkan)
+    if (cardList) {
+      cardList.innerHTML = pageItems.map((p, idx) => {
+        const code = p["Kode Produk"] || p["Kode Produk Internal"] || "—";
+        const name = p["Nama Produk"] || "—";
+        const rawCat = p["Kategori"] || "";
+        const invData = resolveProductInvoiceData(p, invoiceLookup);
+        const rawSup = p["Supplier"] || invData.supplierName || "";
+        const cat = categoryLookup.get(norm(rawCat)) || rawCat || "—";
+        const sup = supplierLookup.get(norm(rawSup)) || rawSup || "—";
+        const buyPrice = invData.buyPrice;
+        const sellPrice = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
+        const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
+        const unit = p["Satuan Dasar"] || p["Satuan"] || "Pcs";
+        const buyUnit = p["Satuan Pembelian"] || invData.purchaseUnit || unit;
+        const conv = num(p["Konversi"]) || invData.conversionRatio || 1;
+        const unitLabel = norm(buyUnit) !== norm(unit) && conv > 1
+          ? `1 ${escapeHtml(buyUnit)} = ${formatNumber(conv)} ${escapeHtml(unit)}`
+          : `${escapeHtml(unit)}`;
+        const minStock = num(p["Stok Minimum"]);
+        const rawStatus = p["Status"] || p["Status Produk"];
+        const statusBadge = getStatusBadge(rawStatus, sellPrice, stock);
 
-    // Bind event hapus produk bersyarat
-    tbody.querySelectorAll(".btn-delete-product").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const code = btn.dataset.code;
-        handleDeleteProduct(code);
+        let cardTheme = "card-primary";
+        if (stock <= 0) cardTheme = "";
+        else if (sellPrice <= 0) cardTheme = "card-warning";
+        else cardTheme = "card-success";
+
+        return `
+          <div class="responsive-data-card ${cardTheme}" data-code="${escapeHtml(code)}">
+            <div class="card-accordion-header">
+              <div class="card-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#0284c7,#4f46e5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">
+                <i class="fa-solid fa-capsules"></i>
+              </div>
+              <div class="card-header-main">
+                <div class="card-title-row">
+                  <div class="card-title">${escapeHtml(name)}</div>
+                  ${statusBadge}
+                </div>
+                <div class="card-subtitle-row">
+                  <span>Kode: <strong>${escapeHtml(code)}</strong></span>
+                  <span>•</span>
+                  <span style="color:#0284c7;font-weight:700;">Beli: ${rupiah(buyPrice)}</span>
+                  <span>•</span>
+                  <span style="color:#059669;font-weight:700;">Jual: ${sellPrice > 0 ? rupiah(sellPrice) : '<span style="color:#dc2626;">Rp0 (Wajib)</span>'}</span>
+                  <span>•</span>
+                  <span>Stok: <strong>${formatNumber(stock)}</strong> ${escapeHtml(unit)}</span>
+                </div>
+              </div>
+              <div class="card-toggle-icon">
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
+            </div>
+            <div class="card-accordion-body">
+              <div class="card-detail-grid">
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Barcode</span>
+                  <span class="card-detail-value">${escapeHtml(p["Barcode"] || "—")}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Kategori</span>
+                  <span class="card-detail-value">${escapeHtml(cat)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Supplier</span>
+                  <span class="card-detail-value">${escapeHtml(sup)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Kemasan & Konversi</span>
+                  <span class="card-detail-value">${unitLabel}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Stok Minimum</span>
+                  <span class="card-detail-value">${formatNumber(minStock)} ${escapeHtml(unit)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Harga Satuan Lain</span>
+                  <span class="card-detail-value">
+                    ${num(p["Harga Jual Satuan Sedang"]) > 0 ? `Sedang: ${rupiah(num(p["Harga Jual Satuan Sedang"]))}` : 'Sedang: —'} • 
+                    ${num(p["Harga Jual Satuan Besar"]) > 0 ? `Besar: ${rupiah(num(p["Harga Jual Satuan Besar"]))}` : 'Besar: —'}
+                  </span>
+                </div>
+              </div>
+              <div class="card-action-bar">
+                ${stock > 0 ? `
+                  <button type="button" class="btn-edit-price button button-small button-primary" data-code="${escapeHtml(code)}">
+                    <i class="fa-solid fa-pen"></i> Atur Harga Jual
+                  </button>
+                ` : `
+                  <button type="button" class="button button-small" disabled style="opacity:0.5;background:#f1f5f9;color:#94a3b8;border:1px solid #cbd5e1;">
+                    <i class="fa-solid fa-lock"></i> Katalog Acuan
+                  </button>
+                `}
+                <button type="button" class="btn-delete-product button button-small button-danger" data-code="${escapeHtml(code)}" title="Hapus Produk">
+                  <i class="fa-solid fa-trash"></i> Hapus
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      cardList.querySelectorAll(".card-accordion-header").forEach(hdr => {
+        hdr.addEventListener("click", () => {
+          const card = hdr.closest(".responsive-data-card");
+          if (card) card.classList.toggle("is-expanded");
+        });
       });
-    });
+    }
+
+    // Bind event Edit & Hapus ke seluruh elemen dalam section produk (baik tabel maupun kartu)
+    const pContainer = document.querySelector('[data-view-section="products"]');
+    if (pContainer) {
+      pContainer.querySelectorAll(".btn-edit-price").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const code = btn.dataset.code;
+          const prod = currentProducts.find(p => norm(p["Kode Produk"]) === norm(code));
+          if (prod) openEditPriceModal(prod);
+        });
+      });
+
+      pContainer.querySelectorAll(".btn-delete-product").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const code = btn.dataset.code;
+          handleDeleteProduct(code);
+        });
+      });
+    }
   }
 
   // Update info pagination

@@ -105,60 +105,138 @@ function applyFilters() {
 
 function renderTable() {
   const tbody = $("categories-table-body");
-  if (!tbody) return;
+  const cardList = $("categories-card-list");
+  if (!tbody && !cardList) return;
 
   const total = filteredCategories.length;
   const start = (currentPage - 1) * PAGE_SIZE;
   const pageItems = filteredCategories.slice(start, start + PAGE_SIZE);
 
   if (!pageItems.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="empty-table-state" style="text-align:center;padding:24px;">Belum ada data kategori.</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="empty-table-state" style="text-align:center;padding:24px;">Belum ada data kategori.</td></tr>`;
+    if (cardList) cardList.innerHTML = `<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;color:#64748b;"><i class="fa-solid fa-tags" style="font-size:28px;margin-bottom:8px;color:#94a3b8;display:block;"></i>Belum ada data kategori yang sesuai pencarian.</div>`;
   } else {
-    tbody.innerHTML = pageItems.map((c, idx) => {
-      const code = c["Kode Kategori"] || c.code || "—";
-      const name = c["Nama Kategori"] || c.name || "—";
-      const desc = c["Deskripsi"] || c.description || "—";
-      const status = c.status || c.Status || "Aktif";
-      const isAktif = norm(status) !== "nonaktif";
+    // 1. Render Desktop Table Rows
+    if (tbody) {
+      tbody.innerHTML = pageItems.map((c, idx) => {
+        const code = c["Kode Kategori"] || c.code || "—";
+        const name = c["Nama Kategori"] || c.name || "—";
+        const desc = c["Deskripsi"] || c.description || "—";
+        const status = c.status || c.Status || "Aktif";
+        const isAktif = norm(status) !== "nonaktif";
 
-      return `
-        <tr>
-          <td><strong>${escapeHtml(code)}</strong></td>
-          <td><strong>${escapeHtml(name)}</strong></td>
-          <td>${escapeHtml(desc)}</td>
-          <td>
-            <span class="badge ${isAktif ? 'badge-success' : 'badge-secondary'}" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;">
-              ${isAktif ? 'Aktif' : 'Nonaktif'}
-            </span>
-          </td>
-          <td>
-            <div style="display:flex;gap:6px;">
-              <button type="button" class="btn-edit-category button button-small button-secondary" data-code="${escapeHtml(code)}" title="Edit Kategori">
-                <i class="fa-solid fa-pen"></i> Edit
-              </button>
-              <button type="button" class="btn-delete-category button button-small button-danger" data-code="${escapeHtml(code)}" title="Hapus / Nonaktifkan">
-                <i class="fa-solid fa-trash"></i>
-              </button>
+        return `
+          <tr>
+            <td><strong>${escapeHtml(code)}</strong></td>
+            <td><strong>${escapeHtml(name)}</strong></td>
+            <td>${escapeHtml(desc)}</td>
+            <td>
+              <span class="badge ${isAktif ? 'badge-success' : 'badge-secondary'}" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;">
+                ${isAktif ? 'Aktif' : 'Nonaktif'}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex;gap:6px;">
+                <button type="button" class="btn-edit-category button button-small button-secondary" data-code="${escapeHtml(code)}" title="Edit Kategori">
+                  <i class="fa-solid fa-pen"></i> Edit
+                </button>
+                <button type="button" class="btn-delete-category button button-small button-danger" data-code="${escapeHtml(code)}" title="Hapus / Nonaktifkan">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // 2. Render Mobile Collapsible Cards (Default Diciutkan)
+    if (cardList) {
+      cardList.innerHTML = pageItems.map((c, idx) => {
+        const code = c["Kode Kategori"] || c.code || "—";
+        const name = c["Nama Kategori"] || c.name || "—";
+        const desc = c["Deskripsi"] || c.description || "";
+        const status = c.status || c.Status || "Aktif";
+        const isAktif = norm(status) !== "nonaktif";
+
+        return `
+          <div class="responsive-data-card card-purple" data-code="${escapeHtml(code)}">
+            <div class="card-accordion-header">
+              <div class="card-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">
+                <i class="fa-solid fa-pills"></i>
+              </div>
+              <div class="card-header-main">
+                <div class="card-title-row">
+                  <div class="card-title">${escapeHtml(name)}</div>
+                  <span class="badge ${isAktif ? 'badge-success' : 'badge-secondary'}" style="font-size:10px;padding:2px 7px;border-radius:5px;font-weight:700;">
+                    ${isAktif ? 'Aktif' : 'Nonaktif'}
+                  </span>
+                </div>
+                <div class="card-subtitle-row">
+                  <span>Kode: <strong>${escapeHtml(code)}</strong></span>
+                  ${desc ? `<span>• ${escapeHtml(desc)}</span>` : ''}
+                </div>
+              </div>
+              <div class="card-toggle-icon">
+                <i class="fa-solid fa-chevron-down"></i>
+              </div>
             </div>
-          </td>
-        </tr>
-      `;
-    }).join("");
+            <div class="card-accordion-body">
+              <div class="card-detail-grid">
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Kode Kategori</span>
+                  <span class="card-detail-value"><strong>${escapeHtml(code)}</strong></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Nama Kategori</span>
+                  <span class="card-detail-value">${escapeHtml(name)}</span>
+                </div>
+                <div class="card-detail-item" style="grid-column: 1 / -1;">
+                  <span class="card-detail-label">Deskripsi & Catatan</span>
+                  <span class="card-detail-value">${escapeHtml(desc || "Tidak ada deskripsi tambahan.")}</span>
+                </div>
+              </div>
+              <div class="card-action-bar">
+                <button type="button" class="btn-edit-category button button-small button-secondary" data-code="${escapeHtml(code)}">
+                  <i class="fa-solid fa-pen"></i> Edit Kategori
+                </button>
+                <button type="button" class="btn-delete-category button button-small button-danger" data-code="${escapeHtml(code)}">
+                  <i class="fa-solid fa-trash"></i> Hapus
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
 
-    tbody.querySelectorAll(".btn-edit-category").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const catCode = btn.dataset.code;
-        const c = currentCategories.find(x => norm(x["Kode Kategori"] || x.code) === norm(catCode));
-        if (c) openCategoryModal(c);
+      cardList.querySelectorAll(".card-accordion-header").forEach(hdr => {
+        hdr.addEventListener("click", () => {
+          const card = hdr.closest(".responsive-data-card");
+          if (card) card.classList.toggle("is-expanded");
+        });
       });
-    });
+    }
 
-    tbody.querySelectorAll(".btn-delete-category").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const catCode = btn.dataset.code;
-        handleDeleteCategory(catCode);
+    // Pasang event action buttons (Edit & Hapus) baik pada table maupun cards
+    const container = document.querySelector('[data-view-section="categories"]');
+    if (container) {
+      container.querySelectorAll(".btn-edit-category").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const catCode = btn.dataset.code;
+          const c = currentCategories.find(x => norm(x["Kode Kategori"] || x.code) === norm(catCode));
+          if (c) openCategoryModal(c);
+        });
       });
-    });
+
+      container.querySelectorAll(".btn-delete-category").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const catCode = btn.dataset.code;
+          handleDeleteCategory(catCode);
+        });
+      });
+    }
   }
 
   const visibleCountEl = $("categories-visible-count");

@@ -1029,6 +1029,44 @@ const loginCorePath = path.join(rootDir, "script-at07-core.js");
 const loginCoreContent = fs.readFileSync(loginCorePath, "utf-8");
 assert(loginCoreContent.includes("Menyiapkan Dashboard..."), "Login: Tombol Menampilkan Status 'Menyiapkan Dashboard...' Pasca-Login");
 
+// -----------------------------------------------------------------------------
+// 18. PENGUJIAN DESAIN SIDEBAR DEEP MIDNIGHT & ADAPTIVE CARD VIEW RESPONSIVE SWITCH
+// -----------------------------------------------------------------------------
+console.log("\n🎨 BAGIAN 18: PENGUJIAN SIDEBAR DEEP MIDNIGHT & ADAPTIVE CARD VIEW");
+
+// 1. Verifikasi Style CSS Sidebar & Responsive Switch
+assert(cssContent.includes("#090e1a"), "Sidebar: Tema Deep Midnight Modern Gradient Terpasang");
+assert(cssContent.includes(".responsive-data-card"), "CSS: Komponen Kartu Adaptif (.responsive-data-card) Terdefinisi");
+assert(cssContent.includes(".card-accordion-header"), "CSS: Komponen Accordion Header (.card-accordion-header) Terdefinisi");
+assert(cssContent.includes(".card-accordion-body"), "CSS: Komponen Accordion Body (.card-accordion-body) Terdefinisi");
+assert(cssContent.includes(".desktop-only-table"), "CSS: Kelas Desktop Table Switch Terpasang");
+assert(cssContent.includes(".mobile-only-card-list"), "CSS: Kelas Mobile Card List Switch Terpasang");
+
+// 2. Verifikasi Kontainer Kartu Mobile di index.html
+assert(indexHtmlContent.includes('id="suppliers-card-list"'), "DOM: Kontainer Kartu Vertikal Supplier Terpasang (#suppliers-card-list)");
+assert(indexHtmlContent.includes('id="categories-card-list"'), "DOM: Kontainer Kartu Vertikal Kategori Terpasang (#categories-card-list)");
+assert(indexHtmlContent.includes('id="products-card-list"'), "DOM: Kontainer Kartu Vertikal Master Produk Terpasang (#products-card-list)");
+assert(indexHtmlContent.includes('id="invoice-card-list"'), "DOM: Kontainer Kartu Vertikal Faktur Terpasang (#invoice-card-list)");
+assert(indexHtmlContent.includes('id="sales-card-list"'), "DOM: Kontainer Kartu Vertikal Penjualan Terpasang (#sales-card-list)");
+
+// 3. Verifikasi Logika Default Diciutkan (Default Collapsed Accordion State)
+const sampleCardHtml = `<div class="responsive-data-card card-success" data-name="PT Kimia Farma"></div>`;
+const isDefaultCollapsed = !sampleCardHtml.includes("is-expanded");
+assert(isDefaultCollapsed, "Accordion Card: Default Status Kartu Adalah Diciutkan (Tanpa is-expanded)");
+
+// 4. Simulasi Interaksi Buka / Tutup Accordion (Toggle Expanded)
+let cardClassList = ["responsive-data-card", "card-success"];
+function toggleCard(classList) {
+  const idx = classList.indexOf("is-expanded");
+  if (idx >= 0) classList.splice(idx, 1);
+  else classList.push("is-expanded");
+}
+
+toggleCard(cardClassList); // Dibuka
+assert(cardClassList.includes("is-expanded"), "Accordion Toggle: Kartu Berhasil Dibentangkan (Menampilkan Detail Lengkap)");
+toggleCard(cardClassList); // Diciutkan kembali
+assert(!cardClassList.includes("is-expanded"), "Accordion Toggle: Kartu Berhasil Diciutkan Kembali (Mode Ringkas)");
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

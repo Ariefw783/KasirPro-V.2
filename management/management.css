@@ -899,40 +899,41 @@
    Modern Dark-Navy or Crisp White Executive Sidebar with Floating Pill Active
    ============================================================================== */
 
-/* 1. STRUKTUR SIDEBAR DENGAN BORDER HALUS & SUBTLE SHADOW */
+/* 1. STRUKTUR SIDEBAR MODERN (DEEP MIDNIGHT MEDICAL & SUBTLE GLOW) */
 .sidebar {
-    background: #ffffff !important;
-    border-right: 1px solid rgba(226, 232, 240, 0.8) !important;
-    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.025) !important;
+    background: linear-gradient(180deg, #090e1a 0%, #0f172a 100%) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 6px 0 28px rgba(0, 0, 0, 0.35) !important;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 /* 2. HEADER BRAND LOGO (APOTEK DOA IBU) */
 .sidebar-brand {
     padding: 14px 18px !important;
-    border-bottom: 1px solid rgba(241, 245, 249, 0.95) !important;
-    background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgba(15, 23, 42, 0.75) !important;
+    backdrop-filter: blur(8px) !important;
 }
 
 .brand-logo {
     width: 40px !important;
     height: 40px !important;
     border-radius: 12px !important;
-    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
-    border: 1px solid #bfdbfe !important;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12) !important;
+    background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4) !important;
     transition: transform 0.2s ease !important;
 }
 
 .sidebar-brand:hover .brand-logo {
-    transform: scale(1.05) rotate(-2deg) !important;
+    transform: scale(1.06) rotate(-2deg) !important;
 }
 
 .brand-text strong {
     font-size: 0.98rem !important;
     font-weight: 850 !important;
     letter-spacing: -0.01em !important;
-    background: linear-gradient(135deg, #0f2a43 0%, #2563eb 100%) !important;
+    background: linear-gradient(135deg, #ffffff 0%, #7dd3fc 100%) !important;
     -webkit-background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
 }
@@ -940,29 +941,29 @@
 .brand-text span {
     font-size: 0.68rem !important;
     font-weight: 650 !important;
-    color: #64748b !important;
-    letter-spacing: 0.01em !important;
+    color: #94a3b8 !important;
+    letter-spacing: 0.02em !important;
 }
 
 /* 3. SECTION LABEL MENU */
 .nav-label {
-    margin: 12px 12px 8px !important;
-    font-size: 0.62rem !important;
+    margin: 16px 12px 8px !important;
+    font-size: 0.63rem !important;
     font-weight: 850 !important;
-    letter-spacing: 0.09em !important;
-    color: #94a3b8 !important;
+    letter-spacing: 0.1em !important;
+    color: #818cf8 !important;
     text-transform: uppercase !important;
 }
 
-/* 4. ITEM NAVIGASI MENU MODERN (FLOATING PILL & SOFT HOVER) */
+/* 4. ITEM NAVIGASI MENU MODERN (FLOATING PILL & SOFT GLOW) */
 .nav-item {
     min-height: 42px !important;
-    margin: 3px 6px !important;
+    margin: 4px 8px !important;
     padding: 9px 12px !important;
     border-radius: 12px !important;
-    font-size: 0.76rem !important;
+    font-size: 0.78rem !important;
     font-weight: 650 !important;
-    color: #475569 !important;
+    color: #cbd5e1 !important;
     display: flex !important;
     align-items: center !important;
     gap: 12px !important;
@@ -972,30 +973,30 @@
 
 .nav-item > i:first-child {
     width: 20px !important;
-    font-size: 0.92rem !important;
-    color: #64748b !important;
+    font-size: 0.95rem !important;
+    color: #94a3b8 !important;
     text-align: center !important;
     transition: all 0.2s ease !important;
 }
 
 /* State Hover Menu */
 .nav-item:hover {
-    color: #1d4ed8 !important;
-    background: #f1f5f9 !important;
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.08) !important;
     transform: translateX(3px) !important;
 }
 
 .nav-item:hover > i:first-child {
-    color: #2563eb !important;
-    transform: scale(1.12) !important;
+    color: #38bdf8 !important;
+    transform: scale(1.15) !important;
 }
 
-/* State Aktif Menu (Pill Modern Gradient dengan Glow Halus) */
+/* State Aktif Menu (Pill Modern Gradient Medical + High Contrast Glow) */
 .nav-item.active {
     color: #ffffff !important;
-    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) !important;
+    background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%) !important;
     font-weight: 800 !important;
-    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.3) !important;
+    box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
     transform: translateX(2px) !important;
 }
 
@@ -1005,47 +1006,46 @@
 
 /* Aksen Khusus Link POS Cepat di Sidebar */
 #sidebar-pos-link {
-    background: #f8fafc !important;
-    border: 1px dashed #cbd5e1 !important;
-    color: #0f2a43 !important;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.12) 100%) !important;
+    border: 1px solid rgba(16, 185, 129, 0.35) !important;
+    color: #34d399 !important;
 }
 
 #sidebar-pos-link:hover {
-    background: #eff6ff !important;
-    border-color: #2563eb !important;
-    color: #1d4ed8 !important;
-    border-style: solid !important;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(6, 182, 212, 0.25) 100%) !important;
+    border-color: #10b981 !important;
+    color: #ffffff !important;
 }
 
 #sidebar-pos-link > i:first-child {
-    color: #2563eb !important;
+    color: #34d399 !important;
 }
 
 /* 5. FOOTER SIDEBAR & TOMBOL KELUAR */
 .sidebar-footer {
     padding: 12px 14px !important;
-    border-top: 1px solid rgba(241, 245, 249, 0.95) !important;
-    background: #fbfcfe !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgba(11, 19, 41, 0.95) !important;
 }
 
 .logout-button {
-    min-height: 42px !important;
+    min-height: 40px !important;
     border-radius: 12px !important;
-    background: #ffffff !important;
-    border: 1px solid #fee2e2 !important;
-    color: #dc2626 !important;
+    background: rgba(239, 68, 68, 0.12) !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    color: #f87171 !important;
     font-size: 0.76rem !important;
     font-weight: 750 !important;
-    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.05) !important;
+    box-shadow: none !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .logout-button:hover {
-    background: #fef2f2 !important;
-    border-color: #fca5a5 !important;
-    color: #b91c1c !important;
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    border-color: #dc2626 !important;
     transform: translateY(-1.5px) !important;
-    box-shadow: 0 6px 14px rgba(220, 38, 38, 0.12) !important;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
 }
 
 .logout-button i {
@@ -1055,6 +1055,200 @@
 
 .logout-button:hover i {
     transform: translateX(2px) !important;
+}
+
+/* ==============================================================================
+   RESPONSIVE DATA CARDS (MOBILE & TABLET ADAPTIVE ACCORDION CARDS)
+   ============================================================================== */
+
+@media (min-width: 901px) {
+    .desktop-only-table {
+        display: block !important;
+    }
+    .mobile-only-card-list {
+        display: none !important;
+    }
+}
+
+@media (max-width: 900px) {
+    .desktop-only-table {
+        display: none !important;
+    }
+    .mobile-only-card-list {
+        display: flex !important;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 8px;
+    }
+}
+
+.responsive-data-card {
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.responsive-data-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+.responsive-data-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #0284c7 0%, #4f46e5 50%, #10b981 100%);
+    opacity: 0.9;
+}
+
+.responsive-data-card.card-success::before {
+    background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+}
+
+.responsive-data-card.card-warning::before {
+    background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%);
+}
+
+.responsive-data-card.card-danger::before {
+    background: linear-gradient(90deg, #dc2626 0%, #f43f5e 100%);
+}
+
+.responsive-data-card.card-purple::before {
+    background: linear-gradient(90deg, #7c3aed 0%, #6366f1 100%);
+}
+
+.card-accordion-header {
+    padding: 13px 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    user-select: none;
+    background: #ffffff;
+    transition: background-color 0.15s ease;
+}
+
+.card-accordion-header:hover {
+    background: #f8fafc;
+}
+
+.card-header-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.card-title {
+    font-size: 0.92rem;
+    font-weight: 750;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-subtitle-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    font-size: 0.76rem;
+    color: #64748b;
+}
+
+.card-toggle-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    transition: transform 0.25s ease, background-color 0.2s ease, color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.responsive-data-card.is-expanded .card-toggle-icon {
+    transform: rotate(180deg);
+    background: #e0f2fe;
+    color: #0284c7;
+}
+
+.card-accordion-body {
+    display: none;
+    padding: 14px 15px 16px;
+    border-top: 1px dashed #e2e8f0;
+    background: #fbfcfe;
+    animation: fadeInSlide 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.responsive-data-card.is-expanded .card-accordion-body {
+    display: block;
+}
+
+@keyframes fadeInSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px 14px;
+    margin-bottom: 12px;
+}
+
+.card-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.card-detail-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+}
+
+.card-detail-value {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1e293b;
+    word-break: break-word;
+}
+
+.card-action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid #edf2f7;
 }
 
 /* ==============================================================================

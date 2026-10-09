@@ -1461,7 +1461,7 @@
         <!-- TABEL PRODUK -->
         <section class="import-panel" style="background:#fff;border-radius:12px;padding:16px 20px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
 
-            <div class="table-wrapper">
+            <div class="table-wrapper desktop-only-table">
 
                 <table
                     id="products-table"
@@ -1505,6 +1505,8 @@
                 </table>
 
             </div>
+
+            <div id="products-card-list" class="mobile-only-card-list responsive-card-list"></div>
 
 
             <!-- FOOTER TABEL -->
@@ -1682,7 +1684,7 @@
                             </select>
                         </div>
 
-                        <div class="table-wrapper">
+                        <div class="table-wrapper desktop-only-table">
                             <table class="data-table">
                                 <thead>
                                     <tr>
@@ -1697,6 +1699,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="categories-card-list" class="mobile-only-card-list responsive-card-list"></div>
 
                         <div class="panel-actions split">
                             <div class="preview-meta">
@@ -1795,7 +1798,7 @@
                             </select>
                         </div>
 
-                        <div class="table-wrapper">
+                        <div class="table-wrapper desktop-only-table">
                             <table class="data-table">
                                 <thead>
                                     <tr>
@@ -1814,6 +1817,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="suppliers-card-list" class="mobile-only-card-list responsive-card-list"></div>
 
                         <div class="panel-actions split">
                             <div class="preview-meta">
@@ -1923,7 +1927,7 @@
             <section class="view-section" data-view-section="purchase-invoices" hidden>
                 <div class="ops-page"><header class="module-header"><div><h2>Faktur Pembelian</h2><p>Kelola faktur pembelian distributor farmasi via Input Grid Manual dengan rekonsiliasi matematis.</p></div><div class="module-header-actions"><button id="btn-open-manual-invoice" class="button button-primary" type="button"><i class="fa-solid fa-plus"></i> Input Faktur Manual</button></div></header>
                 <div class="workbook-summary"><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-file-invoice"></i></span><div><span>Total Faktur</span><strong id="invoice-count">0</strong></div></article><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-pen"></i></span><div><span>Review / Pending</span><strong id="invoice-draft-count">0</strong></div></article><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-circle-check"></i></span><div><span>Terkonfirmasi</span><strong id="invoice-confirmed-count">0</strong></div></article><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-money-bill"></i></span><div><span>Total Nilai</span><strong id="invoice-value-total">Rp0</strong></div></article></div>
-                <section class="ops-card"><div class="preview-toolbar"><div class="preview-search"><i class="fa-solid fa-magnifying-glass"></i><input id="invoice-search" type="search" placeholder="Cari nomor faktur atau supplier..."></div><select id="invoice-status-filter"><option value="">Semua Status</option><option value="perlu review">Perlu Review</option><option value="siap konfirmasi">Siap Konfirmasi</option><option value="terkonfirmasi">Terkonfirmasi</option></select></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Nomor Faktur</th><th>Tanggal</th><th>Supplier</th><th>Item</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="invoice-table-body"></tbody></table></div></section></div>
+                <section class="ops-card"><div class="preview-toolbar"><div class="preview-search"><i class="fa-solid fa-magnifying-glass"></i><input id="invoice-search" type="search" placeholder="Cari nomor faktur atau supplier..."></div><select id="invoice-status-filter"><option value="">Semua Status</option><option value="perlu review">Perlu Review</option><option value="siap konfirmasi">Siap Konfirmasi</option><option value="terkonfirmasi">Terkonfirmasi</option></select></div><div class="table-wrapper desktop-only-table"><table class="data-table"><thead><tr><th>Nomor Faktur</th><th>Tanggal</th><th>Supplier</th><th>Item</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="invoice-table-body"></tbody></table></div><div id="invoice-card-list" class="mobile-only-card-list responsive-card-list"></div></section></div>
 
                             </section>
             <section class="view-section" data-view-section="sales" hidden>
@@ -1959,7 +1963,8 @@
 
                     <section class="ops-card">
                         <div class="report-card-head"><div><h3>Daftar Transaksi</h3><p>Klik Detail untuk melihat item, pembayaran, serta informasi VOID.</p></div><span id="sales-result-count" class="report-count-chip">0 data</span></div>
-                        <div class="table-wrapper"><table class="data-table sales-table"><thead><tr><th>Waktu</th><th>No. Transaksi</th><th>Kasir</th><th>Pembayaran</th><th>Produk</th><th>Subtotal</th><th>Diskon</th><th>Pajak</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="sales-table-body"></tbody></table></div>
+                        <div class="table-wrapper desktop-only-table"><table class="data-table sales-table"><thead><tr><th>Waktu</th><th>No. Transaksi</th><th>Kasir</th><th>Pembayaran</th><th>Produk</th><th>Subtotal</th><th>Diskon</th><th>Pajak</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="sales-table-body"></tbody></table></div>
+                        <div id="sales-card-list" class="mobile-only-card-list responsive-card-list"></div>
                         <div class="sales-pagination"><span id="sales-page-info">Halaman 1</span><div><button id="sales-prev-page" type="button" class="button button-secondary">Sebelumnya</button><button id="sales-next-page" type="button" class="button button-secondary">Berikutnya</button></div></div>
                     </section>
                 </div>

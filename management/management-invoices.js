@@ -196,7 +196,8 @@ function updateKpis() {
 
 function renderInvoicesTable() {
   const tbody = $("invoice-table-body");
-  if (!tbody) return;
+  const cardList = $("invoice-card-list");
+  if (!tbody && !cardList) return;
 
   const q = norm($("invoice-search")?.value);
   const statusFilter = norm($("invoice-status-filter")?.value);
@@ -212,56 +213,147 @@ function renderInvoicesTable() {
   });
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-table-state" style="text-align:center;padding:24px;">Tidak ada faktur pembelian yang ditemukan.</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="empty-table-state" style="text-align:center;padding:24px;">Tidak ada faktur pembelian yang ditemukan.</td></tr>`;
+    if (cardList) cardList.innerHTML = `<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;color:#64748b;"><i class="fa-solid fa-file-invoice" style="font-size:28px;margin-bottom:8px;color:#94a3b8;display:block;"></i>Tidak ada faktur pembelian yang ditemukan.</div>`;
     return;
   }
 
-  tbody.innerHTML = filtered.map(inv => {
-    const id = inv.id || inv.invoiceNumber;
-    const no = inv.invoiceNumber || inv.id || "—";
-    const date = inv.date || inv.invoiceDate || "—";
-    const sup = inv.supplierName || inv.supplier || "—";
-    const itemCount = (inv.items || []).length;
-    const total = num(inv.total);
-    const status = inv.status || "Perlu Review";
+  // 1. Render Desktop Table Rows
+  if (tbody) {
+    tbody.innerHTML = filtered.map(inv => {
+      const id = inv.id || inv.invoiceNumber;
+      const no = inv.invoiceNumber || inv.id || "—";
+      const date = inv.date || inv.invoiceDate || "—";
+      const sup = inv.supplierName || inv.supplier || "—";
+      const itemCount = (inv.items || []).length;
+      const total = num(inv.total);
+      const status = inv.status || "Perlu Review";
 
-    return `
-      <tr>
-        <td><strong>${escapeHtml(no)}</strong></td>
-        <td>${escapeHtml(date)}</td>
-        <td>${escapeHtml(sup)}</td>
-        <td>${itemCount} item</td>
-        <td><strong>${rupiah(total)}</strong></td>
-        <td>${getInvoiceStatusBadge(status)}</td>
-        <td>
-          <div style="display:flex;gap:6px;">
-            <button type="button" class="btn-detail-invoice button button-small button-secondary" data-id="${escapeHtml(id)}">
-              <i class="fa-solid fa-eye"></i> Detail
-            </button>
-            <button type="button" class="btn-pdf-invoice button button-small button-secondary" data-id="${escapeHtml(id)}" title="Cetak PDF">
-              <i class="fa-solid fa-file-pdf"></i>
-            </button>
+      return `
+        <tr>
+          <td><strong>${escapeHtml(no)}</strong></td>
+          <td>${escapeHtml(date)}</td>
+          <td>${escapeHtml(sup)}</td>
+          <td>${itemCount} item</td>
+          <td><strong>${rupiah(total)}</strong></td>
+          <td>${getInvoiceStatusBadge(status)}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <button type="button" class="btn-detail-invoice button button-small button-secondary" data-id="${escapeHtml(id)}">
+                <i class="fa-solid fa-eye"></i> Detail
+              </button>
+              <button type="button" class="btn-pdf-invoice button button-small button-secondary" data-id="${escapeHtml(id)}" title="Cetak PDF">
+                <i class="fa-solid fa-file-pdf"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  // 2. Render Mobile Collapsible Cards (Default Diciutkan)
+  if (cardList) {
+    cardList.innerHTML = filtered.map(inv => {
+      const id = inv.id || inv.invoiceNumber;
+      const no = inv.invoiceNumber || inv.id || "—";
+      const date = inv.date || inv.invoiceDate || "—";
+      const sup = inv.supplierName || inv.supplier || "—";
+      const itemCount = (inv.items || []).length;
+      const total = num(inv.total);
+      const status = inv.status || "Perlu Review";
+
+      const isConf = norm(status) === "terkonfirmasi" || norm(status) === "confirmed";
+      const cardTheme = isConf ? "card-success" : "card-primary";
+
+      return `
+        <div class="responsive-data-card ${cardTheme}" data-id="${escapeHtml(id)}">
+          <div class="card-accordion-header">
+            <div class="card-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#0284c7,#4f46e5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">
+              <i class="fa-solid fa-file-invoice"></i>
+            </div>
+            <div class="card-header-main">
+              <div class="card-title-row">
+                <div class="card-title">#${escapeHtml(no)}</div>
+                ${getInvoiceStatusBadge(status)}
+              </div>
+              <div class="card-subtitle-row">
+                <span><i class="fa-solid fa-truck" style="font-size:11px;color:#94a3b8;"></i> <strong>${escapeHtml(sup)}</strong></span>
+                <span>•</span>
+                <span>${escapeHtml(date)}</span>
+                <span>•</span>
+                <span style="color:#0284c7;font-weight:700;">${rupiah(total)}</span>
+              </div>
+            </div>
+            <div class="card-toggle-icon">
+              <i class="fa-solid fa-chevron-down"></i>
+            </div>
           </div>
-        </td>
-      </tr>
-    `;
-  }).join("");
+          <div class="card-accordion-body">
+            <div class="card-detail-grid">
+              <div class="card-detail-item">
+                <span class="card-detail-label">Nomor Faktur</span>
+                <span class="card-detail-value"><strong>#${escapeHtml(no)}</strong></span>
+              </div>
+              <div class="card-detail-item">
+                <span class="card-detail-label">Supplier</span>
+                <span class="card-detail-value">${escapeHtml(sup)}</span>
+              </div>
+              <div class="card-detail-item">
+                <span class="card-detail-label">Tanggal Faktur</span>
+                <span class="card-detail-value">${escapeHtml(date)}</span>
+              </div>
+              <div class="card-detail-item">
+                <span class="card-detail-label">Jumlah Item</span>
+                <span class="card-detail-value">${itemCount} Produk</span>
+              </div>
+              <div class="card-detail-item" style="grid-column: 1 / -1;">
+                <span class="card-detail-label">Total Tagihan Faktur</span>
+                <span class="card-detail-value" style="color:#0369a1;font-size:0.92rem;font-weight:800;">${rupiah(total)}</span>
+              </div>
+            </div>
+            <div class="card-action-bar">
+              <button type="button" class="btn-detail-invoice button button-small button-secondary" data-id="${escapeHtml(id)}">
+                <i class="fa-solid fa-eye"></i> Detail Faktur
+              </button>
+              <button type="button" class="btn-pdf-invoice button button-small button-secondary" data-id="${escapeHtml(id)}" title="Cetak PDF">
+                <i class="fa-solid fa-file-pdf"></i> Cetak PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
 
-  tbody.querySelectorAll(".btn-detail-invoice").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const invId = btn.dataset.id;
-      const found = currentInvoices.find(i => (i.id || i.invoiceNumber) === invId);
-      if (found) openInvoiceDetailModal(found);
+    cardList.querySelectorAll(".card-accordion-header").forEach(hdr => {
+      hdr.addEventListener("click", () => {
+        const card = hdr.closest(".responsive-data-card");
+        if (card) card.classList.toggle("is-expanded");
+      });
     });
-  });
+  }
 
-  tbody.querySelectorAll(".btn-pdf-invoice").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const invId = btn.dataset.id;
-      const found = currentInvoices.find(i => (i.id || i.invoiceNumber) === invId);
-      if (found) handlePrintInvoicePdf(found);
+  // Bind event Detail & PDF pada seluruh kontainer (baik tabel maupun kartu)
+  const invContainer = document.querySelector('[data-view-section="purchase-invoices"]');
+  if (invContainer) {
+    invContainer.querySelectorAll(".btn-detail-invoice").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const invId = btn.dataset.id;
+        const found = currentInvoices.find(i => (i.id || i.invoiceNumber) === invId);
+        if (found) openInvoiceDetailModal(found);
+      });
     });
-  });
+
+    invContainer.querySelectorAll(".btn-pdf-invoice").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const invId = btn.dataset.id;
+        const found = currentInvoices.find(i => (i.id || i.invoiceNumber) === invId);
+        if (found) handlePrintInvoicePdf(found);
+      });
+    });
+  }
 }
 
 function getInvoiceStatusBadge(status) {
