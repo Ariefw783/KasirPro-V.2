@@ -219,40 +219,68 @@ export function stringSimilarity(s1, s2) {
 
 /**
  * Mencari produk master terdekat berdasarkan nama obat faktur
+ * Mengutamakan kecocokan supplier terlebih dahulu, lalu nama produk.
  *
  * @param {string} searchName
  * @param {Array} masterProducts
  * @param {number} threshold Default 0.8 (80%)
- * @returns {{ matchType: 'exact'|'fuzzy'|'none', score: number, product: Object|null }}
+ * @param {string} preferredSupplier Nama supplier acuan (opsional)
+ * @returns {{ matchType: 'exact'|'fuzzy'|'none', score: number, product: Object|null, differentSupplier?: boolean }}
  */
-export function findBestProductMatch(searchName, masterProducts = [], threshold = 0.8) {
+export function findBestProductMatch(searchName, masterProducts = [], threshold = 0.8, preferredSupplier = "") {
   const rawQuery = String(searchName || "").trim();
   const normQuery = normalizeProductName(rawQuery);
   if (!normQuery || !Array.isArray(masterProducts) || !masterProducts.length) {
     return { matchType: "none", score: 0, product: null };
   }
 
+  const normPrefSup = norm(preferredSupplier);
+
+  // Jika preferredSupplier diisi, utamakan pencarian ke produk supplier yang cocok terlebih dahulu
+  if (normPrefSup) {
+    const sameSupProds = masterProducts.filter(p => !p._isDeleted && norm(p["Supplier"] || p["Produsen"] || p.supplier) === normPrefSup);
+    if (sameSupProds.length > 0) {
+      const supMatch = findBestProductMatch(searchName, sameSupProds, threshold);
+      if (supMatch.matchType !== "none") {
+        return supMatch;
+      }
+    }
+  }
+
   const queryTokens = new Set(normQuery.split(/\s+/).filter(Boolean));
   let bestMatch = null;
   let bestScore = 0;
+  let bestIsDiffSup = false;
 
   for (const p of masterProducts) {
     if (p._isDeleted) continue;
     const pName = p["Nama Produk"] || p.name || "";
-    const pCode = p["Kode Produk"] || p["Kode Produk Internal"] || p.code || "";
-    const pBarcode = p["Barcode"] || p.barcode || "";
+    const pCode = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.code || "");
+    const pBarcode = norm(p["Barcode"] || p.barcode || "");
+    const pSup = norm(p["Supplier"] || p["Produsen"] || p.supplier || "");
+
+    const isDifferentSup = !!(normPrefSup && pSup && (pSup !== normPrefSup));
 
     // 1. Exact match pada Barcode atau Kode Produk
-    if (pBarcode && norm(pBarcode) === norm(rawQuery)) {
+    if (pBarcode && pBarcode === norm(rawQuery)) {
+      if (isDifferentSup) {
+        return { matchType: "fuzzy", score: 0.85, product: p, differentSupplier: true };
+      }
       return { matchType: "exact", score: 1, product: p };
     }
-    if (pCode && norm(pCode) === norm(rawQuery)) {
+    if (pCode && pCode === norm(rawQuery)) {
+      if (isDifferentSup) {
+        return { matchType: "fuzzy", score: 0.85, product: p, differentSupplier: true };
+      }
       return { matchType: "exact", score: 1, product: p };
     }
 
     // 2. Exact match pada Nama Ternormalisasi
     const normMaster = p._normName || normalizeProductName(pName);
     if (normQuery === normMaster) {
+      if (isDifferentSup) {
+        return { matchType: "fuzzy", score: 0.85, product: p, differentSupplier: true };
+      }
       return { matchType: "exact", score: 1, product: p };
     }
 
@@ -264,18 +292,22 @@ export function findBestProductMatch(searchName, masterProducts = [], threshold 
     }
 
     // 3. Fuzzy similarity
-    const score = stringSimilarity(normQuery, normMaster);
+    let score = stringSimilarity(normQuery, normMaster);
+    if (isDifferentSup) {
+      score = Math.min(score, 0.85);
+    }
     if (score > bestScore) {
       bestScore = score;
       bestMatch = p;
+      bestIsDiffSup = isDifferentSup;
     }
   }
 
-  if (bestScore >= 0.999) {
+  if (bestScore >= 0.999 && !bestIsDiffSup) {
     return { matchType: "exact", score: 1, product: bestMatch };
   }
   if (bestScore >= threshold) {
-    return { matchType: "fuzzy", score: bestScore, product: bestMatch };
+    return { matchType: "fuzzy", score: bestScore, product: bestMatch, differentSupplier: bestIsDiffSup };
   }
   return { matchType: "none", score: bestScore, product: null };
 }

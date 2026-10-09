@@ -1,14 +1,14 @@
 {
-  "version": "2.2.43",
-  "build": "20261008.09",
-  "releaseDate": "08 Oktober 2026",
-  "title": "Koreksi Valuasi Konversi Satuan Stok",
-  "description": "Menyesuaikan valuasi total nilai stok di Dashboard, Menu Stok, dan Laporan Keuangan dengan rasio konversi satuan obat agar tidak terjadi pembengkakan nilai akibat perkalian kuantitas satuan terkecil dengan harga beli kemasan besar.",
+  "version": "2.2.44",
+  "build": "20261009.01",
+  "releaseDate": "09 Oktober 2026",
+  "title": "Layer Modal, Header Dinamis & Prioritas Supplier Faktur",
+  "description": "Memastikan modal Input Faktur Manual berada di lapisan terdepan tanpa tertutup sidebar dan header, memperbarui header kartu ciutkan dengan informasi dinamis (nama produk, supplier, satuan besar, subtotal), dan memprioritaskan kecocokan supplier pada impor TSV.",
   "changelog": [
-    "Fix stock valuation unit conversion",
-    "Eliminate multi unit asset inflation",
-    "Display base unit actual cost",
-    "Verify comprehensive system audit tests",
-    "Update service worker cache v96"
+    "Elevate invoice modal top layer",
+    "Show dynamic collapsed item summary",
+    "Prioritize supplier on TSV paste",
+    "Prevent false multi supplier match",
+    "Update service worker cache v97"
   ]
 }

@@ -1925,237 +1925,7 @@
                 <div class="workbook-summary"><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-file-invoice"></i></span><div><span>Total Faktur</span><strong id="invoice-count">0</strong></div></article><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-pen"></i></span><div><span>Review / Pending</span><strong id="invoice-draft-count">0</strong></div></article><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-circle-check"></i></span><div><span>Terkonfirmasi</span><strong id="invoice-confirmed-count">0</strong></div></article><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-money-bill"></i></span><div><span>Total Nilai</span><strong id="invoice-value-total">Rp0</strong></div></article></div>
                 <section class="ops-card"><div class="preview-toolbar"><div class="preview-search"><i class="fa-solid fa-magnifying-glass"></i><input id="invoice-search" type="search" placeholder="Cari nomor faktur atau supplier..."></div><select id="invoice-status-filter"><option value="">Semua Status</option><option value="perlu review">Perlu Review</option><option value="siap konfirmasi">Siap Konfirmasi</option><option value="terkonfirmasi">Terkonfirmasi</option></select></div><div class="table-wrapper"><table class="data-table"><thead><tr><th>Nomor Faktur</th><th>Tanggal</th><th>Supplier</th><th>Item</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="invoice-table-body"></tbody></table></div></section></div>
 
-                <!-- MODAL INPUT FAKTUR MANUAL (GRID MODE DENGAN REKONSILIASI MATEMATIKA) -->
-                <div id="modal-manual-invoice" class="product-detail-overlay" hidden>
-                    <section class="product-detail-panel manual-invoice-dialog" role="dialog" aria-modal="true" aria-labelledby="manual-invoice-title" style="width:min(1680px, calc(100vw - 32px));max-width:calc(100vw - 32px);height:min(94vh, 960px);display:flex;flex-direction:column;border-radius:14px;overflow:hidden;box-shadow:0 25px 60px -15px rgba(0,0,0,0.3);">
-                        <header class="product-detail-header" style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #0c4a6e 100%);color:#fff;border-bottom:1px solid rgba(56, 189, 248, 0.25);padding:14px 22px;flex-shrink:0;">
-                            <div>
-                                <span class="product-detail-label" style="color:#38bdf8;background:rgba(56, 189, 248, 0.12);padding:2px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;"><i class="fa-solid fa-file-circle-plus"></i> Faktur Pembelian Fisik</span>
-                                <h2 id="manual-invoice-title" style="color:#f8fafc;font-size:1.35rem;font-weight:800;margin:3px 0;letter-spacing:-0.2px;">Input Faktur Manual (Grid Mode)</h2>
-                                <p style="color:#94a3b8;font-size:0.8rem;margin:0;">Lengkapi data fisik faktur distributor, cek rekonsiliasi selisih, dan konfirmasi barang masuk.</p>
-                            </div>
-                            <button id="close-manual-invoice-modal" class="product-detail-close" type="button" style="color:#cbd5e1;background:rgba(255,255,255,0.08);border-radius:8px;" title="Tutup Modal"><i class="fa-solid fa-xmark"></i></button>
-                        </header>
-
-                        <div class="product-detail-body manual-invoice-body" style="padding:16px 22px;flex:1;overflow-y:auto;background:#f8fafc;">
-                            <!-- Bagian 1: Header Faktur Fisik -->
-                            <div class="manual-invoice-card" style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e2e8f0;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                                <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-                                    <span><i class="fa-solid fa-building-columns text-primary"></i> 1. Informasi Supplier &amp; Faktur Fisik</span>
-                                    <div style="display:flex;align-items:center;gap:10px;">
-                                        <span style="font-size:11px;font-weight:500;color:#64748b;">* Wajib mencocokkan total fisik di kertas faktur</span>
-                                        <button type="button" id="btn-toggle-inv-header" class="button button-small button-secondary" style="font-size:11px;padding:3px 8px;display:inline-flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #cbd5e1;" title="Lipat / Buka Detail Header">
-                                            <i class="fa-solid fa-chevron-up" id="icon-toggle-inv-header"></i> <span id="label-toggle-inv-header">Ciutkan</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div id="manual-inv-header-summary" style="display:none;padding:10px 14px;background:#f8fafc;border-radius:8px;border:1px solid #cbd5e1;margin-bottom:4px;">
-                                    <!-- Ringkasan satu baris otomatis saat dilipat -->
-                                </div>
-
-                                <div id="manual-inv-header-body">
-                                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;">
-                                        <div>
-                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Nama Supplier <span class="text-danger">*</span></label>
-                                            <div style="display:flex;gap:6px;">
-                                                <select id="manual-inv-supplier" style="flex:1;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;background:#fff;font-weight:600;">
-                                                    <option value="">-- Pilih Supplier --</option>
-                                                </select>
-                                                <button type="button" id="btn-quick-add-supplier-inv" class="button button-small button-secondary" title="Tambah Supplier Baru" style="padding:0 10px;">
-                                                    <i class="fa-solid fa-plus"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">No. Faktur Fisik <span class="text-danger">*</span></label>
-                                            <input type="text" id="manual-inv-number" placeholder="Contoh: 26-026281" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;font-weight:700;letter-spacing:0.5px;">
-                                        </div>
-                                        <div>
-                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Tanggal Faktur <span class="text-danger">*</span></label>
-                                            <input type="date" id="manual-inv-date" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;">
-                                        </div>
-                                        <div>
-                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Metode Pembayaran <span class="text-danger">*</span></label>
-                                            <select id="manual-inv-payment-type" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;background:#fff;font-weight:600;">
-                                                <option value="tempo">Tempo (Kredit / Berjangka)</option>
-                                                <option value="tunai">Tunai (Cash / Lunas Langsung)</option>
-                                            </select>
-                                        </div>
-                                        <div id="manual-inv-due-date-wrapper">
-                                            <label id="manual-inv-due-date-label" style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Jatuh Tempo <span class="text-danger" id="manual-inv-due-date-required">*</span></label>
-                                            <input type="date" id="manual-inv-due-date" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;">
-                                        </div>
-                                    </div>
-
-                                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-top:12px;padding-top:12px;border-top:1px dashed #e2e8f0;">
-                                        <div>
-                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Metode Diskon Faktur</label>
-                                            <select id="manual-inv-discount-type" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:#fff;">
-                                                <option value="item">Diskon Tercetak per Baris Item (Standar PBF)</option>
-                                                <option value="global">Diskon Tambahan di Footer Faktur</option>
-                                            </select>
-                                        </div>
-                                        <div id="manual-inv-global-discount-box" hidden>
-                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Diskon Footer Faktur (Rp)</label>
-                                            <input type="text" inputmode="numeric" id="manual-inv-global-discount-rp" placeholder="0" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
-                                        </div>
-                                        <div>
-                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">PPN Faktur (%)</label>
-                                            <select id="manual-inv-ppn-rate" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:#fff;">
-                                                <option value="11" selected>11% (PPN Standar)</option>
-                                                <option value="0">0% (Bebas PPN / Non-PKP)</option>
-                                                <option value="custom">Kustom Nominal PPN</option>
-                                            </select>
-                                        </div>
-                                        <div id="manual-inv-custom-ppn-box" hidden>
-                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Nominal PPN Tercetak (Rp)</label>
-                                            <input type="text" inputmode="numeric" id="manual-inv-custom-ppn-rp" placeholder="0" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
-                                        </div>
-                                        <div>
-                                            <label style="display:block;font-size:12px;font-weight:700;color:#b91c1c;margin-bottom:4px;">Total Akhir Tercetak di Kertas (Rp) <span class="text-danger">*</span></label>
-                                            <input type="text" inputmode="numeric" id="manual-inv-printed-total" placeholder="Angka Total di Kertas Faktur" style="width:100%;min-height:36px;padding:6px 10px;border:2px solid #f87171;border-radius:6px;font-size:14px;font-weight:800;color:#991b1b;background:#fff5f5;">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Bagian 2: Tabel Grid Item Faktur & Wadah Konversi -->
-                            <div class="manual-invoice-card" style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e2e8f0;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                                <div class="manual-inv-actions-toolbar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-                                    <div>
-                                        <strong style="font-size:13px;color:#0f172a;"><i class="fa-solid fa-boxes-stacked text-primary"></i> 2. Daftar Obat / Barang &amp; Wadah Konversi</strong>
-                                        <p style="font-size:11px;color:#64748b;margin:2px 0 0 0;">Ketik nama produk untuk mencari. Jika belum ada, pilih <strong>[+ Daftarkan Produk Baru]</strong> untuk membuka wadah registrasi.</p>
-                                    </div>
-                                    <div class="manual-inv-actions-btn-group" style="display:flex;gap:8px;flex-wrap:wrap;">
-                                        <button type="button" id="btn-manual-add-row" class="button button-small button-primary" style="padding:6px 14px;">
-                                            <i class="fa-solid fa-plus"></i> Tambah Baris Obat
-                                        </button>
-                                        <button type="button" id="btn-paste-tsv-inv" class="button button-small button-secondary" style="padding:6px 14px;background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;" title="Tempel data tabel dari Excel / TSV (Ctrl + V)">
-                                            <i class="fa-solid fa-clipboard text-primary"></i> Tempel TSV
-                                        </button>
-                                        <button type="button" id="btn-toggle-all-inv-rows" class="button button-small button-secondary" style="padding:6px 12px;background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;" title="Lipat / Buka Semua Kartu Obat">
-                                            <i class="fa-solid fa-chevron-up" id="icon-toggle-all-inv-rows"></i> <span id="label-toggle-all-inv-rows">Ciutkan Semua</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="table-wrapper manual-invoice-grid-wrapper">
-                                    <table class="data-table manual-grid-table">
-                                        <thead style="background:#f1f5f9;border-bottom:2px solid #cbd5e1;">
-                                            <tr>
-                                                <th class="col-num" style="width:36px;text-align:center;">#</th>
-                                                <th class="col-prod" style="min-width:240px;">Nama Produk &amp; Pencarian</th>
-                                                <th class="col-batch" style="width:105px;" title="Nomor batch fisik dari pabrik">No. Batch</th>
-                                                <th class="col-exp" style="width:125px;" title="Tanggal kedaluwarsa fisik obat">Exp. Date</th>
-                                                <th class="col-unit-buy" style="width:85px;" title="Satuan Beli saat pesan ke supplier">Satuan Besar</th>
-                                                <th class="col-unit-mid" style="width:115px;" title="Satuan Antara (misal Strip / Blister)">Satuan Sedang</th>
-                                                <th class="col-unit-base" style="width:100px;" title="Unit terkecil stok apotek (Tablet, Kaplet, Botol, Pcs)">Satuan Terkecil</th>
-                                                <th class="col-conv" style="width:80px;" title="Total Satuan Terkecil dalam 1 Satuan Besar">Isi Konversi</th>
-                                                <th class="col-qty" style="width:65px;">Qty Beli</th>
-                                                <th class="col-total-base" style="width:80px;" title="Jumlah stok satuan terkecil yang masuk">Total Masuk</th>
-                                                <th class="col-buy-price" style="width:100px;">Harga Beli (Rp)</th>
-                                                <th class="col-disc-pct" style="width:70px;">Disc (%)</th>
-                                                <th class="col-disc-rp" style="width:80px;">Disc (Rp)</th>
-                                                <th class="col-subtotal" style="width:105px;text-align:right;">Subtotal</th>
-                                                <th class="col-action" style="width:38px;text-align:center;">Aksi</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="manual-invoice-items-body"></tbody>
-                                    </table>
-                                </div>
-                                <div id="manual-inv-global-ac" class="inv-prod-autocomplete" style="position:fixed;display:none;z-index:999999;box-shadow:0 10px 25px rgba(0,0,0,0.2);max-width:420px;border-radius:8px;"></div>
-                            </div>
-
-                            <!-- Modal Fallback Tempel TSV (Jika browser memblokir clipboard API) -->
-                            <div id="modal-paste-tsv" class="product-detail-overlay" style="z-index:9999999;position:fixed;inset:0;background:rgba(15,23,42,0.65);place-items:center;padding:16px;display:none;" hidden>
-                                <section class="product-detail-panel" style="max-width:580px;width:95vw;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;border:1px solid #cbd5e1;" role="dialog" aria-modal="true" aria-labelledby="paste-tsv-title">
-                                    <header class="product-detail-header" style="background:#f8fafc;padding:14px 18px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
-                                        <div>
-                                            <span class="product-detail-label" style="color:#0284c7;font-size:11px;font-weight:700;"><i class="fa-solid fa-table"></i> Impor Cepat TSV</span>
-                                            <h2 id="paste-tsv-title" style="font-size:16px;margin:2px 0 0 0;color:#0f172a;">Tempel Data TSV Faktur</h2>
-                                            <p style="font-size:11px;color:#64748b;margin:2px 0 0 0;">Salin (Copy) tabel obat dari Excel / GPT, lalu tempel (Paste) di kotak berikut:</p>
-                                        </div>
-                                        <button type="button" id="btn-close-paste-tsv-modal" class="product-detail-close" aria-label="Tutup" style="background:none;border:none;font-size:18px;color:#94a3b8;cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
-                                    </header>
-                                    <div class="product-detail-body" style="padding:16px;">
-                                        <div style="font-size:11.5px;color:#334155;margin-bottom:10px;background:#eff6ff;padding:9px 12px;border-radius:8px;border:1px solid #bfdbfe;line-height:1.5;">
-                                            <i class="fa-solid fa-circle-info text-primary"></i> <strong>Urutan Kolom TSV:</strong><br>
-                                            <small style="color:#64748b;">Nama Produk &bull; No Batch &bull; Exp Date &bull; Satuan Besar &bull; Satuan Sedang &bull; Satuan Terkecil &bull; Konversi &bull; Qty &bull; Total Masuk &bull; Harga Beli &bull; Disc% &bull; Disc Rp &bull; Subtotal</small>
-                                        </div>
-                                        <textarea id="tsv-paste-textarea" rows="9" placeholder="Klik di sini lalu tekan Ctrl + V (atau tempel teks berformat tab-separated)..." style="width:100%;font-family:monospace;font-size:12px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;resize:vertical;background:#f8fafc;color:#0f172a;box-sizing:border-box;"></textarea>
-                                    </div>
-                                    <footer class="product-detail-footer" style="display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;background:#f8fafc;border-top:1px solid #e2e8f0;">
-                                        <button type="button" id="btn-cancel-paste-tsv" class="button button-secondary">Batal</button>
-                                        <button type="button" id="btn-do-paste-tsv" class="button button-primary" style="font-weight:700;padding:6px 16px;">
-                                            <i class="fa-solid fa-file-import"></i> Impor ke Grid
-                                        </button>
-                                    </footer>
-                                </section>
-                            </div>
-
-                            <!-- Bagian 3: Live Rekonsiliasi & Status Match -->
-                            <div class="manual-invoice-card" style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                                <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:12px;">
-                                    <i class="fa-solid fa-calculator text-primary"></i> 3. Rekonsiliasi Matematika Faktur (Live Verification)
-                                </div>
-                                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;background:#f8fafc;padding:12px;border-radius:8px;border:1px solid #e2e8f0;">
-                                    <div>
-                                        <div style="font-size:11px;color:#64748b;font-weight:600;">Subtotal Kotor</div>
-                                        <strong id="rec-subtotal-gross" style="font-size:14px;color:#1e293b;">Rp0</strong>
-                                    </div>
-                                    <div>
-                                        <div style="font-size:11px;color:#64748b;font-weight:600;">Total Diskon Item</div>
-                                        <strong id="rec-discount-item" style="font-size:14px;color:#ea580c;">Rp0</strong>
-                                    </div>
-                                    <div>
-                                        <div style="font-size:11px;color:#64748b;font-weight:600;">DPP (Dasar Pajak)</div>
-                                        <strong id="rec-dpp" style="font-size:14px;color:#1e293b;">Rp0</strong>
-                                    </div>
-                                    <div>
-                                        <div style="font-size:11px;color:#64748b;font-weight:600;">PPN Faktur</div>
-                                        <strong id="rec-ppn" style="font-size:14px;color:#0284c7;">Rp0</strong>
-                                    </div>
-                                    <div style="background:#f1f5f9;padding:6px 10px;border-radius:6px;">
-                                        <div style="font-size:11px;color:#334155;font-weight:700;">Total Hitung Sistem</div>
-                                        <strong id="rec-total-system" style="font-size:16px;color:#0f172a;">Rp0</strong>
-                                    </div>
-                                    <div style="background:#fef2f2;padding:6px 10px;border-radius:6px;border:1px solid #fecaca;">
-                                        <div style="font-size:11px;color:#991b1b;font-weight:700;">Total Tercetak Fisik</div>
-                                        <strong id="rec-total-printed" style="font-size:16px;color:#b91c1c;">Rp0</strong>
-                                    </div>
-                                </div>
-
-                                <!-- Rekonsiliasi Badge Status -->
-                                <div id="rec-status-banner" style="margin-top:12px;padding:10px 14px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;">
-                                    <div style="display:flex;align-items:center;gap:8px;">
-                                        <i id="rec-status-icon" class="fa-solid fa-circle-info"></i>
-                                        <span id="rec-status-text">Masukkan data obat dan nominal total tercetak fisik di kertas faktur.</span>
-                                    </div>
-                                    <strong id="rec-diff-amount" style="font-size:14px;">Selisih: Rp0</strong>
-                                </div>
-                            </div>
-                        </div>
-
-                        <footer class="product-detail-footer" style="padding:14px 20px;background:#fff;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
-                            <div style="display:flex;gap:8px;">
-                                <button type="button" id="btn-save-manual-draft" class="button button-secondary">
-                                    <i class="fa-solid fa-floppy-disk"></i> Simpan Draft Lokal
-                                </button>
-                                <button type="button" id="btn-reset-manual-inv" class="button button-secondary" style="color:#ef4444;">
-                                    <i class="fa-solid fa-trash-can"></i> Bersihkan Form
-                                </button>
-                            </div>
-                            <div style="display:flex;gap:10px;">
-                                <button type="button" id="btn-cancel-manual-inv" class="button button-secondary">Tutup</button>
-                                <button type="button" id="btn-confirm-manual-inv" class="button button-primary" style="font-weight:700;padding:8px 20px;">
-                                    <i class="fa-solid fa-box-open"></i> Konfirmasi Faktur &amp; Masuk Stok
-                                </button>
-                            </div>
-                        </footer>
-                    </section>
-                </div>
-            </section>
+                            </section>
             <section class="view-section" data-view-section="sales" hidden>
                 <div class="ops-page sales-management-page">
                     <header class="module-header">
@@ -2504,6 +2274,237 @@
     </div>
 
 </div>
+
+<!-- MODAL INPUT FAKTUR MANUAL (GRID MODE DENGAN REKONSILIASI MATEMATIKA) -->
+<div id="modal-manual-invoice" class="product-detail-overlay manual-invoice-overlay" style="z-index:99999;" hidden>
+                    <section class="product-detail-panel manual-invoice-dialog" role="dialog" aria-modal="true" aria-labelledby="manual-invoice-title" style="width:min(1680px, calc(100vw - 32px));max-width:calc(100vw - 32px);height:min(94vh, 960px);display:flex;flex-direction:column;border-radius:14px;overflow:hidden;box-shadow:0 25px 60px -15px rgba(0,0,0,0.3);">
+                        <header class="product-detail-header" style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #0c4a6e 100%);color:#fff;border-bottom:1px solid rgba(56, 189, 248, 0.25);padding:14px 22px;flex-shrink:0;">
+                            <div>
+                                <span class="product-detail-label" style="color:#38bdf8;background:rgba(56, 189, 248, 0.12);padding:2px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;"><i class="fa-solid fa-file-circle-plus"></i> Faktur Pembelian Fisik</span>
+                                <h2 id="manual-invoice-title" style="color:#f8fafc;font-size:1.35rem;font-weight:800;margin:3px 0;letter-spacing:-0.2px;">Input Faktur Manual (Grid Mode)</h2>
+                                <p style="color:#94a3b8;font-size:0.8rem;margin:0;">Lengkapi data fisik faktur distributor, cek rekonsiliasi selisih, dan konfirmasi barang masuk.</p>
+                            </div>
+                            <button id="close-manual-invoice-modal" class="product-detail-close" type="button" style="color:#cbd5e1;background:rgba(255,255,255,0.08);border-radius:8px;" title="Tutup Modal"><i class="fa-solid fa-xmark"></i></button>
+                        </header>
+
+                        <div class="product-detail-body manual-invoice-body" style="padding:16px 22px;flex:1;overflow-y:auto;background:#f8fafc;">
+                            <!-- Bagian 1: Header Faktur Fisik -->
+                            <div class="manual-invoice-card" style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e2e8f0;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+                                    <span><i class="fa-solid fa-building-columns text-primary"></i> 1. Informasi Supplier &amp; Faktur Fisik</span>
+                                    <div style="display:flex;align-items:center;gap:10px;">
+                                        <span style="font-size:11px;font-weight:500;color:#64748b;">* Wajib mencocokkan total fisik di kertas faktur</span>
+                                        <button type="button" id="btn-toggle-inv-header" class="button button-small button-secondary" style="font-size:11px;padding:3px 8px;display:inline-flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #cbd5e1;" title="Lipat / Buka Detail Header">
+                                            <i class="fa-solid fa-chevron-up" id="icon-toggle-inv-header"></i> <span id="label-toggle-inv-header">Ciutkan</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div id="manual-inv-header-summary" style="display:none;padding:10px 14px;background:#f8fafc;border-radius:8px;border:1px solid #cbd5e1;margin-bottom:4px;">
+                                    <!-- Ringkasan satu baris otomatis saat dilipat -->
+                                </div>
+
+                                <div id="manual-inv-header-body">
+                                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;">
+                                        <div>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Nama Supplier <span class="text-danger">*</span></label>
+                                            <div style="display:flex;gap:6px;">
+                                                <select id="manual-inv-supplier" style="flex:1;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;background:#fff;font-weight:600;">
+                                                    <option value="">-- Pilih Supplier --</option>
+                                                </select>
+                                                <button type="button" id="btn-quick-add-supplier-inv" class="button button-small button-secondary" title="Tambah Supplier Baru" style="padding:0 10px;">
+                                                    <i class="fa-solid fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">No. Faktur Fisik <span class="text-danger">*</span></label>
+                                            <input type="text" id="manual-inv-number" placeholder="Contoh: 26-026281" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;font-weight:700;letter-spacing:0.5px;">
+                                        </div>
+                                        <div>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Tanggal Faktur <span class="text-danger">*</span></label>
+                                            <input type="date" id="manual-inv-date" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;">
+                                        </div>
+                                        <div>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Metode Pembayaran <span class="text-danger">*</span></label>
+                                            <select id="manual-inv-payment-type" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;background:#fff;font-weight:600;">
+                                                <option value="tempo">Tempo (Kredit / Berjangka)</option>
+                                                <option value="tunai">Tunai (Cash / Lunas Langsung)</option>
+                                            </select>
+                                        </div>
+                                        <div id="manual-inv-due-date-wrapper">
+                                            <label id="manual-inv-due-date-label" style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Jatuh Tempo <span class="text-danger" id="manual-inv-due-date-required">*</span></label>
+                                            <input type="date" id="manual-inv-due-date" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13.5px;">
+                                        </div>
+                                    </div>
+
+                                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:12px;margin-top:12px;padding-top:12px;border-top:1px dashed #e2e8f0;">
+                                        <div>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Metode Diskon Faktur</label>
+                                            <select id="manual-inv-discount-type" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:#fff;">
+                                                <option value="item">Diskon Tercetak per Baris Item (Standar PBF)</option>
+                                                <option value="global">Diskon Tambahan di Footer Faktur</option>
+                                            </select>
+                                        </div>
+                                        <div id="manual-inv-global-discount-box" hidden>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Diskon Footer Faktur (Rp)</label>
+                                            <input type="text" inputmode="numeric" id="manual-inv-global-discount-rp" placeholder="0" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+                                        </div>
+                                        <div>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">PPN Faktur (%)</label>
+                                            <select id="manual-inv-ppn-rate" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;background:#fff;">
+                                                <option value="11" selected>11% (PPN Standar)</option>
+                                                <option value="0">0% (Bebas PPN / Non-PKP)</option>
+                                                <option value="custom">Kustom Nominal PPN</option>
+                                            </select>
+                                        </div>
+                                        <div id="manual-inv-custom-ppn-box" hidden>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:4px;">Nominal PPN Tercetak (Rp)</label>
+                                            <input type="text" inputmode="numeric" id="manual-inv-custom-ppn-rp" placeholder="0" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+                                        </div>
+                                        <div>
+                                            <label style="display:block;font-size:12px;font-weight:700;color:#b91c1c;margin-bottom:4px;">Total Akhir Tercetak di Kertas (Rp) <span class="text-danger">*</span></label>
+                                            <input type="text" inputmode="numeric" id="manual-inv-printed-total" placeholder="Angka Total di Kertas Faktur" style="width:100%;min-height:36px;padding:6px 10px;border:2px solid #f87171;border-radius:6px;font-size:14px;font-weight:800;color:#991b1b;background:#fff5f5;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bagian 2: Tabel Grid Item Faktur & Wadah Konversi -->
+                            <div class="manual-invoice-card" style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e2e8f0;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                <div class="manual-inv-actions-toolbar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                                    <div>
+                                        <strong style="font-size:13px;color:#0f172a;"><i class="fa-solid fa-boxes-stacked text-primary"></i> 2. Daftar Obat / Barang &amp; Wadah Konversi</strong>
+                                        <p style="font-size:11px;color:#64748b;margin:2px 0 0 0;">Ketik nama produk untuk mencari. Jika belum ada, pilih <strong>[+ Daftarkan Produk Baru]</strong> untuk membuka wadah registrasi.</p>
+                                    </div>
+                                    <div class="manual-inv-actions-btn-group" style="display:flex;gap:8px;flex-wrap:wrap;">
+                                        <button type="button" id="btn-manual-add-row" class="button button-small button-primary" style="padding:6px 14px;">
+                                            <i class="fa-solid fa-plus"></i> Tambah Baris Obat
+                                        </button>
+                                        <button type="button" id="btn-paste-tsv-inv" class="button button-small button-secondary" style="padding:6px 14px;background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;" title="Tempel data tabel dari Excel / TSV (Ctrl + V)">
+                                            <i class="fa-solid fa-clipboard text-primary"></i> Tempel TSV
+                                        </button>
+                                        <button type="button" id="btn-toggle-all-inv-rows" class="button button-small button-secondary" style="padding:6px 12px;background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;" title="Lipat / Buka Semua Kartu Obat">
+                                            <i class="fa-solid fa-chevron-up" id="icon-toggle-all-inv-rows"></i> <span id="label-toggle-all-inv-rows">Ciutkan Semua</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="table-wrapper manual-invoice-grid-wrapper">
+                                    <table class="data-table manual-grid-table">
+                                        <thead style="background:#f1f5f9;border-bottom:2px solid #cbd5e1;">
+                                            <tr>
+                                                <th class="col-num" style="width:36px;text-align:center;">#</th>
+                                                <th class="col-prod" style="min-width:240px;">Nama Produk &amp; Pencarian</th>
+                                                <th class="col-batch" style="width:105px;" title="Nomor batch fisik dari pabrik">No. Batch</th>
+                                                <th class="col-exp" style="width:125px;" title="Tanggal kedaluwarsa fisik obat">Exp. Date</th>
+                                                <th class="col-unit-buy" style="width:85px;" title="Satuan Beli saat pesan ke supplier">Satuan Besar</th>
+                                                <th class="col-unit-mid" style="width:115px;" title="Satuan Antara (misal Strip / Blister)">Satuan Sedang</th>
+                                                <th class="col-unit-base" style="width:100px;" title="Unit terkecil stok apotek (Tablet, Kaplet, Botol, Pcs)">Satuan Terkecil</th>
+                                                <th class="col-conv" style="width:80px;" title="Total Satuan Terkecil dalam 1 Satuan Besar">Isi Konversi</th>
+                                                <th class="col-qty" style="width:65px;">Qty Beli</th>
+                                                <th class="col-total-base" style="width:80px;" title="Jumlah stok satuan terkecil yang masuk">Total Masuk</th>
+                                                <th class="col-buy-price" style="width:100px;">Harga Beli (Rp)</th>
+                                                <th class="col-disc-pct" style="width:70px;">Disc (%)</th>
+                                                <th class="col-disc-rp" style="width:80px;">Disc (Rp)</th>
+                                                <th class="col-subtotal" style="width:105px;text-align:right;">Subtotal</th>
+                                                <th class="col-action" style="width:38px;text-align:center;">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="manual-invoice-items-body"></tbody>
+                                    </table>
+                                </div>
+                                <div id="manual-inv-global-ac" class="inv-prod-autocomplete" style="position:fixed;display:none;z-index:999999;box-shadow:0 10px 25px rgba(0,0,0,0.2);max-width:420px;border-radius:8px;"></div>
+                            </div>
+
+                            <!-- Modal Fallback Tempel TSV (Jika browser memblokir clipboard API) -->
+                            <div id="modal-paste-tsv" class="product-detail-overlay" style="z-index:9999999;position:fixed;inset:0;background:rgba(15,23,42,0.65);place-items:center;padding:16px;display:none;" hidden>
+                                <section class="product-detail-panel" style="max-width:580px;width:95vw;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;border:1px solid #cbd5e1;" role="dialog" aria-modal="true" aria-labelledby="paste-tsv-title">
+                                    <header class="product-detail-header" style="background:#f8fafc;padding:14px 18px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+                                        <div>
+                                            <span class="product-detail-label" style="color:#0284c7;font-size:11px;font-weight:700;"><i class="fa-solid fa-table"></i> Impor Cepat TSV</span>
+                                            <h2 id="paste-tsv-title" style="font-size:16px;margin:2px 0 0 0;color:#0f172a;">Tempel Data TSV Faktur</h2>
+                                            <p style="font-size:11px;color:#64748b;margin:2px 0 0 0;">Salin (Copy) tabel obat dari Excel / GPT, lalu tempel (Paste) di kotak berikut:</p>
+                                        </div>
+                                        <button type="button" id="btn-close-paste-tsv-modal" class="product-detail-close" aria-label="Tutup" style="background:none;border:none;font-size:18px;color:#94a3b8;cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+                                    </header>
+                                    <div class="product-detail-body" style="padding:16px;">
+                                        <div style="font-size:11.5px;color:#334155;margin-bottom:10px;background:#eff6ff;padding:9px 12px;border-radius:8px;border:1px solid #bfdbfe;line-height:1.5;">
+                                            <i class="fa-solid fa-circle-info text-primary"></i> <strong>Urutan Kolom TSV:</strong><br>
+                                            <small style="color:#64748b;">Nama Produk &bull; No Batch &bull; Exp Date &bull; Satuan Besar &bull; Satuan Sedang &bull; Satuan Terkecil &bull; Konversi &bull; Qty &bull; Total Masuk &bull; Harga Beli &bull; Disc% &bull; Disc Rp &bull; Subtotal</small>
+                                        </div>
+                                        <textarea id="tsv-paste-textarea" rows="9" placeholder="Klik di sini lalu tekan Ctrl + V (atau tempel teks berformat tab-separated)..." style="width:100%;font-family:monospace;font-size:12px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;resize:vertical;background:#f8fafc;color:#0f172a;box-sizing:border-box;"></textarea>
+                                    </div>
+                                    <footer class="product-detail-footer" style="display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;background:#f8fafc;border-top:1px solid #e2e8f0;">
+                                        <button type="button" id="btn-cancel-paste-tsv" class="button button-secondary">Batal</button>
+                                        <button type="button" id="btn-do-paste-tsv" class="button button-primary" style="font-weight:700;padding:6px 16px;">
+                                            <i class="fa-solid fa-file-import"></i> Impor ke Grid
+                                        </button>
+                                    </footer>
+                                </section>
+                            </div>
+
+                            <!-- Bagian 3: Live Rekonsiliasi & Status Match -->
+                            <div class="manual-invoice-card" style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                                <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:12px;">
+                                    <i class="fa-solid fa-calculator text-primary"></i> 3. Rekonsiliasi Matematika Faktur (Live Verification)
+                                </div>
+                                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;background:#f8fafc;padding:12px;border-radius:8px;border:1px solid #e2e8f0;">
+                                    <div>
+                                        <div style="font-size:11px;color:#64748b;font-weight:600;">Subtotal Kotor</div>
+                                        <strong id="rec-subtotal-gross" style="font-size:14px;color:#1e293b;">Rp0</strong>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:11px;color:#64748b;font-weight:600;">Total Diskon Item</div>
+                                        <strong id="rec-discount-item" style="font-size:14px;color:#ea580c;">Rp0</strong>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:11px;color:#64748b;font-weight:600;">DPP (Dasar Pajak)</div>
+                                        <strong id="rec-dpp" style="font-size:14px;color:#1e293b;">Rp0</strong>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:11px;color:#64748b;font-weight:600;">PPN Faktur</div>
+                                        <strong id="rec-ppn" style="font-size:14px;color:#0284c7;">Rp0</strong>
+                                    </div>
+                                    <div style="background:#f1f5f9;padding:6px 10px;border-radius:6px;">
+                                        <div style="font-size:11px;color:#334155;font-weight:700;">Total Hitung Sistem</div>
+                                        <strong id="rec-total-system" style="font-size:16px;color:#0f172a;">Rp0</strong>
+                                    </div>
+                                    <div style="background:#fef2f2;padding:6px 10px;border-radius:6px;border:1px solid #fecaca;">
+                                        <div style="font-size:11px;color:#991b1b;font-weight:700;">Total Tercetak Fisik</div>
+                                        <strong id="rec-total-printed" style="font-size:16px;color:#b91c1c;">Rp0</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Rekonsiliasi Badge Status -->
+                                <div id="rec-status-banner" style="margin-top:12px;padding:10px 14px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;">
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <i id="rec-status-icon" class="fa-solid fa-circle-info"></i>
+                                        <span id="rec-status-text">Masukkan data obat dan nominal total tercetak fisik di kertas faktur.</span>
+                                    </div>
+                                    <strong id="rec-diff-amount" style="font-size:14px;">Selisih: Rp0</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <footer class="product-detail-footer" style="padding:14px 20px;background:#fff;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+                            <div style="display:flex;gap:8px;">
+                                <button type="button" id="btn-save-manual-draft" class="button button-secondary">
+                                    <i class="fa-solid fa-floppy-disk"></i> Simpan Draft Lokal
+                                </button>
+                                <button type="button" id="btn-reset-manual-inv" class="button button-secondary" style="color:#ef4444;">
+                                    <i class="fa-solid fa-trash-can"></i> Bersihkan Form
+                                </button>
+                            </div>
+                            <div style="display:flex;gap:10px;">
+                                <button type="button" id="btn-cancel-manual-inv" class="button button-secondary">Tutup</button>
+                                <button type="button" id="btn-confirm-manual-inv" class="button button-primary" style="font-weight:700;padding:8px 20px;">
+                                    <i class="fa-solid fa-box-open"></i> Konfirmasi Faktur &amp; Masuk Stok
+                                </button>
+                            </div>
+                        </footer>
+                    </section>
+                </div>
 
 <div id="app-modal" class="app-modal" hidden>
     <section class="app-modal-card" role="dialog" aria-modal="true" aria-labelledby="app-modal-title">

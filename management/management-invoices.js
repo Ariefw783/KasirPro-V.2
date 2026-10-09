@@ -771,12 +771,20 @@ function processTsvData(rawText) {
   }
 
   const prods = cachedMasterProducts || (readStore(STORE_KEYS.master, {})?.produk || []);
+  const selectedSupplier = text($("manual-inv-supplier")?.value);
+  const normSelectedSup = norm(selectedSupplier);
 
   // Pre-indexing Master Produk untuk pencocokan instan (< 10ms)
-  const exactNormMap = new Map();
-  const barcodeMap = new Map();
-  const codeMap = new Map();
-  const candidateList = [];
+  // Dipisahkan Tier 1 (Supplier Sama) dan Tier 2 (Supplier Lain/Umum)
+  const exactNormMap_Sup = new Map();
+  const barcodeMap_Sup = new Map();
+  const codeMap_Sup = new Map();
+  const candidateList_Sup = [];
+
+  const exactNormMap_Other = new Map();
+  const barcodeMap_Other = new Map();
+  const codeMap_Other = new Map();
+  const candidateList_Other = [];
 
   for (const p of prods) {
     if (p._isDeleted) continue;
@@ -784,18 +792,34 @@ function processTsvData(rawText) {
     const pBarcode = norm(p["Barcode"] || p.barcode);
     const pName = p["Nama Produk"] || p.name || "";
     const normPName = normalizeProductName(pName);
+    const pSup = norm(p["Supplier"] || p["Produsen"] || p.supplier || "");
 
-    if (pBarcode && !barcodeMap.has(pBarcode)) barcodeMap.set(pBarcode, p);
-    if (pCode && !codeMap.has(pCode)) codeMap.set(pCode, p);
-    if (normPName && !exactNormMap.has(normPName)) exactNormMap.set(normPName, p);
+    const isSameSup = !!(normSelectedSup && pSup && (pSup === normSelectedSup));
 
-    if (normPName) {
-      candidateList.push({
-        product: p,
-        normName: normPName,
-        tokens: new Set(normPName.split(/\s+/).filter(Boolean)),
-        len: normPName.length
-      });
+    if (isSameSup) {
+      if (pBarcode && !barcodeMap_Sup.has(pBarcode)) barcodeMap_Sup.set(pBarcode, p);
+      if (pCode && !codeMap_Sup.has(pCode)) codeMap_Sup.set(pCode, p);
+      if (normPName && !exactNormMap_Sup.has(normPName)) exactNormMap_Sup.set(normPName, p);
+      if (normPName) {
+        candidateList_Sup.push({
+          product: p,
+          normName: normPName,
+          tokens: new Set(normPName.split(/\s+/).filter(Boolean)),
+          len: normPName.length
+        });
+      }
+    } else {
+      if (pBarcode && !barcodeMap_Other.has(pBarcode)) barcodeMap_Other.set(pBarcode, p);
+      if (pCode && !codeMap_Other.has(pCode)) codeMap_Other.set(pCode, p);
+      if (normPName && !exactNormMap_Other.has(normPName)) exactNormMap_Other.set(normPName, p);
+      if (normPName) {
+        candidateList_Other.push({
+          product: p,
+          normName: normPName,
+          tokens: new Set(normPName.split(/\s+/).filter(Boolean)),
+          len: normPName.length
+        });
+      }
     }
   }
 
@@ -906,46 +930,124 @@ function processTsvData(rawText) {
       rawSubtotal = Math.max(0, Math.round((rawQty * rawBuyPrice) - rawDiscRp));
     }
 
-    // Smart Product Matching dengan Pre-indexed Master Data
+    // Smart Product Matching dengan Prioritas Supplier Pilihan Pengguna
     const normRaw = norm(rawName);
     const normQuery = normalizeProductName(rawName);
     let match = null;
 
-    if (barcodeMap.has(normRaw)) {
-      match = { matchType: "exact", score: 1, product: barcodeMap.get(normRaw) };
-    } else if (codeMap.has(normRaw)) {
-      match = { matchType: "exact", score: 1, product: codeMap.get(normRaw) };
-    } else if (exactNormMap.has(normQuery)) {
-      match = { matchType: "exact", score: 1, product: exactNormMap.get(normQuery) };
-    } else {
-      // Fuzzy matching teroptimasi dengan candidate filtering
-      let bestFuzzyMatch = null;
-      let bestFuzzyScore = 0;
-      const qTokens = new Set(normQuery.split(/\s+/).filter(Boolean));
-      const lenQ = normQuery.length;
+    // 1. TAHAP 1: Utamakan kecocokan produk pada supplier yang dipilih terlebih dahulu
+    if (normSelectedSup) {
+      if (barcodeMap_Sup.has(normRaw)) {
+        match = { matchType: "exact", score: 1, product: barcodeMap_Sup.get(normRaw) };
+      } else if (codeMap_Sup.has(normRaw)) {
+        match = { matchType: "exact", score: 1, product: codeMap_Sup.get(normRaw) };
+      } else if (exactNormMap_Sup.has(normQuery)) {
+        match = { matchType: "exact", score: 1, product: exactNormMap_Sup.get(normQuery) };
+      } else {
+        let bestSupScore = 0;
+        let bestSupMatch = null;
+        const qTokens = new Set(normQuery.split(/\s+/).filter(Boolean));
+        const lenQ = normQuery.length;
 
-      for (const cand of candidateList) {
-        if (Math.min(lenQ, cand.len) / Math.max(lenQ, cand.len) < 0.55) continue;
-
-        let commonTokens = 0;
-        for (const qt of qTokens) {
-          if (cand.tokens.has(qt)) commonTokens++;
+        for (const cand of candidateList_Sup) {
+          if (Math.min(lenQ, cand.len) / Math.max(lenQ, cand.len) < 0.55) continue;
+          let commonTokens = 0;
+          for (const qt of qTokens) {
+            if (cand.tokens.has(qt)) commonTokens++;
+          }
+          if (qTokens.size >= 2 && commonTokens === 0) continue;
+          const score = stringSimilarity(normQuery, cand.normName);
+          if (score > bestSupScore) {
+            bestSupScore = score;
+            bestSupMatch = cand.product;
+          }
         }
-        if (qTokens.size >= 2 && commonTokens === 0) continue;
 
-        const score = stringSimilarity(normQuery, cand.normName);
-        if (score > bestFuzzyScore) {
-          bestFuzzyScore = score;
-          bestFuzzyMatch = cand.product;
+        if (bestSupScore >= 0.999) {
+          match = { matchType: "exact", score: 1, product: bestSupMatch };
+        } else if (bestSupScore >= 0.8) {
+          match = { matchType: "fuzzy", score: bestSupScore, product: bestSupMatch };
         }
       }
+    }
 
-      if (bestFuzzyScore >= 0.999) {
-        match = { matchType: "exact", score: 1, product: bestFuzzyMatch };
-      } else if (bestFuzzyScore >= 0.8) {
-        match = { matchType: "fuzzy", score: bestFuzzyScore, product: bestFuzzyMatch };
+    // 2. TAHAP 2: Jika tidak cocok di supplier pilihan atau supplier belum dipilih
+    if (!match) {
+      if (!normSelectedSup) {
+        // Jika belum ada supplier dipilih, cari di master secara netral
+        if (barcodeMap_Other.has(normRaw)) {
+          match = { matchType: "exact", score: 1, product: barcodeMap_Other.get(normRaw) };
+        } else if (codeMap_Other.has(normRaw)) {
+          match = { matchType: "exact", score: 1, product: codeMap_Other.get(normRaw) };
+        } else if (exactNormMap_Other.has(normQuery)) {
+          match = { matchType: "exact", score: 1, product: exactNormMap_Other.get(normQuery) };
+        } else {
+          let bestFuzzyMatch = null;
+          let bestFuzzyScore = 0;
+          const qTokens = new Set(normQuery.split(/\s+/).filter(Boolean));
+          const lenQ = normQuery.length;
+
+          for (const cand of candidateList_Other) {
+            if (Math.min(lenQ, cand.len) / Math.max(lenQ, cand.len) < 0.55) continue;
+            let commonTokens = 0;
+            for (const qt of qTokens) {
+              if (cand.tokens.has(qt)) commonTokens++;
+            }
+            if (qTokens.size >= 2 && commonTokens === 0) continue;
+            const score = stringSimilarity(normQuery, cand.normName);
+            if (score > bestFuzzyScore) {
+              bestFuzzyScore = score;
+              bestFuzzyMatch = cand.product;
+            }
+          }
+
+          if (bestFuzzyScore >= 0.999) {
+            match = { matchType: "exact", score: 1, product: bestFuzzyMatch };
+          } else if (bestFuzzyScore >= 0.8) {
+            match = { matchType: "fuzzy", score: bestFuzzyScore, product: bestFuzzyMatch };
+          } else {
+            match = { matchType: "none", score: bestFuzzyScore, product: null };
+          }
+        }
       } else {
-        match = { matchType: "none", score: bestFuzzyScore, product: null };
+        // Supplier dipilih, tetapi obat ini milik supplier lain di master.
+        // Dilarang menganggap 100% cocok (exact)! Diturunkan menjadi fuzzy (maks 85%) dengan flag differentSupplier.
+        let otherProd = null;
+        let otherScore = 0;
+
+        if (barcodeMap_Other.has(normRaw)) {
+          otherProd = barcodeMap_Other.get(normRaw);
+          otherScore = 0.85;
+        } else if (codeMap_Other.has(normRaw)) {
+          otherProd = codeMap_Other.get(normRaw);
+          otherScore = 0.85;
+        } else if (exactNormMap_Other.has(normQuery)) {
+          otherProd = exactNormMap_Other.get(normQuery);
+          otherScore = 0.85;
+        } else {
+          const qTokens = new Set(normQuery.split(/\s+/).filter(Boolean));
+          const lenQ = normQuery.length;
+
+          for (const cand of candidateList_Other) {
+            if (Math.min(lenQ, cand.len) / Math.max(lenQ, cand.len) < 0.55) continue;
+            let commonTokens = 0;
+            for (const qt of qTokens) {
+              if (cand.tokens.has(qt)) commonTokens++;
+            }
+            if (qTokens.size >= 2 && commonTokens === 0) continue;
+            const score = stringSimilarity(normQuery, cand.normName);
+            if (score > otherScore) {
+              otherScore = score;
+              otherProd = cand.product;
+            }
+          }
+        }
+
+        if (otherProd && otherScore >= 0.8) {
+          match = { matchType: "fuzzy", score: Math.min(otherScore, 0.85), product: otherProd, differentSupplier: true };
+        } else {
+          match = { matchType: "none", score: otherScore, product: null };
+        }
       }
     }
 
@@ -1017,6 +1119,7 @@ function processTsvData(rawText) {
       productCode: finalCode,
       name: rawName,
       barcode: finalBarcode,
+      supplier: selectedSupplier || (matchedProduct ? (matchedProduct["Supplier"] || matchedProduct["Produsen"] || "") : ""),
       purchaseUnit: pUnit,
       intermediateUnit: mUnit,
       intermediateQty: mUnit ? (mQty || "") : "",
@@ -1159,7 +1262,9 @@ function renderManualInvoiceItems() {
           <span>Kode: ${escapeHtml(item.productCode)}</span>
         </div>
       `;
-    }
+    const itemSupName = item.supplier || currentSup || item.matchedProduct?.["Supplier"] || item.matchedProduct?.["Produsen"] || "-";
+    const itemUnit = item.purchaseUnit || "-";
+    const unitDisplay = qNum ? `${qNum} ${itemUnit}` : itemUnit;
 
     return `
       <tr data-index="${idx}" class="manual-inv-row ${isCollapsed ? 'is-collapsed' : 'is-expanded'}">
@@ -1168,7 +1273,19 @@ function renderManualInvoiceItems() {
             <span class="mobile-row-badge" style="background:#0284c7;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;flex-shrink:0;">#${idx + 1}</span>
             <div style="min-width:0;flex:1;">
               <div class="mobile-row-title" style="font-size:12.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(item.name || '(Obat Baru)')}</div>
-              <div class="mobile-row-summary" style="font-size:11px;color:#0369a1;font-weight:600;margin-top:1px;">${qNum ? `${qNum} ${escapeHtml(item.purchaseUnit || '')} • ` : ''}${rupiah(item.subtotal || 0)}</div>
+              <div class="mobile-row-summary" style="font-size:11px;color:#475569;font-weight:600;margin-top:2px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+                <span class="mobile-row-supplier-tag" style="color:#64748b;display:inline-flex;align-items:center;gap:3px;" title="Supplier">
+                  <i class="fa-solid fa-truck-field" style="font-size:9.5px;color:#0284c7;"></i> <span class="val-sup">${escapeHtml(itemSupName)}</span>
+                </span>
+                <span style="color:#cbd5e1;">•</span>
+                <span class="mobile-row-unit-tag" style="color:#0284c7;display:inline-flex;align-items:center;gap:3px;" title="Satuan Besar">
+                  <i class="fa-solid fa-box" style="font-size:9.5px;"></i> <span class="val-unit">${escapeHtml(unitDisplay)}</span>
+                </span>
+                <span style="color:#cbd5e1;">•</span>
+                <strong class="mobile-row-subtotal-tag" style="color:#0f172a;font-weight:800;display:inline-flex;align-items:center;gap:3px;" title="Subtotal">
+                  <span class="val-subtotal">${rupiah(item.subtotal || 0)}</span>
+                </strong>
+              </div>
             </div>
           </div>
           <div class="mobile-row-header-actions" style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
@@ -1356,11 +1473,8 @@ function bindManualItemRowEvents() {
   tbody.querySelectorAll(".row-prod-search").forEach(input => {
     input.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.index, 10);
-      const row = tbody.querySelector(`tr[data-index="${idx}"]`);
-      if (row) {
-        const titleEl = row.querySelector(".mobile-row-title");
-        if (titleEl) titleEl.textContent = e.target.value.trim() || "(Obat Baru)";
-      }
+      manualInvoiceItems[idx].name = e.target.value.trim();
+      updateMobileRowHeader(idx);
       clearTimeout(prodSearchDebounceTimer);
       prodSearchDebounceTimer = setTimeout(() => {
         showProductSuggestions(e.target, idx, e.target.value);
@@ -1393,6 +1507,7 @@ function bindManualItemRowEvents() {
       const idx = parseInt(e.target.dataset.index, 10);
       manualInvoiceItems[idx].purchaseUnit = e.target.value.trim();
       checkAutoUnitFallback(idx);
+      updateMobileRowHeader(idx);
     });
   });
 
@@ -1688,6 +1803,32 @@ function selectProductForRow(idx, prod) {
   calculateManualInvoiceTotals();
 }
 
+function updateMobileRowHeader(idx) {
+  const item = manualInvoiceItems[idx];
+  if (!item) return;
+  const row = document.querySelector(`tr.manual-inv-row[data-index="${idx}"]`);
+  if (!row) return;
+
+  const titleEl = row.querySelector(".mobile-row-title");
+  if (titleEl) {
+    titleEl.textContent = item.name || "(Obat Baru)";
+  }
+
+  const currentSup = text($("manual-inv-supplier")?.value);
+  const itemSupName = item.supplier || currentSup || item.matchedProduct?.["Supplier"] || item.matchedProduct?.["Produsen"] || "-";
+  const supEl = row.querySelector(".val-sup");
+  if (supEl) supEl.textContent = itemSupName;
+
+  const qNum = num(item.qty) || 0;
+  const itemUnit = item.purchaseUnit || "-";
+  const unitDisplay = qNum ? `${qNum} ${itemUnit}` : itemUnit;
+  const unitEl = row.querySelector(".val-unit");
+  if (unitEl) unitEl.textContent = unitDisplay;
+
+  const subtotalEl = row.querySelector(".val-subtotal");
+  if (subtotalEl) subtotalEl.textContent = rupiah(item.subtotal || 0);
+}
+
 function recalculateRow(idx, fullRender = false) {
   const item = manualInvoiceItems[idx];
   if (!item) return;
@@ -1710,14 +1851,7 @@ function recalculateRow(idx, fullRender = false) {
         const totalBase = q * (num(item.conversionRatio) || 1);
         baseEl.innerHTML = `${totalBase} <small style="font-size:10px;">${escapeHtml(item.baseUnit || '')}</small>`;
       }
-      const mobileSummary = row.querySelector(".mobile-row-summary");
-      if (mobileSummary) {
-        mobileSummary.textContent = `${q ? `${q} ${escapeHtml(item.purchaseUnit || '')} • ` : ''}${rupiah(item.subtotal)}`;
-      }
-      const mobileTitle = row.querySelector(".mobile-row-title");
-      if (mobileTitle && item.name) {
-        mobileTitle.textContent = item.name;
-      }
+      updateMobileRowHeader(idx);
     }
   }
 

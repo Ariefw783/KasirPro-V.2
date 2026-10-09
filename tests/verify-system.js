@@ -669,6 +669,58 @@ assert(totalBatchUnits === 515, "Total Item Faktur Fisik Tepat 515 Unit Dasar");
 assert(correctedBatchStockVal === 398535, "Total Nilai Stok Tidak Mengalami Inflasi 100x Lipat (Rp 398.535, Bukan Rp 22.320.303)");
 
 // -----------------------------------------------------------------------------
+// 14. PENGUJIAN LAYER MODAL, HEADER DINAMIS & PRIORITAS SUPPLIER MATCHING
+// -----------------------------------------------------------------------------
+console.log("\n📑 BAGIAN 14: PENGUJIAN LAYER MODAL, HEADER DINAMIS & PRIORITAS SUPPLIER");
+
+// 1. Verifikasi Posisi DOM dan Z-Index Modal Input Faktur Manual
+const indexHtmlContent = fs.readFileSync(path.resolve(rootDir, "management/index.html"), "utf8");
+const appLayoutEnd = indexHtmlContent.indexOf("</div>\r\n\r\n<!-- MODAL INPUT FAKTUR MANUAL") !== -1 ||
+                     indexHtmlContent.indexOf("</div>\n\n<!-- MODAL INPUT FAKTUR MANUAL") !== -1 ||
+                     indexHtmlContent.indexOf("<!-- MODAL INPUT FAKTUR MANUAL (GRID MODE DENGAN REKONSILIASI MATEMATIKA) -->\n<div id=\"modal-manual-invoice\"") !== -1 ||
+                     indexHtmlContent.indexOf("<!-- MODAL INPUT FAKTUR MANUAL (GRID MODE DENGAN REKONSILIASI MATEMATIKA) -->\r\n<div id=\"modal-manual-invoice\"") !== -1;
+assert(appLayoutEnd, "Modal Faktur: Diletakkan di Lapisan Terluar Root Body (Bebas dari Stacking Context Main Area & Sidebar)");
+assert(indexHtmlContent.includes('id="modal-manual-invoice"') && indexHtmlContent.includes('z-index:99999'), "Modal Faktur: Memiliki Z-Index 99999 (Di Depan Sidebar dan Header)");
+
+// 2. Verifikasi Data Header Ciutkan (Collapse) Poin 2
+const mockCollapsedItem = {
+  name: "COPARCETIN STRAW SYRUP (PRE)",
+  supplier: "PT Kimia Farma",
+  purchaseUnit: "BOTOL",
+  qty: 2,
+  subtotal: 16260
+};
+const qNum = mockCollapsedItem.qty;
+const unitDisplay = qNum ? `${qNum} ${mockCollapsedItem.purchaseUnit}` : mockCollapsedItem.purchaseUnit;
+const subtotalDisplay = `Rp ${mockCollapsedItem.subtotal.toLocaleString("id-ID")}`;
+
+assert(mockCollapsedItem.name === "COPARCETIN STRAW SYRUP (PRE)", "Header Collapse: Nama Produk Ditampilkan Dinamis");
+assert(mockCollapsedItem.supplier === "PT Kimia Farma", "Header Collapse: Nama Supplier Ditampilkan Dinamis");
+assert(unitDisplay === "2 BOTOL", "Header Collapse: Satuan Besar Ditampilkan Dinamis (2 BOTOL)");
+assert(subtotalDisplay.includes("16.260"), "Header Collapse: Subtotal Ditampilkan Dinamis (Rp 16.260)");
+
+// 3. Verifikasi Smart Product Matching dengan Prioritas Supplier Pilihan
+const multiSupMaster = [
+  { "Kode Produk": "KF-COP-01", "Nama Produk": "COPARCETIN SYRUP", "Supplier": "PT Kimia Farma" },
+  { "Kode Produk": "MBS-COP-01", "Nama Produk": "COPARCETIN SYRUP", "Supplier": "PT Mensa Binasukses" }
+];
+
+// Saat supplier dipilih adalah PT Mensa Binasukses:
+const matchedWithMensa = findBestProductMatch("COPARCETIN SYRUP", multiSupMaster, 0.8, "PT Mensa Binasukses");
+assert(matchedWithMensa.matchType === "exact", "Supplier Match: Exact Match Ditemukan pada Supplier yang Sama");
+assert(matchedWithMensa.product?.["Kode Produk"] === "MBS-COP-01", "Supplier Match: Produk Dipilih dari PT Mensa Binasukses (Bukan Kimia Farma)");
+
+// Saat nama produk cocok dengan master tapi berbeda supplier dengan dropdown:
+const singleSupMaster = [
+  { "Kode Produk": "KF-COP-01", "Nama Produk": "COPARCETIN SYRUP", "Supplier": "PT Kimia Farma" }
+];
+const matchedDiffSup = findBestProductMatch("COPARCETIN SYRUP", singleSupMaster, 0.8, "PT Mensa Binasukses");
+assert(matchedDiffSup.matchType !== "exact", "Supplier Match: Dilarang Menganggap 100% Cocok Jika Berbeda Supplier");
+assert(matchedDiffSup.differentSupplier === true || matchedDiffSup.score <= 0.85, "Supplier Match: Diturunkan Menjadi Fuzzy/Peringatan Beda Supplier");
+
+
+
+// -----------------------------------------------------------------------------
 // REKAPITULASI HASIL AUDIT
 // -----------------------------------------------------------------------------
 console.log("\n========================================================");

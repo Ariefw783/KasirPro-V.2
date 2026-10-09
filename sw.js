@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v96-stock-valuation-conversion";
+const CACHE_VERSION = "kasirpro-pwa-v97-invoice-modal-supplier-priority";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

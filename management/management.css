@@ -1121,6 +1121,10 @@
     }
 }
 
-
-
-
+/* LAPISAN TERDEPAN MODAL INPUT FAKTUR MANUAL (GRID MODE) */
+#modal-manual-invoice.product-detail-overlay,
+#modal-manual-invoice {
+    z-index: 99999 !important;
+    position: fixed !important;
+    inset: 0 !important;
+}
