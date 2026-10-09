@@ -1030,24 +1030,27 @@ const loginCoreContent = fs.readFileSync(loginCorePath, "utf-8");
 assert(loginCoreContent.includes("Menyiapkan Dashboard..."), "Login: Tombol Menampilkan Status 'Menyiapkan Dashboard...' Pasca-Login");
 
 // -----------------------------------------------------------------------------
-// 18. PENGUJIAN DESAIN SIDEBAR DEEP MIDNIGHT & ADAPTIVE CARD VIEW RESPONSIVE SWITCH
+// 18. PENGUJIAN DESAIN SIDEBAR CLEAN MODERN MEDICAL & UNIVERSAL ADAPTIVE DATA CARDS
 // -----------------------------------------------------------------------------
-console.log("\n🎨 BAGIAN 18: PENGUJIAN SIDEBAR DEEP MIDNIGHT & ADAPTIVE CARD VIEW");
+console.log("\n🎨 BAGIAN 18: PENGUJIAN SIDEBAR CLEAN MODERN MEDICAL & ADAPTIVE DATA CARDS");
 
-// 1. Verifikasi Style CSS Sidebar & Responsive Switch
-assert(cssContent.includes("#090e1a"), "Sidebar: Tema Deep Midnight Modern Gradient Terpasang");
+// 1. Verifikasi Style CSS Sidebar Clean Modern Medical & Eliminasi Tabel Lama
+assert(cssContent.includes("#0d9488"), "Sidebar: Tema Clean Modern Medical Gradient & Teal Terpasang");
 assert(cssContent.includes(".responsive-data-card"), "CSS: Komponen Kartu Adaptif (.responsive-data-card) Terdefinisi");
 assert(cssContent.includes(".card-accordion-header"), "CSS: Komponen Accordion Header (.card-accordion-header) Terdefinisi");
 assert(cssContent.includes(".card-accordion-body"), "CSS: Komponen Accordion Body (.card-accordion-body) Terdefinisi");
-assert(cssContent.includes(".desktop-only-table"), "CSS: Kelas Desktop Table Switch Terpasang");
-assert(cssContent.includes(".mobile-only-card-list"), "CSS: Kelas Mobile Card List Switch Terpasang");
+assert(cssContent.includes(".desktop-only-table"), "CSS: Kelas Desktop Table Terdefinisi");
+assert(cssContent.includes(".mobile-only-card-list"), "CSS: Kelas Mobile/Adaptive Card List Terdefinisi");
+assert(/\.desktop-only-table\s*\{[^}]*display:\s*none\s*!important/s.test(cssContent), "CSS: Tabel Lama Scroll Dinonaktifkan (Display None)");
 
-// 2. Verifikasi Kontainer Kartu Mobile di index.html
+// 2. Verifikasi Kontainer Kartu Adaptif di Seluruh Modul index.html
 assert(indexHtmlContent.includes('id="suppliers-card-list"'), "DOM: Kontainer Kartu Vertikal Supplier Terpasang (#suppliers-card-list)");
 assert(indexHtmlContent.includes('id="categories-card-list"'), "DOM: Kontainer Kartu Vertikal Kategori Terpasang (#categories-card-list)");
 assert(indexHtmlContent.includes('id="products-card-list"'), "DOM: Kontainer Kartu Vertikal Master Produk Terpasang (#products-card-list)");
 assert(indexHtmlContent.includes('id="invoice-card-list"'), "DOM: Kontainer Kartu Vertikal Faktur Terpasang (#invoice-card-list)");
 assert(indexHtmlContent.includes('id="sales-card-list"'), "DOM: Kontainer Kartu Vertikal Penjualan Terpasang (#sales-card-list)");
+assert(indexHtmlContent.includes('id="stock-card-list"'), "DOM: Kontainer Kartu Vertikal Stok Terpasang (#stock-card-list)");
+assert(indexHtmlContent.includes('id="users-card-list"'), "DOM: Kontainer Kartu Vertikal Pengguna Terpasang (#users-card-list)");
 
 // 3. Verifikasi Logika Default Diciutkan (Default Collapsed Accordion State)
 const sampleCardHtml = `<div class="responsive-data-card card-success" data-name="PT Kimia Farma"></div>`;

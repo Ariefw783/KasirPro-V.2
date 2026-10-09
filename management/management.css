@@ -899,29 +899,33 @@
    Modern Dark-Navy or Crisp White Executive Sidebar with Floating Pill Active
    ============================================================================== */
 
-/* 1. STRUKTUR SIDEBAR MODERN (DEEP MIDNIGHT MEDICAL & SUBTLE GLOW) */
+/* ==============================================================================
+   RENOVASI VISUAL PREMIUM — SIDEBAR NAVIGASI MENU KASIRPRO V2
+   Clean Modern Medical Sidebar with Soft Teal, Sky Blue, and Crisp Slate
+   ============================================================================== */
+
+/* 1. STRUKTUR SIDEBAR CLEAN MODERN MEDICAL */
 .sidebar {
-    background: linear-gradient(180deg, #090e1a 0%, #0f172a 100%) !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
-    box-shadow: 6px 0 28px rgba(0, 0, 0, 0.35) !important;
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 50%, #f0fdfa 100%) !important;
+    border-right: 1px solid #e2e8f0 !important;
+    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.05) !important;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 /* 2. HEADER BRAND LOGO (APOTEK DOA IBU) */
 .sidebar-brand {
     padding: 14px 18px !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-    background: rgba(15, 23, 42, 0.75) !important;
-    backdrop-filter: blur(8px) !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
 }
 
 .brand-logo {
     width: 40px !important;
     height: 40px !important;
     border-radius: 12px !important;
-    background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4) !important;
+    background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%) !important;
+    border: 1px solid rgba(13, 148, 136, 0.25) !important;
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25) !important;
     transition: transform 0.2s ease !important;
 }
 
@@ -933,29 +937,29 @@
     font-size: 0.98rem !important;
     font-weight: 850 !important;
     letter-spacing: -0.01em !important;
-    background: linear-gradient(135deg, #ffffff 0%, #7dd3fc 100%) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
+    color: #0f172a !important;
+    background: none !important;
+    -webkit-text-fill-color: initial !important;
 }
 
 .brand-text span {
     font-size: 0.68rem !important;
-    font-weight: 650 !important;
-    color: #94a3b8 !important;
+    font-weight: 750 !important;
+    color: #0d9488 !important;
     letter-spacing: 0.02em !important;
 }
 
 /* 3. SECTION LABEL MENU */
 .nav-label {
     margin: 16px 12px 8px !important;
-    font-size: 0.63rem !important;
+    font-size: 0.64rem !important;
     font-weight: 850 !important;
-    letter-spacing: 0.1em !important;
-    color: #818cf8 !important;
+    letter-spacing: 0.08em !important;
+    color: #0d9488 !important;
     text-transform: uppercase !important;
 }
 
-/* 4. ITEM NAVIGASI MENU MODERN (FLOATING PILL & SOFT GLOW) */
+/* 4. ITEM NAVIGASI MENU MODERN (CLEAN MODERN MEDICAL FLOATING PILL) */
 .nav-item {
     min-height: 42px !important;
     margin: 4px 8px !important;
@@ -963,41 +967,45 @@
     border-radius: 12px !important;
     font-size: 0.78rem !important;
     font-weight: 650 !important;
-    color: #cbd5e1 !important;
+    color: #475569 !important;
     display: flex !important;
     align-items: center !important;
     gap: 12px !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
     position: relative !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
 }
 
 .nav-item > i:first-child {
     width: 20px !important;
     font-size: 0.95rem !important;
-    color: #94a3b8 !important;
+    color: #0d9488 !important;
     text-align: center !important;
     transition: all 0.2s ease !important;
 }
 
 /* State Hover Menu */
 .nav-item:hover {
-    color: #ffffff !important;
-    background: rgba(255, 255, 255, 0.08) !important;
+    color: #0f172a !important;
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
     transform: translateX(3px) !important;
 }
 
 .nav-item:hover > i:first-child {
-    color: #38bdf8 !important;
+    color: #0284c7 !important;
     transform: scale(1.15) !important;
 }
 
-/* State Aktif Menu (Pill Modern Gradient Medical + High Contrast Glow) */
+/* State Aktif Menu (Medical Teal to Sky Blue Gradient + Glow) */
 .nav-item.active {
     color: #ffffff !important;
-    background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%) !important;
-    font-weight: 800 !important;
-    box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+    background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%) !important;
+    font-weight: 750 !important;
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3) !important;
     transform: translateX(2px) !important;
+    border-color: transparent !important;
 }
 
 .nav-item.active > i:first-child {
@@ -1006,34 +1014,40 @@
 
 /* Aksen Khusus Link POS Cepat di Sidebar */
 #sidebar-pos-link {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(6, 182, 212, 0.12) 100%) !important;
-    border: 1px solid rgba(16, 185, 129, 0.35) !important;
-    color: #34d399 !important;
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%) !important;
+    border: 1px solid #a7f3d0 !important;
+    color: #047857 !important;
+    font-weight: 750 !important;
 }
 
 #sidebar-pos-link:hover {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(6, 182, 212, 0.25) 100%) !important;
+    background: linear-gradient(135deg, #10b981 0%, #0d9488 100%) !important;
     border-color: #10b981 !important;
     color: #ffffff !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25) !important;
 }
 
 #sidebar-pos-link > i:first-child {
-    color: #34d399 !important;
+    color: #059669 !important;
+}
+
+#sidebar-pos-link:hover > i:first-child {
+    color: #ffffff !important;
 }
 
 /* 5. FOOTER SIDEBAR & TOMBOL KELUAR */
 .sidebar-footer {
     padding: 12px 14px !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
-    background: rgba(11, 19, 41, 0.95) !important;
+    border-top: 1px solid #e2e8f0 !important;
+    background: #f8fafc !important;
 }
 
 .logout-button {
     min-height: 40px !important;
     border-radius: 12px !important;
-    background: rgba(239, 68, 68, 0.12) !important;
-    border: 1px solid rgba(239, 68, 68, 0.3) !important;
-    color: #f87171 !important;
+    background: #fff1f2 !important;
+    border: 1px solid #fecdd3 !important;
+    color: #e11d48 !important;
     font-size: 0.76rem !important;
     font-weight: 750 !important;
     box-shadow: none !important;
@@ -1041,11 +1055,11 @@
 }
 
 .logout-button:hover {
-    background: #dc2626 !important;
+    background: #e11d48 !important;
     color: #ffffff !important;
-    border-color: #dc2626 !important;
+    border-color: #e11d48 !important;
     transform: translateY(-1.5px) !important;
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25) !important;
 }
 
 .logout-button i {
@@ -1058,28 +1072,31 @@
 }
 
 /* ==============================================================================
-   RESPONSIVE DATA CARDS (MOBILE & TABLET ADAPTIVE ACCORDION CARDS)
+   FORMAT KARTU ADAPTIF MENYELURUH (UNIVERSAL ADAPTIVE DATA CARDS)
+   Eliminasi tabel lama yang memakai scroll horizontal di seluruh modul
    ============================================================================== */
 
-@media (min-width: 901px) {
-    .desktop-only-table {
-        display: block !important;
-    }
-    .mobile-only-card-list {
-        display: none !important;
-    }
+/* Sembunyikan tabel lama dengan scroll horizontal di semua resolusi */
+.desktop-only-table {
+    display: none !important;
 }
 
-@media (max-width: 900px) {
-    .desktop-only-table {
-        display: none !important;
-    }
-    .mobile-only-card-list {
-        display: flex !important;
-        flex-direction: column;
-        gap: 12px;
-        margin-top: 8px;
-    }
+/* Tampilkan kartu vertikal adaptif secara universal di desktop & mobile */
+.mobile-only-card-list,
+.responsive-card-list,
+.responsive-data-card-list,
+#suppliers-card-list,
+#categories-card-list,
+#products-card-list,
+#invoice-card-list,
+#sales-card-list,
+#stock-card-list,
+#users-card-list {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+    width: 100%;
 }
 
 .responsive-data-card {

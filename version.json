@@ -1,13 +1,13 @@
 {
-  "version": "2.2.50",
-  "build": "20261009.08",
+  "version": "2.2.51",
+  "build": "20261009.09",
   "releaseDate": "09 Oktober 2026",
-  "title": "Deep Midnight Sidebar & Adaptive Mobile Cards",
-  "description": "Pembaruan desain sidebar bertema Deep Midnight Medical dengan floating glow pill, serta transformasi tabel utama menjadi kartu vertikal adaptif (accordion cards) di layar ponsel.",
+  "title": "Clean Modern Medical Sidebar & Universal Adaptive Cards",
+  "description": "Pembaruan desain sidebar bertema Clean Modern Medical (Teal & Sky Blue), eliminasi total tabel ber-scroll horizontal, serta penerapan format kartu adaptif vertikal universal di semua resolusi.",
   "changelog": [
-    "Upgrade deep midnight sidebar style",
-    "Add collapsible vertical mobile cards",
-    "Responsive switch for data tables",
-    "Update service worker cache v103"
+    "Apply clean modern medical sidebar",
+    "Remove old horizontal scroll tables",
+    "Display universal adaptive data cards",
+    "Update service worker cache v104"
   ]
 }

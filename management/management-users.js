@@ -187,6 +187,115 @@ function renderUsersTable() {
       handleToggleUserStatus(uName);
     });
   });
+
+  // Render Kartu Adaptif Vertikal (Accordion Data Cards)
+  const cardList = $("users-card-list");
+  if (cardList) {
+    if (!filtered.length) {
+      cardList.innerHTML = `<div style="text-align:center;padding:28px 16px;color:#94a3b8;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;"><i class="fa-solid fa-users" style="font-size:24px;margin-bottom:8px;display:block;"></i>Tidak ada data pengguna yang sesuai pencarian.</div>`;
+    } else {
+      cardList.innerHTML = filtered.map(u => {
+        const uid = u.id || `usr-${u.username}`;
+        const uname = u.username || u["Username"] || "—";
+        const name = u.name || u["Nama"] || uname;
+        const roleRaw = norm(u.role || u["Role"]);
+        const roleLabel = roleRaw === "admin" ? "Administrator" : "Kasir";
+        const phone = u.phone || u["Telepon"] || "—";
+        const email = u.email || u["Email"] || `${uname}@kasirpro-v2.app`;
+        const statusRaw = norm(u.status || u["Status"]);
+        const isAktif = statusRaw !== "nonaktif";
+        const statusLabel = isAktif ? "Aktif" : "Nonaktif";
+
+        return `
+          <div class="responsive-data-card ${roleRaw === 'admin' ? 'card-purple' : 'card-success'}">
+            <div class="card-accordion-header" role="button" tabindex="0">
+              <div class="card-header-main">
+                <div class="card-title-row">
+                  <span class="card-title">${escapeHtml(name)}</span>
+                  <span class="badge ${roleRaw === 'admin' ? 'badge-primary' : 'badge-info'}" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;">
+                    ${escapeHtml(roleLabel)}
+                  </span>
+                </div>
+                <div class="card-subtitle-row">
+                  <span><i class="fa-solid fa-user"></i> <code>${escapeHtml(uname)}</code></span>
+                  <span><i class="fa-solid fa-phone"></i> ${escapeHtml(phone)}</span>
+                  <span class="badge ${isAktif ? 'badge-success' : 'badge-secondary'}" style="padding:2px 6px;border-radius:4px;font-size:10.5px;">${escapeHtml(statusLabel)}</span>
+                </div>
+              </div>
+              <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </div>
+            <div class="card-accordion-body">
+              <div class="card-detail-grid">
+                <div class="card-detail-item">
+                  <span class="card-detail-label">ID Pengguna</span>
+                  <span class="card-detail-value"><code>${escapeHtml(uid)}</code></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Username Login</span>
+                  <span class="card-detail-value"><code>${escapeHtml(uname)}</code></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Nomor Telepon</span>
+                  <span class="card-detail-value">${escapeHtml(phone)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Email Terdaftar</span>
+                  <span class="card-detail-value"><small class="text-muted">${escapeHtml(email)}</small></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Autentikasi</span>
+                  <span class="card-detail-value" style="color:#059669;font-weight:700;"><i class="fa-solid fa-shield-check"></i> Firebase</span>
+                </div>
+              </div>
+              <div class="card-action-bar">
+                <button type="button" class="btn-edit-user button button-small button-secondary" data-username="${escapeHtml(uname)}" title="Edit User">
+                  <i class="fa-solid fa-pen"></i> Edit Profil
+                </button>
+                <button type="button" class="btn-reset-user button button-small button-secondary" data-username="${escapeHtml(uname)}" title="Reset Password">
+                  <i class="fa-solid fa-key"></i> Reset Sandi
+                </button>
+                ${uname !== 'admin' ? `
+                  <button type="button" class="btn-toggle-user button button-small button-danger" data-username="${escapeHtml(uname)}" title="Aktif/Nonaktifkan">
+                    <i class="fa-solid ${isAktif ? 'fa-user-slash' : 'fa-user-check'}"></i> ${isAktif ? 'Nonaktifkan' : 'Aktifkan'}
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      // Accordion toggle handler
+      cardList.querySelectorAll(".card-accordion-header").forEach(header => {
+        header.addEventListener("click", () => {
+          const card = header.closest(".responsive-data-card");
+          if (card) card.classList.toggle("is-expanded");
+        });
+      });
+
+      cardList.querySelectorAll(".btn-edit-user").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const uName = btn.dataset.username;
+          const found = userList.find(x => norm(x.username || x["Username"]) === norm(uName));
+          if (found) openUserModal(found);
+        });
+      });
+
+      cardList.querySelectorAll(".btn-reset-user").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const uName = btn.dataset.username;
+          handleResetPassword(uName);
+        });
+      });
+
+      cardList.querySelectorAll(".btn-toggle-user").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const uName = btn.dataset.username;
+          handleToggleUserStatus(uName);
+        });
+      });
+    }
+  }
 }
 
 function installUserModal() {

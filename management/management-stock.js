@@ -275,6 +275,85 @@ function renderStockTable() {
     });
   }
 
+  // Render Kartu Adaptif Vertikal (Accordion Data Cards)
+  const cardList = $("stock-card-list");
+  if (cardList) {
+    if (!pageItems.length) {
+      cardList.innerHTML = `<div style="text-align:center;padding:28px 16px;color:#94a3b8;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;"><i class="fa-solid fa-boxes-stacked" style="font-size:24px;margin-bottom:8px;display:block;"></i>Tidak ada data stok produk yang ditemukan.</div>`;
+    } else {
+      cardList.innerHTML = pageItems.map(item => {
+        const s = norm(item.status);
+        let accentClass = "card-success";
+        if (s === "minus") accentClass = "card-danger";
+        else if (s === "habis") accentClass = "card-danger";
+        else if (s === "menipis") accentClass = "card-warning";
+
+        return `
+          <div class="responsive-data-card ${accentClass}">
+            <div class="card-accordion-header" role="button" tabindex="0">
+              <div class="card-header-main">
+                <div class="card-title-row">
+                  <span class="card-title">${escapeHtml(item.name)}</span>
+                  ${getStockStatusBadge(item.status)}
+                </div>
+                <div class="card-subtitle-row">
+                  <span><i class="fa-solid fa-barcode"></i> ${escapeHtml(item.code)}</span>
+                  <span><i class="fa-solid fa-tags"></i> ${escapeHtml(item.category || 'Umum')}</span>
+                  <span><i class="fa-solid fa-boxes-stacked"></i> <strong>${formatNumber(item.stock)}</strong> ${escapeHtml(item.unit)}</span>
+                </div>
+              </div>
+              <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </div>
+            <div class="card-accordion-body">
+              <div class="card-detail-grid">
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Stok Fisik</span>
+                  <span class="card-detail-value"><strong style="color:#0f172a;font-size:15px;">${formatNumber(item.stock)}</strong> ${escapeHtml(item.unit)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Stok Minimum</span>
+                  <span class="card-detail-value">${formatNumber(item.minStock)} ${escapeHtml(item.unit)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Harga Beli Dasar</span>
+                  <span class="card-detail-value">${rupiah(item.unitBuyPrice)}${item.conv > 1 ? ` <small class="text-muted">(${rupiah(item.buyPrice)}/${escapeHtml(item.buyUnit || 'Box')})</small>` : ''}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Total Nilai Stok</span>
+                  <span class="card-detail-value"><strong style="color:#0284c7;">${rupiah(item.totalValue)}</strong></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Supplier Terkait</span>
+                  <span class="card-detail-value">${escapeHtml(item.supplier || '—')}</span>
+                </div>
+              </div>
+              <div class="card-action-bar">
+                <button type="button" class="btn-stock-history button button-small button-secondary" data-code="${escapeHtml(item.code)}" title="Lihat Histori Masuk/Batch">
+                  <i class="fa-solid fa-clock-rotate-left"></i> Histori Masuk/Batch
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      // Accordion toggle listener
+      cardList.querySelectorAll(".card-accordion-header").forEach(header => {
+        header.addEventListener("click", () => {
+          const card = header.closest(".responsive-data-card");
+          if (card) card.classList.toggle("is-expanded");
+        });
+      });
+
+      cardList.querySelectorAll(".btn-stock-history").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const code = btn.dataset.code;
+          openStockHistoryModal(code);
+        });
+      });
+    }
+  }
+
   const pageInfoEl = $("stock-page-info");
   if (pageInfoEl) {
     pageInfoEl.textContent = `Menampilkan ${pageItems.length} dari ${total} produk (Halaman ${currentStockPage})`;

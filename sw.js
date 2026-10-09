@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v103-deep-midnight-adaptive-cards";
+const CACHE_VERSION = "kasirpro-pwa-v104-clean-medical-universal-cards";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
