@@ -22,6 +22,7 @@ import { generatePurchaseInvoicePdf } from "../modules/core/pdf.js";
 
 let currentInvoices = [];
 let activeDetailInvoice = null;
+let editingInvoice = null;
 
 export function initInvoicesModule() {
   bindEvents();
@@ -288,10 +289,13 @@ export async function executeConfirmInvoice(inv) {
     if (!goAhead) return false;
   }
 
-  const confirmed = await window.KasirProDialog?.confirm(
-    "Konfirmasi Faktur Masuk",
-    `Apakah Anda yakin ingin mengonfirmasi Faktur #${inv.invoiceNumber} dari ${inv.supplierName}?\nStok produk akan bertambah di satuan dasar dan Harga Beli Terakhir akan diperbarui.`
-  );
+  const isEditMode = Boolean(editingInvoice);
+  const confirmTitle = isEditMode ? "Konfirmasi Pembaruan Faktur" : "Konfirmasi Faktur Masuk";
+  const confirmText = isEditMode
+    ? `Apakah Anda yakin ingin memperbarui Faktur #${editingInvoice.invoiceNumber}?\nStok versi lama akan dibalik (*reversal*) otomatis dan digantikan dengan stok versi baru hasil editan.`
+    : `Apakah Anda yakin ingin mengonfirmasi Faktur #${inv.invoiceNumber} dari ${inv.supplierName}?\nStok produk akan bertambah di satuan dasar dan Harga Beli Terakhir akan diperbarui.`;
+
+  const confirmed = await window.KasirProDialog?.confirm(confirmTitle, confirmText);
   if (!confirmed) return false;
 
   try {
@@ -307,6 +311,23 @@ export async function executeConfirmInvoice(inv) {
 
     const now = nowIso();
     const user = "Admin";
+
+    // 0. Jika sedang mengedit faktur, balikkan (reversal) stok versi lama terlebih dahulu
+    if (isEditMode && Array.isArray(editingInvoice.items)) {
+      for (const oldItem of editingInvoice.items) {
+        const oldConv = num(oldItem.conversionRatio) || num(oldItem.conversion) || 1;
+        const oldBaseQty = (num(oldItem.qty) || 1) * oldConv;
+        const oldCode = norm(oldItem.matchedProductCode || oldItem.productCode || oldItem.code);
+        const prod = products.find(p => norm(p["Kode Produk"]) === oldCode || norm(p["Nama Produk"]) === norm(oldItem.name));
+        if (prod) {
+          const curStock = readCurrentStock(prod["Kode Produk"]);
+          const revertedStock = Math.max(0, curStock - oldBaseQty);
+          activeStockIndex.set(norm(prod["Kode Produk"]), revertedStock);
+          prod["Stok Awal"] = revertedStock;
+          touchedProducts.set(norm(prod["Kode Produk"]), prod);
+        }
+      }
+    }
 
     // 1. Pastikan supplier terdaftar
     if (inv.supplierName && !suppliers.some(s => norm(s["Nama Perusahaan"] || s["Supplier"]) === norm(inv.supplierName))) {
@@ -412,12 +433,30 @@ export async function executeConfirmInvoice(inv) {
     // 3. Simpan Faktur Terkonfirmasi
     const confirmedInvoice = {
       ...inv,
+      id: isEditMode ? editingInvoice.id : inv.id,
       status: "Terkonfirmasi",
       confirmedAt: now,
-      confirmedBy: user
+      confirmedBy: user,
+      corrections: isEditMode ? [
+        ...(editingInvoice.corrections || []),
+        { method: "trx", reason: "Revisi Item via Grid Mode", correctedAt: now, correctedBy: user }
+      ] : (inv.corrections || [])
     };
 
-    const nextInvoices = [...existingInvoices, confirmedInvoice];
+    let nextInvoices;
+    if (isEditMode) {
+      nextInvoices = existingInvoices.map(x => (x.id === editingInvoice.id || norm(x.invoiceNumber) === norm(editingInvoice.invoiceNumber)) ? confirmedInvoice : x);
+    } else {
+      nextInvoices = [...existingInvoices, confirmedInvoice];
+    }
+
+    if (isEditMode) {
+      const oldRef = norm(editingInvoice.invoiceNumber);
+      const oldId = norm(editingInvoice.id);
+      const curMovs = readStore(STORE_KEYS.movements, []);
+      const keptMovs = curMovs.filter(m => norm(m.reference) !== oldRef && norm(m.reference) !== oldId);
+      await writeStore(STORE_KEYS.movements, keptMovs);
+    }
 
     // Eksekusi transaksi atomik
     await writeStockTransaction([
@@ -441,6 +480,10 @@ export async function executeConfirmInvoice(inv) {
     // Tutup modal manual jika sedang terbuka
     try { closeManualInvoiceModal(); } catch (e) {}
 
+    if (isEditMode) {
+      editingInvoice = null;
+    }
+
     // Kembali ke daftar faktur
     try {
       if (window.switchView) {
@@ -453,8 +496,10 @@ export async function executeConfirmInvoice(inv) {
     } catch (e) {}
 
     window.KasirProDialog?.success(
-      "Faktur Berhasil Dikonfirmasi",
-      `Faktur #${inv.invoiceNumber} berhasil dikonfirmasi sebagai Barang Masuk.\nStok telah diperbarui secara otomatis.`
+      isEditMode ? "Faktur Berhasil Diperbarui" : "Faktur Berhasil Dikonfirmasi",
+      isEditMode
+        ? `Faktur #${inv.invoiceNumber} berhasil diperbarui.\nStok lama telah dibalik dan stok baru telah diterapkan secara otomatis.`
+        : `Faktur #${inv.invoiceNumber} berhasil dikonfirmasi sebagai Barang Masuk.\nStok telah diperbarui secara otomatis.`
     );
     return true;
   } catch (err) {
@@ -531,11 +576,86 @@ export function openManualInvoiceModal() {
   setTimeout(() => $("manual-inv-number")?.focus(), 60);
 }
 
+export function openManualInvoiceForEdit(inv) {
+  if (!inv) return;
+  editingInvoice = inv;
+  populateManualInvoiceSupplierDropdown();
+
+  if ($("manual-inv-supplier")) $("manual-inv-supplier").value = inv.supplierName || inv.supplier || "";
+  if ($("manual-inv-number")) $("manual-inv-number").value = inv.invoiceNumber || "";
+  if ($("manual-inv-date")) $("manual-inv-date").value = inv.date || inv.invoiceDate || "";
+  if ($("manual-inv-payment-type")) $("manual-inv-payment-type").value = inv.paymentType || inv.paymentMethod || "tempo";
+  if ($("manual-inv-due-date")) $("manual-inv-due-date").value = inv.dueDate || "";
+  if ($("manual-inv-discount-type")) $("manual-inv-discount-type").value = inv.discountMethod || "item";
+  if ($("manual-inv-global-discount-rp")) $("manual-inv-global-discount-rp").value = inv.discountGlobal ? formatNumber(inv.discountGlobal) : "";
+  if ($("manual-inv-ppn-rate")) $("manual-inv-ppn-rate").value = String(inv.taxGlobalPercent ?? (inv.taxGlobal > 0 ? 11 : 0));
+  if ($("manual-inv-printed-total")) $("manual-inv-printed-total").value = inv.total ? formatNumber(inv.total) : "";
+
+  handlePaymentTypeChange();
+  handleDiscountTypeChange();
+  handlePpnRateChange();
+
+  const titleEl = $("manual-invoice-title");
+  if (titleEl) {
+    titleEl.innerHTML = `<span style="color:#f59e0b;"><i class="fa-solid fa-pen-to-square"></i> Edit & Rekonsiliasi Faktur</span> #${escapeHtml(inv.invoiceNumber || inv.id)}`;
+  }
+  const confirmBtn = $("btn-confirm-manual-inv");
+  if (confirmBtn) {
+    confirmBtn.innerHTML = `<i class="fa-solid fa-rotate"></i> Perbarui & Reversal Stok`;
+    confirmBtn.style.background = "#d97706";
+  }
+
+  manualInvoiceItems = (inv.items || []).map(it => ({
+    name: it.name || "",
+    productCode: it.productCode || it.matchedProductCode || it.code || "",
+    barcode: it.barcode || "",
+    batch: it.batch || "",
+    expiryDate: it.expiryDate || "",
+    purchaseUnit: it.purchaseUnit || it.satuanBesar || "BOX",
+    intermediateUnit: it.intermediateUnit || it.satuanSedang || "",
+    intermediateQty: num(it.intermediateQty) || 1,
+    baseUnit: it.baseUnit || it.satuanTerkecil || "TABLET",
+    conversionRatio: num(it.conversionRatio) || num(it.conversion) || 1,
+    qty: num(it.qty) || 0,
+    buyPrice: num(it.buyPrice) || 0,
+    discountPercent: num(it.discountPercent) || 0,
+    discountRp: num(it.discountRp) || 0,
+    subtotal: num(it.subtotal) || 0,
+    _collapsed: false
+  }));
+
+  if (!manualInvoiceItems.length) {
+    addManualInvoiceRow();
+  }
+
+  renderManualInvoiceItems();
+  calculateManualInvoiceTotals();
+  toggleManualInvoiceHeader(false);
+  updateManualInvoiceHeaderSummary();
+
+  const modal = $("modal-manual-invoice");
+  if (modal) {
+    modal.hidden = false;
+    modal.style.display = "flex";
+    setTimeout(() => $("manual-inv-number")?.focus(), 60);
+  }
+}
+
 export function closeManualInvoiceModal() {
   const modal = $("modal-manual-invoice");
   if (modal) {
     modal.hidden = true;
     modal.style.display = "none";
+  }
+  if (editingInvoice) {
+    editingInvoice = null;
+    const titleEl = $("manual-invoice-title");
+    if (titleEl) titleEl.textContent = "Input Faktur Manual (Grid Mode)";
+    const confirmBtn = $("btn-confirm-manual-inv");
+    if (confirmBtn) {
+      confirmBtn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Simpan & Verifikasi Faktur`;
+      confirmBtn.style.background = "";
+    }
   }
 }
 
@@ -2022,8 +2142,8 @@ async function handleConfirmManualInvoice() {
     invDueDate = invDate;
   }
 
-  // Cek duplikasi nomor faktur
-  const exists = currentInvoices.some(i => norm(i.invoiceNumber) === norm(invNum) && (norm(i.status) === "terkonfirmasi" || norm(i.status) === "confirmed"));
+  // Cek duplikasi nomor faktur (kecuali faktur yang sedang diedit)
+  const exists = currentInvoices.some(i => i.id !== editingInvoice?.id && norm(i.invoiceNumber) === norm(invNum) && (norm(i.status) === "terkonfirmasi" || norm(i.status) === "confirmed"));
   if (exists) {
     window.KasirProDialog?.warning("Faktur Duplikat", `Nomor faktur "${invNum}" sudah pernah dikonfirmasi sebelumnya. Import ulang ditolak sesuai aturan.`);
     return;
@@ -2321,32 +2441,102 @@ function installInvoiceCorrectionModal() {
   const modalHtml = `
     <div id="modal-invoice-correction" class="kp-dialog-v4" hidden>
       <div class="kp-dialog-v4__backdrop"></div>
-      <section class="kp-dialog-v4__card" style="width:min(94vw,520px);" role="dialog">
-        <header style="padding:18px 20px 12px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
-          <h2 style="font-size:16px;font-weight:800;margin:0;">Koreksi Faktur Pembelian</h2>
+      <section class="kp-dialog-v4__card" style="width:min(94vw,560px);max-height:92vh;overflow-y:auto;" role="dialog">
+        <header style="padding:16px 20px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+          <h2 style="font-size:16px;font-weight:800;margin:0;"><i class="fa-solid fa-pen-to-square" style="color:#d97706;"></i> Koreksi & Edit Faktur</h2>
           <button type="button" id="close-modal-correction" class="button button-small button-secondary" style="padding:4px 8px;"><i class="fa-solid fa-xmark"></i></button>
         </header>
         <div style="padding:20px;text-align:left;">
           <label style="display:block;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">Metode Koreksi</label>
           <select id="corr-method" style="width:100%;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;margin-bottom:14px;">
-            <option value="admin">Koreksi Administratif (Hanya perbaiki info tanpa efek stok)</option>
-            <option value="trx">Koreksi Transaksional (Perbaiki catatan nominal / stok delta)</option>
+            <option value="admin">1. Koreksi Administratif (Nomor, Tanggal, Jatuh Tempo, Status Bayar - Tanpa Ubah Stok)</option>
+            <option value="trx">2. Koreksi Transaksional (Revisi Item, Qty, Harga Beli via Grid Editor - Reversal Stok Otomatis)</option>
           </select>
 
-          <label style="display:block;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">Alasan Koreksi <span class="text-danger">*</span></label>
-          <input type="text" id="corr-reason" required style="width:100%;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;margin-bottom:14px;" placeholder="Contoh: Kesalahan nomor faktur dari supplier">
+          <!-- SEKSI ADMINISTRATIF -->
+          <div id="corr-admin-section">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;">Nomor Faktur</label>
+                <input type="text" id="corr-inv-number" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+              </div>
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;">Supplier</label>
+                <input type="text" id="corr-inv-supplier" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+              </div>
+            </div>
 
-          <label style="display:block;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">Catatan Koreksi Tambahan</label>
-          <textarea id="corr-notes" rows="2" style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;margin-bottom:14px;" placeholder="Keterangan perbaikan..."></textarea>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;">Tanggal Faktur</label>
+                <input type="date" id="corr-inv-date" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+              </div>
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;">Jatuh Tempo</label>
+                <input type="date" id="corr-inv-due-date" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;">Metode Pembayaran</label>
+                <select id="corr-inv-pay-type" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+                  <option value="tempo">Tempo (Kredit)</option>
+                  <option value="tunai">Tunai (Cash)</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:4px;">Status Pembayaran</label>
+                <select id="corr-inv-pay-status" style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+                  <option value="Belum Lunas">Belum Lunas</option>
+                  <option value="Lunas">Lunas</option>
+                </select>
+              </div>
+            </div>
+
+            <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Alasan Koreksi <span class="text-danger">*</span></label>
+            <input type="text" id="corr-reason" required style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;margin-bottom:12px;" placeholder="Contoh: Kesalahan nomor faktur dari supplier atau tanggal tempo">
+
+            <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Catatan Koreksi Tambahan</label>
+            <textarea id="corr-notes" rows="2" style="width:100%;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;margin-bottom:12px;" placeholder="Keterangan perbaikan tambahan..."></textarea>
+          </div>
+
+          <!-- SEKSI TRANSAKSIONAL -->
+          <div id="corr-trx-section" style="display:none;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:14px;margin-bottom:14px;">
+            <h4 style="margin:0 0 6px;color:#0369a1;font-size:13.5px;font-weight:800;"><i class="fa-solid fa-arrows-rotate"></i> Koreksi Transaksional & Rekonsiliasi Stok</h4>
+            <p style="margin:0 0 12px;font-size:12.5px;color:#0c4a6e;line-height:1.45;">
+              Gunakan opsi ini jika Anda perlu <strong>menambah/mengurangi obat, mengubah kuantitas beli, harga beli, atau diskon faktur</strong>.<br>
+              Form Input Faktur Manual (Grid Mode) akan dibuka dengan data faktur ini sudah terisi. Saat disimpan, KasirPro akan <strong>membalik (*reversal*) stok lama secara atomik</strong> dan menerapkan stok baru hasil revisi.
+            </p>
+            <button type="button" id="btn-open-grid-editor" class="button button-primary" style="width:100%;background:#0284c7;font-weight:700;padding:10px 16px;font-size:13px;"><i class="fa-solid fa-table-cells"></i> Buka Editor Faktur di Form Grid Mode</button>
+          </div>
         </div>
         <footer style="padding:12px 20px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:8px;">
           <button type="button" id="cancel-correction" class="button button-secondary">Batal</button>
-          <button type="button" id="save-correction" class="button button-primary"><i class="fa-solid fa-floppy-disk"></i> Simpan Koreksi</button>
+          <button type="button" id="save-correction" class="button button-primary"><i class="fa-solid fa-floppy-disk"></i> Simpan Koreksi Administratif</button>
         </footer>
       </section>
     </div>
   `;
   document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+  $("corr-method")?.addEventListener("change", (e) => {
+    const isTrx = e.target.value === "trx";
+    const adminSec = $("corr-admin-section");
+    const trxSec = $("corr-trx-section");
+    const saveBtn = $("save-correction");
+    if (adminSec) adminSec.style.display = isTrx ? "none" : "block";
+    if (trxSec) trxSec.style.display = isTrx ? "block" : "none";
+    if (saveBtn) saveBtn.style.display = isTrx ? "none" : "inline-flex";
+  });
+
+  $("btn-open-grid-editor")?.addEventListener("click", () => {
+    if (!activeDetailInvoice) return;
+    const invToEdit = activeDetailInvoice;
+    closeInvoiceCorrectionModal();
+    closeInvoiceDetailModal();
+    openManualInvoiceForEdit(invToEdit);
+  });
 
   $("close-modal-correction")?.addEventListener("click", closeInvoiceCorrectionModal);
   $("cancel-correction")?.addEventListener("click", closeInvoiceCorrectionModal);
@@ -2356,8 +2546,26 @@ function installInvoiceCorrectionModal() {
 function openInvoiceCorrectionModal(inv) {
   const modal = $("modal-invoice-correction");
   if (!modal) return;
-  $("corr-reason").value = "";
-  $("corr-notes").value = "";
+
+  const methodSelect = $("corr-method");
+  if (methodSelect) methodSelect.value = "admin";
+
+  const adminSec = $("corr-admin-section");
+  const trxSec = $("corr-trx-section");
+  const saveBtn = $("save-correction");
+  if (adminSec) adminSec.style.display = "block";
+  if (trxSec) trxSec.style.display = "none";
+  if (saveBtn) saveBtn.style.display = "inline-flex";
+
+  if ($("corr-inv-number")) $("corr-inv-number").value = inv.invoiceNumber || inv.id || "";
+  if ($("corr-inv-supplier")) $("corr-inv-supplier").value = inv.supplierName || inv.supplier || "";
+  if ($("corr-inv-date")) $("corr-inv-date").value = inv.date || inv.invoiceDate || "";
+  if ($("corr-inv-due-date")) $("corr-inv-due-date").value = inv.dueDate || "";
+  if ($("corr-inv-pay-type")) $("corr-inv-pay-type").value = inv.paymentType || inv.paymentMethod || "tempo";
+  if ($("corr-inv-pay-status")) $("corr-inv-pay-status").value = inv.paymentStatus || (inv.paymentType === "tunai" ? "Lunas" : "Belum Lunas");
+  if ($("corr-reason")) $("corr-reason").value = "";
+  if ($("corr-notes")) $("corr-notes").value = "";
+
   modal.hidden = false;
   setTimeout(() => $("corr-reason")?.focus(), 50);
 }
@@ -2370,7 +2578,6 @@ function closeInvoiceCorrectionModal() {
 async function handleSaveInvoiceCorrection() {
   if (!activeDetailInvoice) return;
   const inv = activeDetailInvoice;
-  const method = $("corr-method")?.value || "admin";
   const reason = text($("corr-reason")?.value);
   const notes = text($("corr-notes")?.value);
 
@@ -2379,26 +2586,74 @@ async function handleSaveInvoiceCorrection() {
     return;
   }
 
+  const newNum = text($("corr-inv-number")?.value) || inv.invoiceNumber;
+  const newSup = text($("corr-inv-supplier")?.value) || inv.supplierName || inv.supplier;
+  const newDate = text($("corr-inv-date")?.value) || inv.date || inv.invoiceDate;
+  const newDueDate = text($("corr-inv-due-date")?.value) || inv.dueDate;
+  const newPayType = $("corr-inv-pay-type")?.value || inv.paymentType || "tempo";
+  const newPayStatus = $("corr-inv-pay-status")?.value || inv.paymentStatus || "Belum Lunas";
+
+  // Cek duplikasi nomor faktur jika diubah
+  if (norm(newNum) !== norm(inv.invoiceNumber)) {
+    const isDup = currentInvoices.some(x => x.id !== inv.id && norm(x.invoiceNumber) === norm(newNum));
+    if (isDup) {
+      window.KasirProDialog?.warning("Nomor Faktur Duplikat", `Nomor faktur "${newNum}" sudah digunakan pada faktur lain.`);
+      return;
+    }
+  }
+
+  const oldInvNum = inv.invoiceNumber;
+  inv.invoiceNumber = newNum;
+  inv.supplierName = newSup;
+  inv.supplier = newSup;
+  inv.date = newDate;
+  inv.invoiceDate = newDate;
+  inv.dueDate = newDueDate;
+  inv.paymentType = newPayType;
+  inv.paymentMethod = newPayType;
+  inv.paymentStatus = newPayStatus;
+
   const now = nowIso();
   const user = "Admin";
 
   const correctionEntry = {
-    method,
+    method: "admin",
     reason,
     notes,
     correctedAt: now,
-    correctedBy: user
+    correctedBy: user,
+    changedFields: {
+      invoiceNumber: newNum,
+      supplier: newSup,
+      date: newDate,
+      dueDate: newDueDate,
+      paymentType: newPayType,
+      paymentStatus: newPayStatus
+    }
   };
 
   inv.corrections = Array.isArray(inv.corrections) ? [...inv.corrections, correctionEntry] : [correctionEntry];
-  inv.notes = `${inv.notes || ''} [Koreksi ${method.toUpperCase()}: ${reason}]`.trim();
+  inv.notes = `${inv.notes || ''} [Koreksi Admin: ${reason}]`.trim();
 
   try {
+    // Jika nomor faktur berubah, perbarui juga reference di movements terkait
+    if (oldInvNum && norm(oldInvNum) !== norm(newNum)) {
+      const movements = readStore(STORE_KEYS.movements, []);
+      let movChanged = false;
+      movements.forEach(m => {
+        if (norm(m.reference) === norm(oldInvNum)) {
+          m.reference = newNum;
+          movChanged = true;
+        }
+      });
+      if (movChanged) await writeStore(STORE_KEYS.movements, movements);
+    }
+
     await writeStore(STORE_KEYS.invoices, currentInvoices);
     closeInvoiceCorrectionModal();
     closeInvoiceDetailModal();
     renderInvoices();
-    window.KasirProDialog?.success("Koreksi Disimpan", "Riwayat koreksi faktur berhasil dicatat tanpa menghapus histori asli.");
+    window.KasirProDialog?.success("Koreksi Disimpan", "Koreksi administratif faktur berhasil disimpan.");
   } catch (err) {
     window.KasirProDialog?.error("Gagal Menyimpan Koreksi", err.message);
   }

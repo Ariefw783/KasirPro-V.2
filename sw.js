@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v98-restore-sidebar-navigation";
+const CACHE_VERSION = "kasirpro-pwa-v99-invoice-reports-and-edit";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

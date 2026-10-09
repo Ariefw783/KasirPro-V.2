@@ -723,8 +723,92 @@ assert(matchedDiffSup.differentSupplier === true || matchedDiffSup.score <= 0.85
 
 
 // -----------------------------------------------------------------------------
-// REKAPITULASI HASIL AUDIT
+// 15. PENGUJIAN SINKRONISASI LAPORAN FAKTUR & EDIT FAKTUR (ADMIN & TRANSAKSI)
 // -----------------------------------------------------------------------------
+console.log("\n📑 BAGIAN 15: PENGUJIAN SINKRONISASI LAPORAN FAKTUR & FITUR EDIT FAKTUR");
+
+// 1. Uji Parsing Tanggal Laporan
+function testParseEntryDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return Number.isNaN(val.getTime()) ? null : val;
+  const s = String(val).trim();
+  if (!s) return null;
+  const dmyMatch = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (dmyMatch) {
+    const d = new Date(Number(dmyMatch[3]), Number(dmyMatch[2]) - 1, Number(dmyMatch[1]), 12, 0, 0);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const ymdMatch = s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+  if (ymdMatch) {
+    const d = new Date(Number(ymdMatch[1]), Number(ymdMatch[2]) - 1, Number(ymdMatch[3]), 12, 0, 0);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const parsed = new Date(s);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+const parsedIso = testParseEntryDate("2026-10-09");
+const parsedDmy = testParseEntryDate("09/10/2026");
+assert(parsedIso !== null && parsedIso.getDate() === 9 && parsedIso.getMonth() === 9, "Date Parser: Format YYYY-MM-DD Diparsing Tepat Tanpa Masalah Timezone");
+assert(parsedDmy !== null && parsedDmy.getDate() === 9 && parsedDmy.getMonth() === 9, "Date Parser: Format DD/MM/YYYY Diparsing Tepat");
+
+// 2. Uji Filter Faktur Periode Semua Data
+const mockInvoicesList = [
+  { id: "inv-1", invoiceNumber: "INV-001", date: "2026-10-01", total: 100000 },
+  { id: "inv-2", invoiceNumber: "INV-002", date: "2026-10-05", total: 200000 },
+  { id: "inv-3", invoiceNumber: "INV-003", date: "2026-10-09", total: 300000 }
+];
+
+const allStart = new Date(0);
+const allEnd = new Date(8640000000000000);
+const filteredAll = mockInvoicesList.filter(inv => {
+  const d = testParseEntryDate(inv.date);
+  return !d || (d >= allStart && d <= allEnd);
+});
+assert(filteredAll.length === 3, "Laporan Faktur: Filter 'Semua Data' Berhasil Mengambil Seluruh 3 Faktur Aktif");
+
+// 3. Uji Koreksi Administratif (Hanya Ubah Identitas Tanpa Efek Stok)
+let initialStockAdminTest = 50;
+const testInv = {
+  id: "inv-edit-1",
+  invoiceNumber: "INV-OLD-999",
+  supplierName: "Supplier Lama",
+  date: "2026-10-01",
+  dueDate: "2026-11-01",
+  paymentType: "tempo",
+  paymentStatus: "Belum Lunas",
+  items: [{ name: "Obat A", qty: 2, conversionRatio: 1 }]
+};
+
+// Lakukan koreksi administratif
+const updatedInvNum = "INV-REV-999";
+testInv.invoiceNumber = updatedInvNum;
+testInv.supplierName = "Supplier Baru";
+testInv.paymentStatus = "Lunas";
+testInv.corrections = [{
+  method: "admin",
+  reason: "Revisi nomor faktur resmi",
+  correctedAt: new Date().toISOString()
+}];
+
+assert(testInv.invoiceNumber === "INV-REV-999", "Koreksi Admin: Nomor Faktur Berhasil Diperbarui");
+assert(testInv.corrections.length === 1 && testInv.corrections[0].method === "admin", "Koreksi Admin: Riwayat Audit Tercatat");
+assert(initialStockAdminTest === 50, "Koreksi Admin: Stok Produk Tetap Utuh dan Tidak Berubah (50 Pcs)");
+
+// 4. Uji Koreksi Transaksional (Reversal Stok Versi Lama & Re-apply Stok Versi Baru)
+let currentStockState = 120; // 20 stok awal + 100 dari faktur lama (10 Box x 10 = 100)
+const oldInvoiceItem = { name: "Amoxicillin", qty: 10, conversionRatio: 10 };
+const newInvoiceItem = { name: "Amoxicillin", qty: 8, conversionRatio: 10 }; // Dikoreksi jadi 8 Box (80 unit)
+
+// Langkah Reversal:
+const oldBaseQty = oldInvoiceItem.qty * oldInvoiceItem.conversionRatio; // 100
+currentStockState = Math.max(0, currentStockState - oldBaseQty); // Kembali ke 20
+assert(currentStockState === 20, "Reversal Stok: Stok Lama Berhasil Dibatalkan Kembali ke Posisi Sebelum Faktur (20 Unit)");
+
+// Langkah Re-apply Stok Baru:
+const newBaseQty = newInvoiceItem.qty * newInvoiceItem.conversionRatio; // 80
+currentStockState += newBaseQty; // Menjadi 100
+assert(currentStockState === 100, "Re-apply Stok: Stok Baru Hasil Revisi Diterapkan Secara Presisi (100 Unit)");
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

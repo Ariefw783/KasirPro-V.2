@@ -65,6 +65,27 @@ function handlePeriodChange() {
   renderReports();
 }
 
+function parseEntryDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return Number.isNaN(val.getTime()) ? null : val;
+  const s = String(val).trim();
+  if (!s) return null;
+  // Format DD/MM/YYYY atau DD-MM-YYYY
+  const dmyMatch = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (dmyMatch) {
+    const d = new Date(Number(dmyMatch[3]), Number(dmyMatch[2]) - 1, Number(dmyMatch[1]), 12, 0, 0);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  // Format YYYY-MM-DD
+  const ymdMatch = s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);
+  if (ymdMatch) {
+    const d = new Date(Number(ymdMatch[1]), Number(ymdMatch[2]) - 1, Number(ymdMatch[3]), 12, 0, 0);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const parsed = new Date(s);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 function getDateRange() {
   const p = $("report-period")?.value || "month";
   const now = new Date();
@@ -77,21 +98,25 @@ function getDateRange() {
   } else if (p === "7") {
     start.setDate(now.getDate() - 7);
     start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
   } else if (p === "30") {
     start.setDate(now.getDate() - 30);
     start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
   } else if (p === "month") {
-    start = new Date(now.getFullYear(), now.getMonth(), 1);
-    end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+    end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
   } else if (p === "custom") {
     const sVal = $("report-start-date")?.value;
     const eVal = $("report-end-date")?.value;
     start = sVal ? new Date(sVal) : new Date(0);
+    start.setHours(0, 0, 0, 0);
     end = eVal ? new Date(eVal) : new Date();
     end.setHours(23, 59, 59, 999);
   } else {
-    // Semua
+    // Semua Data: cakup seluruh riwayat hingga masa depan
     start = new Date(0);
+    end = new Date(8640000000000000);
   }
 
   return { start, end };
@@ -109,18 +134,26 @@ export function renderReports() {
 
   // Filter Sales dalam periode
   const filteredSales = sales.filter(s => {
-    const d = new Date(s.at || s.createdAt);
-    if (Number.isNaN(d.getTime())) return true;
-    return d >= start && d <= end;
+    const d = parseEntryDate(s.at || s.createdAt);
+    if (d && (d < start || d > end)) return false;
+    if (q) {
+      const sTarget = norm(`${s.transactionNumber || s.id || ''} ${s.cashierName || s.cashier || ''} ${s.paymentMethod || ''}`);
+      if (!sTarget.includes(q)) return false;
+    }
+    return true;
   });
 
   const completedSales = filteredSales.filter(s => norm(s.status) !== "void");
 
-  // Filter Faktur dalam periode
+  // Filter Faktur dalam periode & pencarian
   const filteredInvoices = invoices.filter(inv => {
-    const d = new Date(inv.date || inv.invoiceDate || inv.createdAt);
-    if (Number.isNaN(d.getTime())) return true;
-    return d >= start && d <= end;
+    const d = parseEntryDate(inv.date || inv.invoiceDate || inv.createdAt);
+    if (d && (d < start || d > end)) return false;
+    if (q) {
+      const invTarget = norm(`${inv.invoiceNumber || inv.id || ''} ${inv.supplierName || inv.supplier || ''} ${inv.status || ''} ${inv.notes || ''}`);
+      if (!invTarget.includes(q)) return false;
+    }
+    return true;
   });
 
   // KPI Utama
@@ -161,8 +194,18 @@ export function renderReports() {
   const purEl = $("report-purchase-value");
   if (purEl) purEl.textContent = rupiah(purchaseValue);
 
+  // Pasang count ke KPI card dan ke badge chip tab panel
   const invCountEl = $("report-invoice-count");
   if (invCountEl) invCountEl.textContent = `${filteredInvoices.length} faktur`;
+
+  const invPanelCountEl = $("report-invoices-count");
+  if (invPanelCountEl) invPanelCountEl.textContent = `${filteredInvoices.length} faktur`;
+
+  const salesPanelCountEl = $("report-sales-count");
+  if (salesPanelCountEl) salesPanelCountEl.textContent = `${filteredSales.length} transaksi`;
+
+  const stockPanelCountEl = $("report-stock-count");
+  if (stockPanelCountEl) stockPanelCountEl.textContent = `${products.length} produk`;
 
   const stockValEl = $("report-stock-value");
   if (stockValEl) stockValEl.textContent = rupiah(totalStockVal);
@@ -240,6 +283,11 @@ function renderProductsSoldSubReport(completedSales, products) {
 function renderInvoicesSubReport(invoices) {
   const tbody = $("report-invoices-body");
   if (!tbody) return;
+
+  if (!invoices.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:28px 16px;color:#94a3b8;font-size:13px;"><i class="fa-solid fa-file-circle-xmark" style="font-size:22px;display:block;margin-bottom:8px;opacity:0.5;"></i>Belum ada faktur pembelian pada periode terpilih</td></tr>`;
+    return;
+  }
 
   tbody.innerHTML = invoices.map(inv => `
     <tr>
