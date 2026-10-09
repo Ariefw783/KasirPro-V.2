@@ -1,13 +1,14 @@
 {
-  "version": "2.2.47",
-  "build": "20261009.04",
+  "version": "2.2.48",
+  "build": "20261009.05",
   "releaseDate": "09 Oktober 2026",
-  "title": "Preservasi Harga Beli Faktur & Rekonsiliasi Master Produk",
-  "description": "Menjaga keutuhan harga beli faktur fisik pada tabel Master Produk dan filter Perlu Harga Jual, serta mencegah reset harga nol saat sinkronisasi snapshot katalog acuan.",
+  "title": "Kartu Vertikal Entitas & Alur Penetapan Harga Bertingkat",
+  "description": "Tampilan kartu vertikal collapsible untuk Master Supplier & Kategori, serta alur penetapan harga bertingkat via Excel & tabel dengan otomatisasi 3 satuan.",
   "changelog": [
-    "Preserve invoice buy price data",
-    "Protect snapshot chunk product merge",
-    "Auto recover product purchase prices",
-    "Update service worker cache v100"
+    "Add vertical supplier accordion cards",
+    "Add vertical category accordion cards",
+    "Support three tier excel pricing",
+    "Add quick inline table pricing",
+    "Update service worker cache v101"
   ]
 }

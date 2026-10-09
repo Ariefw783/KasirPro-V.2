@@ -14,6 +14,8 @@ let currentPage = 1;
 let currentCategories = [];
 let filteredCategories = [];
 let activeEditingCategory = null;
+let allCategoriesExpanded = false;
+let categoryLinkedCounts = new Map();
 
 export function initCategoriesModule() {
   bindEvents();
@@ -29,6 +31,21 @@ function bindEvents() {
   $("category-status-filter")?.addEventListener("change", () => {
     currentPage = 1;
     applyFilters();
+  });
+
+  $("btn-toggle-all-categories")?.addEventListener("click", () => {
+    allCategoriesExpanded = !allCategoriesExpanded;
+    const cards = document.querySelectorAll(".kp-entity-card[data-entity='category']");
+    cards.forEach(c => {
+      c.classList.toggle("is-expanded", allCategoriesExpanded);
+      c.classList.toggle("is-collapsed", !allCategoriesExpanded);
+      const icon = c.querySelector(".btn-toggle-card i");
+      if (icon) {
+        icon.className = allCategoriesExpanded ? "fa-solid fa-chevron-up" : "fa-solid fa-chevron-down";
+      }
+    });
+    const label = $("toggle-all-categories-text");
+    if (label) label.textContent = allCategoriesExpanded ? "Ciutkan Semua" : "Buka Semua";
   });
 
   $("refresh-categories")?.addEventListener("click", () => {
@@ -74,6 +91,14 @@ export function renderCategories() {
 }
 
 function updateSummaryKpis() {
+  const master = readStore(STORE_KEYS.master, {});
+  const prods = Array.isArray(master.produk) ? master.produk : [];
+  categoryLinkedCounts.clear();
+  prods.forEach(p => {
+    const c = norm(p["Kategori"] || p.category);
+    if (c) categoryLinkedCounts.set(c, (categoryLinkedCounts.get(c) || 0) + 1);
+  });
+
   const total = currentCategories.length;
   const activeCount = currentCategories.filter(c => norm(c.status || c.Status) !== "nonaktif").length;
 
@@ -104,59 +129,131 @@ function applyFilters() {
 }
 
 function renderTable() {
-  const tbody = $("categories-table-body");
-  if (!tbody) return;
+  const container = $("categories-cards-container") || $("categories-table-body");
+  if (!container) return;
 
   const total = filteredCategories.length;
   const start = (currentPage - 1) * PAGE_SIZE;
   const pageItems = filteredCategories.slice(start, start + PAGE_SIZE);
 
   if (!pageItems.length) {
-    tbody.innerHTML = `<tr><td colspan="5" class="empty-table-state" style="text-align:center;padding:24px;">Belum ada data kategori.</td></tr>`;
+    container.innerHTML = `<div class="empty-table-state" style="text-align:center;padding:28px 20px;background:#fff;border-radius:12px;border:1px solid #e2e8f0;color:#64748b;">
+      <i class="fa-solid fa-tags" style="font-size:32px;color:#cbd5e1;display:block;margin-bottom:10px;"></i>
+      Belum ada data kategori yang sesuai pencarian.
+    </div>`;
   } else {
-    tbody.innerHTML = pageItems.map((c, idx) => {
+    container.innerHTML = pageItems.map((c, idx) => {
       const code = c["Kode Kategori"] || c.code || "—";
       const name = c["Nama Kategori"] || c.name || "—";
-      const desc = c["Deskripsi"] || c.description || "—";
+      const desc = c["Deskripsi"] || c.description || "";
+      const rack = c["Rak"] || c["Lokasi"] || c.rack || "";
       const status = c.status || c.Status || "Aktif";
       const isAktif = norm(status) !== "nonaktif";
+      const linkedCount = categoryLinkedCounts.get(norm(name)) || categoryLinkedCounts.get(norm(code)) || 0;
 
       return `
-        <tr>
-          <td><strong>${escapeHtml(code)}</strong></td>
-          <td><strong>${escapeHtml(name)}</strong></td>
-          <td>${escapeHtml(desc)}</td>
-          <td>
-            <span class="badge ${isAktif ? 'badge-success' : 'badge-secondary'}" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;">
-              ${isAktif ? 'Aktif' : 'Nonaktif'}
-            </span>
-          </td>
-          <td>
-            <div style="display:flex;gap:6px;">
-              <button type="button" class="btn-edit-category button button-small button-secondary" data-code="${escapeHtml(code)}" title="Edit Kategori">
-                <i class="fa-solid fa-pen"></i> Edit
+        <article class="kp-entity-card ${allCategoriesExpanded ? 'is-expanded' : 'is-collapsed'}" data-entity="category" data-code="${escapeHtml(code)}">
+          <div class="kp-entity-card-header" data-action="toggle">
+            <div class="kp-entity-header-left">
+              <div class="kp-entity-avatar category">
+                <i class="fa-solid fa-tags"></i>
+              </div>
+              <div class="kp-entity-info">
+                <div class="kp-entity-title">
+                  <span>${escapeHtml(name)}</span>
+                  <span style="font-size:11px;color:#7c3aed;background:#f5f3ff;padding:1px 6px;border-radius:4px;border:1px solid #ddd6fe;font-weight:700;">
+                    ${escapeHtml(code)}
+                  </span>
+                  <span class="badge ${isAktif ? 'badge-success' : 'badge-secondary'}" style="padding:2px 7px;font-size:10px;font-weight:700;">
+                    ${isAktif ? 'Aktif' : 'Nonaktif'}
+                  </span>
+                </div>
+                <div class="kp-entity-subtitle">
+                  <span style="color:#64748b;display:inline-flex;align-items:center;gap:4px;"><i class="fa-solid fa-boxes-stacked" style="font-size:10px;"></i> ${linkedCount} Produk</span>
+                  ${desc ? `<span style="color:#cbd5e1;">•</span><span style="color:#475569;display:inline-flex;align-items:center;gap:4px;"><i class="fa-solid fa-align-left" style="font-size:10px;"></i> ${escapeHtml(desc.length > 40 ? desc.slice(0, 40) + '...' : desc)}</span>` : ''}
+                </div>
+              </div>
+            </div>
+            <div class="kp-entity-header-right">
+              <button type="button" class="btn-edit-category button button-small button-secondary" data-code="${escapeHtml(code)}" title="Edit Kategori" style="padding:4px 8px;font-size:11px;">
+                <i class="fa-solid fa-pen"></i> <span class="hide-mobile">Edit</span>
               </button>
-              <button type="button" class="btn-delete-category button button-small button-danger" data-code="${escapeHtml(code)}" title="Hapus / Nonaktifkan">
+              <button type="button" class="btn-delete-category button button-small button-danger" data-code="${escapeHtml(code)}" title="Hapus / Nonaktifkan" style="padding:4px 8px;font-size:11px;">
                 <i class="fa-solid fa-trash"></i>
               </button>
+              <button type="button" class="btn-toggle-card button button-small button-secondary" style="padding:4px 8px;font-size:11px;" title="Buka/Ciutkan Data Lengkap">
+                <i class="fa-solid ${allCategoriesExpanded ? 'fa-chevron-up' : 'fa-chevron-down'}"></i>
+              </button>
             </div>
-          </td>
-        </tr>
+          </div>
+          
+          <div class="kp-entity-card-body">
+            <div class="kp-entity-grid">
+              <div class="kp-entity-field">
+                <span class="kp-entity-label">Deskripsi Lengkap</span>
+                <span class="kp-entity-val">${escapeHtml(desc || 'Tidak ada deskripsi.')}</span>
+              </div>
+              <div class="kp-entity-field">
+                <span class="kp-entity-label">Lokasi / Rak Penyimpanan</span>
+                <span class="kp-entity-val">${escapeHtml(rack || '—')}</span>
+              </div>
+            </div>
+            
+            <div class="kp-entity-footer">
+              <span style="font-size:12px;color:#64748b;">
+                Terdapat <strong>${linkedCount}</strong> obat di kategori ini
+              </span>
+              <button type="button" class="btn-filter-category-products button button-small button-primary" data-name="${escapeHtml(name)}" data-code="${escapeHtml(code)}" style="display:inline-flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat Produk di Kategori Ini
+              </button>
+            </div>
+          </div>
+        </article>
       `;
     }).join("");
 
-    tbody.querySelectorAll(".btn-edit-category").forEach(btn => {
-      btn.addEventListener("click", () => {
+    container.querySelectorAll(".kp-entity-card").forEach(card => {
+      const header = card.querySelector(".kp-entity-card-header");
+      const doToggle = (e) => {
+        if (e.target.closest(".btn-edit-category") || e.target.closest(".btn-delete-category")) return;
+        const isExpanded = card.classList.toggle("is-expanded");
+        card.classList.toggle("is-collapsed", !isExpanded);
+        const icon = card.querySelector(".btn-toggle-card i");
+        if (icon) icon.className = isExpanded ? "fa-solid fa-chevron-up" : "fa-solid fa-chevron-down";
+      };
+      header?.addEventListener("click", doToggle);
+    });
+
+    container.querySelectorAll(".btn-edit-category").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
         const catCode = btn.dataset.code;
         const c = currentCategories.find(x => norm(x["Kode Kategori"] || x.code) === norm(catCode));
         if (c) openCategoryModal(c);
       });
     });
 
-    tbody.querySelectorAll(".btn-delete-category").forEach(btn => {
-      btn.addEventListener("click", () => {
+    container.querySelectorAll(".btn-delete-category").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
         const catCode = btn.dataset.code;
         handleDeleteCategory(catCode);
+      });
+    });
+
+    container.querySelectorAll(".btn-filter-category-products").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const catName = btn.dataset.name;
+        if (window.switchView) {
+          window.switchView("products");
+          setTimeout(() => {
+            const cf = document.getElementById("product-category-filter");
+            if (cf) {
+              cf.value = catName;
+              cf.dispatchEvent(new Event("change"));
+            }
+          }, 80);
+        }
       });
     });
   }
@@ -186,21 +283,34 @@ function installCategoryModal() {
           <h2 id="category-modal-title" style="font-size:16px;font-weight:800;margin:0;">Tambah Kategori Baru</h2>
           <button type="button" id="close-modal-category" class="button button-small button-secondary" style="padding:4px 8px;"><i class="fa-solid fa-xmark"></i></button>
         </header>
-        <form id="category-form-inner" style="padding:20px;text-align:left;">
-          <label style="display:block;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">Kode Kategori</label>
-          <input type="text" id="input-category-code" style="width:100%;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;margin-bottom:14px;" placeholder="Contoh: KAT001 (Opsional, otomatis bila kosong)">
+        <form id="category-form-inner" style="padding:20px;text-align:left;display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">Kode Kategori</label>
+            <input type="text" id="input-category-code" style="width:100%;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;" placeholder="Contoh: KAT001 (Opsional, otomatis bila kosong)">
+          </div>
 
-          <label style="display:block;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">Nama Kategori <span class="text-danger">*</span></label>
-          <input type="text" id="input-category-name" required style="width:100%;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;margin-bottom:14px;" placeholder="Contoh: Obat Bebas">
+          <div>
+            <label style="display:block;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">Nama Kategori <span class="text-danger">*</span></label>
+            <input type="text" id="input-category-name" required style="width:100%;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;" placeholder="Contoh: Obat Bebas">
+          </div>
 
-          <label style="display:block;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">Deskripsi</label>
-          <textarea id="input-category-desc" rows="2" style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;margin-bottom:14px;" placeholder="Keterangan singkat kategori..."></textarea>
+          <div>
+            <label style="display:block;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">Lokasi / Rak Penyimpanan</label>
+            <input type="text" id="input-category-rack" style="width:100%;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;" placeholder="Contoh: Rak A-02">
+          </div>
 
-          <label style="display:block;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">Status</label>
-          <select id="input-category-status" style="width:100%;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;">
-            <option value="Aktif">Aktif</option>
-            <option value="Nonaktif">Nonaktif</option>
-          </select>
+          <div>
+            <label style="display:block;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">Deskripsi</label>
+            <textarea id="input-category-desc" rows="2" style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;" placeholder="Keterangan singkat kategori..."></textarea>
+          </div>
+
+          <div>
+            <label style="display:block;font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">Status</label>
+            <select id="input-category-status" style="width:100%;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;color:#0f172a;">
+              <option value="Aktif">Aktif</option>
+              <option value="Nonaktif">Nonaktif</option>
+            </select>
+          </div>
         </form>
         <footer style="padding:12px 20px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:8px;">
           <button type="button" id="cancel-category-form" class="button button-secondary">Batal</button>
@@ -224,6 +334,7 @@ function openCategoryModal(cat = null) {
   $("category-modal-title").textContent = cat ? "Edit Kategori" : "Tambah Kategori Baru";
   $("input-category-code").value = cat ? (cat["Kode Kategori"] || cat.code || "") : "";
   $("input-category-name").value = cat ? (cat["Nama Kategori"] || cat.name || "") : "";
+  $("input-category-rack").value = cat ? (cat["Rak"] || cat["Lokasi"] || cat.rack || "") : "";
   $("input-category-desc").value = cat ? (cat["Deskripsi"] || cat.description || "") : "";
   $("input-category-status").value = cat ? (cat.status || cat.Status || "Aktif") : "Aktif";
 
@@ -240,6 +351,7 @@ function closeCategoryModal() {
 async function handleSaveCategory() {
   let code = text($("input-category-code")?.value);
   const name = text($("input-category-name")?.value);
+  const rack = text($("input-category-rack")?.value);
   const desc = text($("input-category-desc")?.value);
   const status = $("input-category-status")?.value || "Aktif";
 
@@ -262,6 +374,8 @@ async function handleSaveCategory() {
       id: (idx >= 0 && cats[idx].id) ? cats[idx].id : `KAT-${Date.now()}`,
       "Kode Kategori": code,
       "Nama Kategori": name,
+      "Rak": rack,
+      "Lokasi": rack,
       "Deskripsi": desc,
       "Status": status,
       "status": status
@@ -277,6 +391,8 @@ async function handleSaveCategory() {
       id: `KAT-${Date.now()}`,
       "Kode Kategori": code,
       "Nama Kategori": name,
+      "Rak": rack,
+      "Lokasi": rack,
       "Deskripsi": desc,
       "Status": status,
       "status": status

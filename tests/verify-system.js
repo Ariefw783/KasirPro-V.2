@@ -936,6 +936,109 @@ const filterPerluHargaJualProducts = [restoredProd].filter(p => {
 assert(filterPerluHargaJualProducts.length === 1, "Filter 'Perlu Harga Jual': Produk Masuk Kriteria Filter (Stok > 0 & Harga Jual 0)");
 assert(num(filterPerluHargaJualProducts[0]["Harga Beli Terakhir"]) > 0, "Filter 'Perlu Harga Jual': Kolom Harga Beli Menampilkan Nilai Faktur Asli (> Rp0, Bukan Rp0)");
 
+// -----------------------------------------------------------------------------
+// 17. PENGUJIAN KARTU VERTIKAL DINAMIS ENTITAS & ALUR PENETAPAN HARGA BERTINGKAT
+// -----------------------------------------------------------------------------
+console.log("\n🗂️ BAGIAN 17: PENGUJIAN KARTU VERTIKAL ENTITAS & WORKFLOW EXCEL PRICING 3 TINGKAT");
+
+// 1. Uji Hitung Produk Terhubung & Kartu Accordion Supplier
+const mockSuppliers = [
+  { id: "sup-1", "Nama Perusahaan": "PT Mensa Binasukses", Telepon: "021-123456" },
+  { id: "sup-2", "Nama Perusahaan": "PT Kimia Farma Trading", Telepon: "021-654321" }
+];
+const mockCatalogProducts = [
+  { "Kode Produk": "PRD-1", "Nama Produk": "FLUCADEX", Supplier: "PT Mensa Binasukses", Kategori: "Obat Bebas" },
+  { "Kode Produk": "PRD-2", "Nama Produk": "BODREXIN", Supplier: "PT Mensa Binasukses", Kategori: "Obat Bebas" },
+  { "Kode Produk": "PRD-3", "Nama Produk": "PARACETAMOL", Supplier: "PT Mensa Binasukses", Kategori: "Obat Keras" },
+  { "Kode Produk": "PRD-4", "Nama Produk": "AMOXICILLIN", Supplier: "PT Kimia Farma Trading", Kategori: "Obat Keras" }
+];
+
+function countProductsForSupplier(supplierName, products) {
+  const normSup = String(supplierName || "").trim().toLowerCase();
+  return products.filter(p => String(p.Supplier || "").trim().toLowerCase() === normSup).length;
+}
+
+const countSup1 = countProductsForSupplier("PT Mensa Binasukses", mockCatalogProducts);
+const countSup2 = countProductsForSupplier("PT Kimia Farma Trading", mockCatalogProducts);
+
+assert(countSup1 === 3, "Kartu Supplier: Counter Produk Terhubung PT Mensa Akurat (3 Produk)");
+assert(countSup2 === 1, "Kartu Supplier: Counter Produk Terhubung PT Kimia Farma Akurat (1 Produk)");
+
+// 2. Uji Hitung Produk Terhubung & Kartu Accordion Kategori
+function countProductsForCategory(categoryName, products) {
+  const normCat = String(categoryName || "").trim().toLowerCase();
+  return products.filter(p => String(p.Kategori || "").trim().toLowerCase() === normCat).length;
+}
+
+const countCatBebas = countProductsForCategory("Obat Bebas", mockCatalogProducts);
+const countCatKeras = countProductsForCategory("Obat Keras", mockCatalogProducts);
+
+assert(countCatBebas === 2, "Kartu Kategori: Counter Produk Terhubung Obat Bebas Akurat (2 Produk)");
+assert(countCatKeras === 2, "Kartu Kategori: Counter Produk Terhubung Obat Keras Akurat (2 Produk)");
+
+// 3. Uji Workflow Alur Penetapan Harga Bertingkat (Opsi 1: Hanya Jual 1 Satuan Ecer)
+function calculateTierPricing(p, inputEcer, inputSedang, inputBesar, opsiJual = "1") {
+  const priceBase = num(inputEcer);
+  const conv = num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1) || 1;
+  const midQty = num(p["Isi Satuan Antara"] || 1) || 1;
+  const hasMid = !!p["Satuan Antara"] && String(p["Satuan Antara"]).toLowerCase() !== String(p["Satuan Dasar"] || "pcs").toLowerCase();
+
+  let priceMid = num(inputSedang);
+  let priceBuy = num(inputBesar);
+
+  if (opsiJual === "1") {
+    if (!priceMid && hasMid && midQty > 1) priceMid = Math.round(priceBase * midQty);
+    if (!priceBuy && conv > 1) priceBuy = Math.round(priceBase * conv);
+  } else if (opsiJual === "2") {
+    if (!priceBuy && conv > 1) priceBuy = Math.round(priceBase * conv);
+  }
+
+  const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
+  const baseHpp = conv > 0 ? (buyPrice / conv) : buyPrice;
+  const isBelowCost = baseHpp > 0 && priceBase < baseHpp;
+
+  return {
+    priceBase,
+    priceMid,
+    priceBuy,
+    opsiJual,
+    isBelowCost,
+    baseHpp
+  };
+}
+
+const targetProduct = {
+  "Kode Produk": "PRD-FLUCADEX",
+  "Nama Produk": "FLUCADEX",
+  "Satuan Dasar": "Kaplet",
+  "Satuan Antara": "Strip",
+  "Isi Satuan Antara": 10,
+  "Satuan Pembelian": "Box",
+  "Konversi": 100,
+  "Harga Beli Terakhir": 50868
+};
+
+// Kasus 1: Opsi 1 (Hanya isi Harga Jual Ecer Rp 600)
+const resOpsi1 = calculateTierPricing(targetProduct, 600, 0, 0, "1");
+assert(resOpsi1.priceBase === 600, "Alur Harga Opsi 1: Harga Jual Ecer Tersimpan Sesuai Input (Rp 600)");
+assert(resOpsi1.priceMid === 6000, "Alur Harga Opsi 1: Harga Jual Sedang (Strip isi 10) Terhitung Otomatis (Rp 6.000)");
+assert(resOpsi1.priceBuy === 60000, "Alur Harga Opsi 1: Harga Jual Besar (Box isi 100) Terhitung Otomatis (Rp 60.000)");
+assert(!resOpsi1.isBelowCost, "Alur Harga Opsi 1: Harga Jual Di Atas Modal HPP (Rp 600 > Rp 508,68)");
+
+// Kasus 2: Opsi 2 (Isi Ecer Rp 600 & Strip Rp 5.500 dengan diskon grosir)
+const resOpsi2 = calculateTierPricing(targetProduct, 600, 5500, 0, "2");
+assert(resOpsi2.priceBase === 600, "Alur Harga Opsi 2: Harga Jual Ecer Tersimpan (Rp 600)");
+assert(resOpsi2.priceMid === 5500, "Alur Harga Opsi 2: Harga Jual Sedang Menghargai Input Diskon Grosir Pengguna (Rp 5.500)");
+assert(resOpsi2.priceBuy === 60000, "Alur Harga Opsi 2: Harga Jual Besar Terhitung Otomatis dari Ecer (Rp 60.000)");
+
+// Kasus 3: Opsi 3 (Isi ketiga satuan secara kustom)
+const resOpsi3 = calculateTierPricing(targetProduct, 600, 5500, 52000, "3");
+assert(resOpsi3.priceBuy === 52000, "Alur Harga Opsi 3: Harga Jual Besar Menghargai Kustomisasi Pengguna (Rp 52.000)");
+
+// Kasus 4: Proteksi Validasi Jual di Bawah Modal (HPP Rp 508,68, Jual Rp 500)
+const resBelowCost = calculateTierPricing(targetProduct, 500, 0, 0, "1");
+assert(resBelowCost.isBelowCost === true, "Proteksi HPP: Terdeteksi Peringatan Saat Harga Jual Ecer di Bawah Modal Fisik (Rp 500 < Rp 508)");
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

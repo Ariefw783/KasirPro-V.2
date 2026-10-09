@@ -7,7 +7,7 @@
 import { num, text, norm, rupiah, INVOICE_TOLERANCE_RP, isWithinTolerance } from "../core/utils.js";
 
 function getXLSX() {
-  const x = window.XLSX;
+  const x = (typeof window !== "undefined" ? window.XLSX : null) || globalThis.XLSX;
   if (!x) throw new Error("Pustaka SheetJS (XLSX) belum dimuat.");
   return x;
 }
@@ -625,4 +625,241 @@ function formatExcelDate(val) {
     },
     issueCount
   };
+}
+
+/**
+ * 5. EXPORT ANTREAN HARGA JUAL (KHUSUS FILTER PERLU HARGA JUAL)
+ * Mendukung otomatisasi 3 tingkat satuan penjualan dengan rumus Excel.
+ */
+export function exportPendingPricingWorkbook(pendingProducts = []) {
+  const XLSX = getXLSX();
+  const wb = XLSX.utils.book_new();
+
+  const ts = getTimestampString();
+  const fileName = `Update_Harga_Jual_${ts}.xlsx`;
+
+  const headerRow = [
+    "No",
+    "Kode Produk",
+    "Nama Produk",
+    "Supplier",
+    "Kemasan Beli",
+    "Total Konversi",
+    "Satuan Dasar",
+    "Satuan Antara",
+    "Isi Satuan Antara",
+    "Modal Faktur Fisik",
+    "Modal Dasar (HPP)",
+    "Opsi Jual (1/2/3)",
+    "Satuan Yang Dijual",
+    "Harga Jual Ecer (Satuan Dasar)",
+    "Harga Jual Satuan Sedang",
+    "Harga Jual Satuan Besar",
+    "Estimasi Margin Ecer (%)"
+  ];
+
+  const rows = [headerRow];
+
+  pendingProducts.forEach((p, idx) => {
+    const rowNum = idx + 2;
+    const code = p["Kode Produk"] || p["Kode Produk Internal"] || p.id || "";
+    const name = p["Nama Produk"] || p.name || "";
+    const sup = p["Supplier"] || p.supplier || "";
+    const buyUnit = p["Kemasan Beli"] || p["Satuan Pembelian"] || p["Satuan Dasar"] || "Pcs";
+    const conv = num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1) || 1;
+    const baseUnit = p["Satuan Dasar"] || p["Satuan"] || "Pcs";
+    const midUnit = p["Satuan Antara"] && norm(p["Satuan Antara"]) !== norm(baseUnit) ? p["Satuan Antara"] : "";
+    const midQty = num(p["Isi Satuan Antara"] || 1);
+    const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
+    const defaultMode = (conv > 1 && midUnit) ? 3 : (conv > 1 ? 2 : 1);
+    const defaultAllowed = defaultMode === 3 ? "Semua (Terkecil + Sedang + Besar)" : (defaultMode === 2 ? "Terkecil + Besar" : "Terkecil");
+
+    rows.push([
+      idx + 1,
+      code,
+      name,
+      sup,
+      buyUnit,
+      conv,
+      baseUnit,
+      midUnit,
+      midQty,
+      buyPrice,
+      conv > 0 ? Math.round(buyPrice / conv) : buyPrice,
+      defaultMode,
+      defaultAllowed,
+      "",
+      midUnit ? "" : "",
+      "",
+      0
+    ]);
+  });
+
+  const wsHarga = XLSX.utils.aoa_to_sheet(rows);
+
+  wsHarga["!cols"] = [
+    { wch: 5 },
+    { wch: 18 },
+    { wch: 32 },
+    { wch: 22 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 15 },
+    { wch: 18 },
+    { wch: 18 },
+    { wch: 16 },
+    { wch: 30 },
+    { wch: 26 },
+    { wch: 24 },
+    { wch: 24 },
+    { wch: 22 }
+  ];
+
+  const panduanRows = [
+    ["PANDUAN PENGISIAN UPDATE HARGA JUAL BERTINGKAT KASIRPRO"],
+    [""],
+    ["1. CARA PENGISIAN CEPAT (REKOMENDASI):"],
+    ["   - Anda CUKUP MENGISI kolom 'Harga Jual Ecer (Satuan Dasar)' (Kolom N)."],
+    ["   - Jika kolom 'Harga Jual Satuan Sedang' (Kolom O) dan 'Harga Jual Satuan Besar' (Kolom P) Anda kosongkan,"],
+    ["     sistem KasirPro akan OTOMATIS MENGHITUNG harganya sesuai rasio konversi saat file di-import!"],
+    [""],
+    ["2. CARA KUSTOMISASI HARGA GROSIR (JIKA INGIN DISKON PEMBELIAN BESAR):"],
+    ["   - Jika Anda ingin harga 1 Box lebih murah daripada beli eceran, Anda bisa langsung mengetik angka khusus pada kolom 'Harga Jual Satuan Besar'."],
+    ["   - Sistem KasirPro akan mematuhi angka yang Anda ketik tanpa menimpanya."],
+    [""],
+    ["3. ARTI OPSI JUAL (KOLOM L):"],
+    ["   - Opsi 1 (1 Satuan): Produk hanya dijual dalam satuan ecer / terkecil."],
+    ["   - Opsi 2 (2 Satuan): Produk dijual dalam 2 satuan (misal Ecer & Box, atau Ecer & Strip)."],
+    ["   - Opsi 3 (3 Satuan): Produk dijual fleksibel di kasir dalam Ecer, Strip, maupun Box utuh."],
+    [""],
+    ["4. PERINGATAN:"],
+    ["   - Dilarang mengubah isi Kolom B (Kode Produk) agar sistem dapat mengenali obat dengan akurat."]
+  ];
+  const wsPanduan = XLSX.utils.aoa_to_sheet(panduanRows);
+
+  XLSX.utils.book_append_sheet(wb, wsHarga, "UPDATE_HARGA_JUAL");
+  XLSX.utils.book_append_sheet(wb, wsPanduan, "PANDUAN_PENGISIAN");
+
+  XLSX.writeFile(wb, fileName);
+  return { fileName, count: pendingProducts.length };
+}
+
+/**
+ * 6. PARSER IMPORT UPDATE HARGA JUAL DARI EXCEL
+ */
+export async function parsePendingPricingWorkbook(file, currentMaster = {}) {
+  const XLSX = getXLSX();
+  let buffer;
+  if (file instanceof ArrayBuffer) {
+    buffer = file;
+  } else if (file && typeof file.arrayBuffer === "function") {
+    buffer = await file.arrayBuffer();
+  } else if (typeof Buffer !== "undefined" && Buffer.isBuffer(file)) {
+    buffer = file;
+  } else if (file instanceof Uint8Array) {
+    buffer = file;
+  } else {
+    buffer = file;
+  }
+  const wb = XLSX.read(buffer, { type: "array" });
+
+  const sheetName = wb.SheetNames.find(n => norm(n).includes("harga") || norm(n).includes("update")) || wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  const rawRows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+  const prods = Array.isArray(currentMaster.produk) ? [...currentMaster.produk] : [];
+  const prodMap = new Map();
+  prods.forEach(p => {
+    const code = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
+    if (code) prodMap.set(code, p);
+    const name = norm(p["Nama Produk"] || p.name);
+    if (name) prodMap.set(name, p);
+  });
+
+  const updatedProducts = [];
+  const skipped = [];
+  const warnings = [];
+
+  for (const row of rawRows) {
+    const code = text(row["Kode Produk"] || row["Kode"] || row["Kode Produk Internal"]);
+    const name = text(row["Nama Produk"] || row["Nama"]);
+    if (!code && !name) continue;
+
+    const target = prodMap.get(norm(code)) || prodMap.get(norm(name));
+    if (!target) {
+      skipped.push({ code, name, reason: "Produk tidak ditemukan di database." });
+      continue;
+    }
+
+    const priceBase = num(row["Harga Jual Ecer (Satuan Dasar)"] ?? row["Harga Jual Ecer"] ?? row["Harga Jual"] ?? row["Harga Ecer"]);
+    let priceMid = num(row["Harga Jual Satuan Sedang"] ?? row["Harga Sedang"] ?? target["Harga Jual Satuan Sedang"]);
+    let priceBuy = num(row["Harga Jual Satuan Besar"] ?? row["Harga Besar"] ?? target["Harga Jual Satuan Besar"]);
+
+    if (priceBase <= 0) {
+      skipped.push({ code: target["Kode Produk"], name: target["Nama Produk"], reason: "Harga jual ecer bernilai 0 atau belum diisi." });
+      continue;
+    }
+
+    const conv = num(target["Konversi"] ?? target["Isi Kemasan"] ?? 1) || 1;
+    const midQty = num(target["Isi Satuan Antara"] || 1) || 1;
+    const hasMid = !!target["Satuan Antara"] && norm(target["Satuan Antara"]) !== norm(target["Satuan Dasar"] || "Pcs");
+
+    // Otomatisasi hitung jika kolom sedang/besar tidak diisi
+    if (!priceMid && hasMid && midQty > 1) {
+      priceMid = Math.round(priceBase * midQty);
+    }
+    if (!priceBuy && conv > 1) {
+      priceBuy = Math.round(priceBase * conv);
+    }
+
+    // Tentukan mode opsi jual
+    let mode = String(row["Opsi Jual (1/2/3)"] || row["Opsi Jual"] || "").trim();
+    if (mode !== "1" && mode !== "2" && mode !== "3") {
+      if (hasMid && conv > 1 && priceMid > 0 && priceBuy > 0) {
+        mode = "3";
+      } else if (conv > 1 && priceBuy > 0) {
+        mode = "2";
+      } else {
+        mode = "1";
+      }
+    }
+
+    // Tentukan allowed units
+    let allowedUnits = ["base"];
+    const satuanStr = norm(row["Satuan Yang Dijual"] || row["Satuan Dijual"] || "");
+    if (mode === "3") {
+      allowedUnits = ["base"];
+      if (hasMid) allowedUnits.push("mid");
+      if (conv > 1) allowedUnits.push("buy");
+    } else if (mode === "2") {
+      if (satuanStr.includes("sedang") && hasMid) {
+        allowedUnits = ["base", "mid"];
+      } else {
+        allowedUnits = ["base", "buy"];
+      }
+    } else {
+      allowedUnits = ["base"];
+    }
+
+    // Peringatan jika jual di bawah modal fisik
+    const buyPrice = num(target["Harga Beli Terakhir"] ?? target["Harga Beli"] ?? 0);
+    const baseHpp = conv > 0 ? (buyPrice / conv) : buyPrice;
+    if (baseHpp > 0 && priceBase < baseHpp) {
+      warnings.push(`"${target["Nama Produk"]}": Harga Jual Ecer (Rp ${priceBase.toLocaleString("id-ID")}) di bawah modal (Rp ${Math.round(baseHpp).toLocaleString("id-ID")}).`);
+    }
+
+    target["Harga Jual"] = priceBase;
+    target["Harga Jual Satuan Sedang"] = priceMid;
+    target["Harga Jual Satuan Besar"] = priceBuy;
+    target["Opsi Jual"] = mode;
+    target["Satuan Dijual"] = allowedUnits;
+    target["Status"] = "Aktif";
+    target["Status Produk"] = "Aktif";
+
+    updatedProducts.push(target);
+  }
+
+  return { updatedProducts, skipped, warnings, totalParsed: rawRows.length };
 }

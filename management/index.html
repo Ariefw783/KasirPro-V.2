@@ -1455,6 +1455,29 @@
                 </button>
             </div>
 
+            <!-- Baris 3: Banner Aksi Penetapan Harga Jual Cepat (3 Tingkat Satuan Otomatis) -->
+            <div id="pending-pricing-actions-bar" class="pending-pricing-bar" style="display:none;margin-top:14px;padding:12px 16px;background:#fefce8;border:1px solid #fef08a;border-radius:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <i class="fa-solid fa-tags" style="color:#ca8a04;font-size:18px;"></i>
+                    <div>
+                        <strong style="color:#854d0e;font-size:13px;display:block;">Alur Penetapan Harga Jual Cepat (3 Tingkat Satuan Otomatis)</strong>
+                        <span style="color:#a16207;font-size:12px;">Export daftar ke Excel, isi harga jual ecer/tingkat, lalu Import kembali; atau gunakan mode input langsung di tabel.</span>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <button type="button" id="btn-export-pending-pricing" class="button button-secondary" style="background:#fff;border-color:#ca8a04;color:#854d0e;font-weight:600;font-size:12.5px;padding:6px 12px;">
+                        <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> Export Antrean Harga (.xlsx)
+                    </button>
+                    <button type="button" id="btn-import-pending-pricing" class="button button-primary" style="background:#ca8a04;border-color:#ca8a04;color:#fff;font-weight:600;font-size:12.5px;padding:6px 12px;">
+                        <i class="fa-solid fa-file-import"></i> Import Update Harga (.xlsx)
+                    </button>
+                    <input type="file" id="file-import-pending-pricing" accept=".xlsx,.xls" style="display:none;">
+                    <button type="button" id="btn-toggle-quick-pricing" class="button button-secondary" style="background:#fff;border-color:#cbd5e1;color:#334155;font-weight:600;font-size:12.5px;padding:6px 12px;">
+                        <i class="fa-solid fa-pen-to-square"></i> <span id="btn-toggle-quick-pricing-text">Mode Input Cepat di Tabel</span>
+                    </button>
+                </div>
+            </div>
+
         </section>
 
 
@@ -1675,28 +1698,23 @@
                                 <i class="fa-solid fa-magnifying-glass"></i>
                                 <input type="search" id="category-search" placeholder="Cari kode, nama, atau deskripsi kategori...">
                             </div>
-                            <select id="category-status-filter" class="product-filter">
-                                <option value="">Semua Status</option>
-                                <option value="aktif">Aktif</option>
-                                <option value="nonaktif">Nonaktif</option>
-                            </select>
+                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                <select id="category-status-filter" class="product-filter">
+                                    <option value="">Semua Status</option>
+                                    <option value="aktif">Aktif</option>
+                                    <option value="nonaktif">Nonaktif</option>
+                                </select>
+                                <button type="button" id="btn-toggle-all-categories" class="button button-small button-secondary" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;" title="Buka atau ciutkan seluruh kartu kategori">
+                                    <i class="fa-solid fa-arrows-up-down"></i> <span id="toggle-all-categories-text">Buka Semua</span>
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="table-wrapper">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Kode Kategori</th>
-                                        <th>Nama Kategori</th>
-                                        <th>Deskripsi</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="categories-table-body">
-                                    <tr><td colspan="4" class="empty-table-state">Belum ada data kategori.</td></tr>
-                                </tbody>
-                            </table>
+                        <!-- KARTU DINAMIS VERTIKAL KATEGORI -->
+                        <div id="categories-cards-container" class="entity-cards-container">
+                            <div class="empty-table-state" style="text-align:center;padding:24px;background:#fff;border-radius:12px;border:1px solid #e2e8f0;">Memuat data kategori...</div>
                         </div>
+                        <div style="display:none;"><tbody id="categories-table-body"></tbody></div>
 
                         <div class="panel-actions split">
                             <div class="preview-meta">
@@ -1788,32 +1806,23 @@
                                 <i class="fa-solid fa-magnifying-glass"></i>
                                 <input type="search" id="supplier-search" placeholder="Cari kode, nama, kontak, telepon, atau email supplier...">
                             </div>
-                            <select id="supplier-status-filter" class="product-filter">
-                                <option value="">Semua Status</option>
-                                <option value="aktif">Aktif</option>
-                                <option value="nonaktif">Nonaktif</option>
-                            </select>
+                            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                <select id="supplier-status-filter" class="product-filter">
+                                    <option value="">Semua Status</option>
+                                    <option value="aktif">Aktif</option>
+                                    <option value="nonaktif">Nonaktif</option>
+                                </select>
+                                <button type="button" id="btn-toggle-all-suppliers" class="button button-small button-secondary" style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap;" title="Buka atau ciutkan seluruh kartu supplier">
+                                    <i class="fa-solid fa-arrows-up-down"></i> <span id="toggle-all-suppliers-text">Buka Semua</span>
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="table-wrapper">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Supplier</th>
-                                        <th>Nama Supplier</th>
-                                        <th>Kontak Person</th>
-                                        <th>Telepon</th>
-                                        <th>Email</th>
-                                        <th>Termin</th>
-                                        <th>Produk</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="suppliers-table-body">
-                                    <tr><td colspan="8" class="empty-table-state">Belum ada data supplier.</td></tr>
-                                </tbody>
-                            </table>
+                        <!-- KARTU DINAMIS VERTIKAL SUPPLIER -->
+                        <div id="suppliers-cards-container" class="entity-cards-container">
+                            <div class="empty-table-state" style="text-align:center;padding:24px;background:#fff;border-radius:12px;border:1px solid #e2e8f0;">Memuat data supplier...</div>
                         </div>
+                        <div style="display:none;"><tbody id="suppliers-table-body"></tbody></div>
 
                         <div class="panel-actions split">
                             <div class="preview-meta">

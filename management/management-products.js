@@ -16,13 +16,14 @@
 import { $, num, text, norm, rupiah, formatNumber, escapeHtml } from "../modules/core/utils.js";
 import { STORE_KEYS, readStore, writeMasterDelta, deleteMasterProduct, readCurrentStock } from "../modules/database/database-store.js";
 import { indexedDBStore, STORES } from "../modules/local/indexeddb-store.js";
-import { exportMasterData, parseMasterWorkbook } from "../modules/excel/excel-service.js";
+import { exportMasterData, parseMasterWorkbook, exportPendingPricingWorkbook, parsePendingPricingWorkbook } from "../modules/excel/excel-service.js";
 
 const PAGE_SIZE = 25;
 let currentPage = 1;
 let currentProducts = [];
 let filteredProducts = [];
 let activeEditingProduct = null;
+let isQuickPricingMode = false;
 
 export function initProductsModule() {
   bindEvents();
@@ -108,6 +109,27 @@ function bindEvents() {
   // Tombol Export Master Seluruh Data
   const exportBtn = $("export-master-button") || $("export-products");
   exportBtn?.addEventListener("click", handleExportMaster);
+
+  // Tombol Export & Import Antrean Harga Jual (Excel)
+  $("btn-export-pending-pricing")?.addEventListener("click", handleExportPendingPricing);
+  $("btn-import-pending-pricing")?.addEventListener("click", () => {
+    const fileInp = $("file-import-pending-pricing");
+    if (fileInp) {
+      fileInp.value = "";
+      fileInp.click();
+    }
+  });
+  $("file-import-pending-pricing")?.addEventListener("change", (e) => {
+    const file = e.target?.files?.[0];
+    if (file) handleImportPendingPricing(file);
+  });
+
+  // Toggle Mode Input Cepat di Tabel
+  $("btn-toggle-quick-pricing")?.addEventListener("click", () => {
+    isQuickPricingMode = !isQuickPricingMode;
+    updateQuickPricingBtnUI();
+    renderTable();
+  });
 
   // Modal Edit Harga Jual & Tambah Produk
   installEditPriceModal();
@@ -196,6 +218,30 @@ function syncProductStatusPills() {
     const s = norm(btn.dataset.status ?? "");
     btn.classList.toggle("active", s === currentVal);
   });
+
+  // Tampilkan bar aksi khusus bila pengguna memilih status Perlu Harga Jual
+  const pendingBar = $("pending-pricing-actions-bar");
+  const isPending = currentVal === "belum aktif" || currentVal === "perlu harga jual";
+  if (pendingBar) {
+    pendingBar.style.display = isPending ? "flex" : "none";
+  }
+
+  // Hitung jumlah produk yang perlu harga jual secara live
+  const pendingCount = currentProducts.filter(p => {
+    if (p._isDeleted) return false;
+    const code = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
+    const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
+    const sellPrice = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
+    return stock > 0 && sellPrice <= 0;
+  }).length;
+
+  const pendingPill = document.querySelector('.prod-pill-btn[data-status="belum aktif"]');
+  if (pendingPill) {
+    const textSpan = pendingPill.querySelector("span:not(.prod-pill-indicator)");
+    if (textSpan) {
+      textSpan.textContent = pendingCount > 0 ? `Perlu Harga Jual (${pendingCount})` : "Perlu Harga Jual";
+    }
+  }
 }
 
 function populateFilterDropdowns(master) {
@@ -430,6 +476,19 @@ function renderTable() {
             </button>
           </div>
         `;
+      } else if (isQuickPricingMode) {
+        // Mode Input Cepat di Tabel (Live Inline Pricing)
+        priceDisplayHtml = `
+          <div style="display:flex;align-items:center;gap:4px;">
+            <div style="position:relative;width:115px;">
+              <span style="position:absolute;left:6px;top:50%;transform:translateY(-50%);font-size:10px;color:#64748b;font-weight:700;">Rp</span>
+              <input type="number" min="0" class="input-quick-sell-price" data-code="${escapeHtml(code)}" placeholder="0" value="${sellPrice > 0 ? sellPrice : ''}" style="width:100%;height:30px;padding:2px 4px 2px 24px;border:1.5px solid #0284c7;border-radius:6px;font-size:12px;font-weight:700;color:#0f172a;background:#f0f9ff;" title="Ketik harga jual ecer lalu klik centang / tekan Enter">
+            </div>
+            <button type="button" class="btn-quick-save-price button button-small button-primary" data-code="${escapeHtml(code)}" style="padding:4px 8px;font-size:11px;background:#0284c7;border-color:#0284c7;" title="Simpan Harga Cepat">
+              <i class="fa-solid fa-check"></i>
+            </button>
+          </div>
+        `;
       } else if (sellPrice <= 0) {
         // Status Belum Aktif (Perlu Harga Jual): Sudah ada stok dari faktur -> Tombol TERBUKA & MENONJOL
         priceDisplayHtml = `
@@ -481,6 +540,25 @@ function renderTable() {
         const code = btn.dataset.code;
         const prod = currentProducts.find(p => norm(p["Kode Produk"]) === norm(code));
         if (prod) openEditPriceModal(prod);
+      });
+    });
+
+    // Bind event Quick Save Price
+    tbody.querySelectorAll(".btn-quick-save-price").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const code = btn.dataset.code;
+        const input = tbody.querySelector(`.input-quick-sell-price[data-code="${code}"]`);
+        if (input) handleQuickSavePrice(code, input.value);
+      });
+    });
+
+    tbody.querySelectorAll(".input-quick-sell-price").forEach(input => {
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const code = input.dataset.code;
+          handleQuickSavePrice(code, input.value);
+        }
       });
     });
 
@@ -537,6 +615,143 @@ export function handleExportMaster() {
   } catch (err) {
     console.error("[ExportMaster] Error exporting:", err);
     window.KasirProDialog?.error("Gagal Export Master", err.message || "Terjadi kesalahan saat membuat file Excel.");
+  }
+}
+
+/**
+ * Update UI Tombol Toggle Mode Cepat di Tabel
+ */
+function updateQuickPricingBtnUI() {
+  const btn = $("btn-toggle-quick-pricing");
+  const txt = $("btn-toggle-quick-pricing-text");
+  if (!btn || !txt) return;
+  if (isQuickPricingMode) {
+    btn.style.background = "#e0f2fe";
+    btn.style.borderColor = "#0284c7";
+    btn.style.color = "#0369a1";
+    txt.textContent = "Matikan Mode Cepat";
+  } else {
+    btn.style.background = "#fff";
+    btn.style.borderColor = "#cbd5e1";
+    btn.style.color = "#334155";
+    txt.textContent = "Mode Input Cepat di Tabel";
+  }
+}
+
+/**
+ * Export Antrean Produk yang Memerlukan Penetapan Harga Jual (.xlsx)
+ */
+export function handleExportPendingPricing() {
+  try {
+    const master = readStore(STORE_KEYS.master, {});
+    const prods = Array.isArray(master.produk) ? master.produk : [];
+    const pendingProducts = prods.filter(p => {
+      if (p._isDeleted) return false;
+      const code = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
+      const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
+      const sellPrice = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
+      return stock > 0 && sellPrice <= 0;
+    });
+
+    if (!pendingProducts.length) {
+      window.KasirProDialog?.info(
+        "Tidak Ada Antrean",
+        "Semua produk yang memiliki stok saat ini sudah memiliki harga jual aktif."
+      );
+      return;
+    }
+
+    const res = exportPendingPricingWorkbook(pendingProducts);
+    window.KasirProDialog?.success(
+      "Export Antrean Berhasil",
+      `Berhasil mengekspor ${res.count} produk antrean ke file:\n${res.fileName}\n\nSilakan buka file tersebut di Excel, isi kolom 'Harga Jual Ecer', lalu klik 'Import Update Harga' untuk memperbarui data.`
+    );
+  } catch (err) {
+    console.error("[ExportPendingPricing] Error:", err);
+    window.KasirProDialog?.error("Gagal Export", err.message || "Terjadi kesalahan saat membuat file Excel.");
+  }
+}
+
+/**
+ * Import Update Penetapan Harga Jual dari File Excel (.xlsx)
+ */
+export async function handleImportPendingPricing(file) {
+  if (!file) return;
+  try {
+    const master = readStore(STORE_KEYS.master, {});
+    const res = await parsePendingPricingWorkbook(file, master);
+
+    if (!res.updatedProducts || !res.updatedProducts.length) {
+      window.KasirProDialog?.warning(
+        "Import Selesai",
+        "Tidak ada produk yang berhasil diperbarui. Pastikan kolom 'Harga Jual Ecer' terisi angka valid > 0."
+      );
+      return;
+    }
+
+    await writeMasterDelta({ produk: res.updatedProducts });
+    renderProducts();
+
+    let msg = `Berhasil memperbarui harga jual untuk ${res.updatedProducts.length} produk!\nProduk kini aktif dan siap dijual di kasir POS.`;
+    if (res.warnings && res.warnings.length > 0) {
+      msg += `\n\nCatatan:\n• ${res.warnings.slice(0, 3).join("\n• ")}`;
+      if (res.warnings.length > 3) msg += `\n...dan ${res.warnings.length - 3} catatan lainnya.`;
+    }
+    window.KasirProDialog?.success("Update Harga Berhasil", msg);
+  } catch (err) {
+    console.error("[ImportPendingPricing] Error:", err);
+    window.KasirProDialog?.error("Gagal Import", err.message || "File Excel tidak dapat diproses.");
+  }
+}
+
+/**
+ * Simpan Cepat Harga Jual Langsung dari Baris Tabel (Mode Cepat)
+ */
+async function handleQuickSavePrice(code, newPrice) {
+  const master = readStore(STORE_KEYS.master, {});
+  const prods = Array.isArray(master.produk) ? master.produk : [];
+  const target = prods.find(p => norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id) === norm(code));
+  if (!target) return;
+
+  const sellPrice = num(newPrice);
+  if (sellPrice <= 0) {
+    window.KasirProDialog?.warning("Harga Tidak Valid", "Harga jual harus lebih dari 0.");
+    return;
+  }
+
+  const conv = num(target["Konversi"] ?? target["Isi Kemasan"] ?? 1) || 1;
+  const midQty = num(target["Isi Satuan Antara"] || 1) || 1;
+  const hasMid = !!target["Satuan Antara"] && norm(target["Satuan Antara"]) !== norm(target["Satuan Dasar"] || "Pcs");
+
+  target["Harga Jual"] = sellPrice;
+  if (!num(target["Harga Jual Satuan Sedang"]) && hasMid && midQty > 1) {
+    target["Harga Jual Satuan Sedang"] = Math.round(sellPrice * midQty);
+  }
+  if (!num(target["Harga Jual Satuan Besar"]) && conv > 1) {
+    target["Harga Jual Satuan Besar"] = Math.round(sellPrice * conv);
+  }
+  target["Opsi Jual"] = target["Opsi Jual"] || "1";
+  target["Satuan Dijual"] = target["Satuan Dijual"] || ["base"];
+  target["Status"] = "Aktif";
+  target["Status Produk"] = "Aktif";
+
+  const invData = resolveProductInvoiceData(target);
+  if (invData.buyPrice > 0 && !num(target["Harga Beli Terakhir"])) {
+    target["Harga Beli Terakhir"] = invData.buyPrice;
+    target["Harga Beli"] = invData.buyPrice;
+  }
+
+  try {
+    await writeMasterDelta({ produk: [target] });
+    renderProducts();
+    if (window.KasirProDialog?.toast) {
+      window.KasirProDialog.toast(`Harga "${target["Nama Produk"] || code}" berhasil disimpan!`, "success");
+    } else {
+      window.KasirProDialog?.success("Tersimpan", `Harga "${target["Nama Produk"] || code}" berhasil disimpan!`);
+    }
+  } catch (err) {
+    console.error("[QuickSavePrice] Error:", err);
+    window.KasirProDialog?.error("Gagal Menyimpan", err.message || "Gagal menyimpan harga ke database.");
   }
 }
 
