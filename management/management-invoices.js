@@ -527,12 +527,16 @@ export function openManualInvoiceModal() {
   toggleManualInvoiceHeader(false);
   updateManualInvoiceHeaderSummary();
   modal.hidden = false;
+  modal.style.display = "flex";
   setTimeout(() => $("manual-inv-number")?.focus(), 60);
 }
 
 export function closeManualInvoiceModal() {
   const modal = $("modal-manual-invoice");
-  if (modal) modal.hidden = true;
+  if (modal) {
+    modal.hidden = true;
+    modal.style.display = "none";
+  }
 }
 
 function updateManualInvoiceHeaderSummary() {
@@ -1262,6 +1266,8 @@ function renderManualInvoiceItems() {
           <span>Kode: ${escapeHtml(item.productCode)}</span>
         </div>
       `;
+    }
+
     const itemSupName = item.supplier || currentSup || item.matchedProduct?.["Supplier"] || item.matchedProduct?.["Produsen"] || "-";
     const itemUnit = item.purchaseUnit || "-";
     const unitDisplay = qNum ? `${qNum} ${itemUnit}` : itemUnit;

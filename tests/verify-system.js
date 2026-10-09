@@ -66,10 +66,12 @@ let syntaxFailures = 0;
 for (const f of allJsFiles) {
   const rel = path.relative(rootDir, f);
   try {
-    execSync(`node -c "${f}"`, { stdio: "pipe" });
+    const code = fs.readFileSync(f, "utf8");
+    // Gunakan input-type=module agar sintaks ES module diperiksa secara ketat oleh V8 Node.js
+    execSync(`node --check --input-type=module`, { input: code, stdio: ["pipe", "pipe", "pipe"] });
   } catch (err) {
     syntaxFailures++;
-    console.error(`  Syntax error in ${rel}`);
+    console.error(`  Syntax error in ${rel}: ${err.message}`);
   }
 }
 assert(syntaxFailures === 0, `Verifikasi Sintaks Seluruh File JS (${allJsFiles.length} file)`, `${syntaxFailures} file gagal`);

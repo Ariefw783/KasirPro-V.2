@@ -1,14 +1,14 @@
 {
-  "version": "2.2.44",
-  "build": "20261009.01",
+  "version": "2.2.45",
+  "build": "20261009.02",
   "releaseDate": "09 Oktober 2026",
-  "title": "Layer Modal, Header Dinamis & Prioritas Supplier Faktur",
-  "description": "Memastikan modal Input Faktur Manual berada di lapisan terdepan tanpa tertutup sidebar dan header, memperbarui header kartu ciutkan dengan informasi dinamis (nama produk, supplier, satuan besar, subtotal), dan memprioritaskan kecocokan supplier pada impor TSV.",
+  "title": "Perbaikan Sintaks & Pemulihan Navigasi Menu",
+  "description": "Memperbaiki penutupan blok sintaks pada modul faktur pembelian, memastikan isolasi layer modal yang tersembunyi, dan memulihkan fungsi interaksi tombol navigasi sidebar.",
   "changelog": [
-    "Elevate invoice modal top layer",
-    "Show dynamic collapsed item summary",
-    "Prioritize supplier on TSV paste",
-    "Prevent false multi supplier match",
-    "Update service worker cache v97"
+    "Fix invoice syntax block closure",
+    "Restore sidebar menu navigation clickability",
+    "Guard hidden invoice modal layer",
+    "Strengthen ESM syntax test check",
+    "Update service worker cache v98"
   ]
 }

@@ -1128,3 +1128,9 @@
     position: fixed !important;
     inset: 0 !important;
 }
+
+#modal-manual-invoice[hidden] {
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+}
