@@ -221,10 +221,11 @@ export function reconcileProductsWithInvoices(products, invoices) {
     if (!Array.isArray(inv.items)) continue;
     for (const item of inv.items) {
       const buyPrice = num(item.buyPrice);
-      if (buyPrice > 0) {
+      const purchaseUnit = String(item.purchaseUnit || item.satuanBesar || item.unit || "").trim();
+      if (buyPrice > 0 || purchaseUnit) {
         const payload = {
           buyPrice,
-          purchaseUnit: item.purchaseUnit || item.satuanBesar || "",
+          purchaseUnit,
           conversionRatio: num(item.conversionRatio || item.conversion) || 1,
           intermediateUnit: item.intermediateUnit || item.satuanSedang || "",
           intermediateQty: num(item.intermediateQty) || 1,
@@ -246,18 +247,19 @@ export function reconcileProductsWithInvoices(products, invoices) {
     const invMatch = (code && mapByCode.get(code)) || (name && mapByName.get(name));
 
     if (invMatch) {
-      if (curBuy <= 0) {
+      if (curBuy <= 0 && invMatch.buyPrice > 0) {
         p["Harga Beli Terakhir"] = invMatch.buyPrice;
         p["Harga Beli"] = invMatch.buyPrice;
       }
       if (!p["Supplier"] && invMatch.supplierName) {
         p["Supplier"] = invMatch.supplierName;
       }
-      if ((!p["Satuan Pembelian"] || p["Satuan Pembelian"] === p["Satuan Dasar"]) && invMatch.purchaseUnit) {
+      // MUTLAK: Mengikuti satuan besar / kemasan beli dari faktur pembelian
+      if (invMatch.purchaseUnit) {
         p["Satuan Pembelian"] = invMatch.purchaseUnit;
         p["Kemasan Beli"] = invMatch.purchaseUnit;
       }
-      if ((!p["Konversi"] || num(p["Konversi"]) <= 1) && invMatch.conversionRatio > 1) {
+      if (invMatch.conversionRatio > 1 || (!num(p["Konversi"]) && invMatch.conversionRatio)) {
         p["Konversi"] = invMatch.conversionRatio;
         p["Isi Kemasan"] = invMatch.conversionRatio;
       }

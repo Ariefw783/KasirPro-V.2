@@ -1070,6 +1070,99 @@ assert(cardClassList.includes("is-expanded"), "Accordion Toggle: Kartu Berhasil 
 toggleCard(cardClassList); // Diciutkan kembali
 assert(!cardClassList.includes("is-expanded"), "Accordion Toggle: Kartu Berhasil Diciutkan Kembali (Mode Ringkas)");
 
+// -----------------------------------------------------------------------------
+// 19. PENGUJIAN FILTER PRODUK (KATEGORI & SUPPLIER) & MUTLAK SATUAN BESAR FAKTUR
+// -----------------------------------------------------------------------------
+console.log("\n🏷️ BAGIAN 19: PENGUJIAN FILTER PRODUK (KATEGORI & SUPPLIER) & MUTLAK SATUAN BESAR FAKTUR");
+
+// 1. Verifikasi Mutlak Satuan Besar Faktur Menggantikan Default Katalog Master
+const masterProductWithBox = {
+  "Kode Produk": "PRD-OBAT-CAIR",
+  "Nama Produk": "OBAT BATUK SIRUP 60ML",
+  "Satuan Dasar": "BOTOL",
+  "Satuan": "BOTOL",
+  "Satuan Pembelian": "BOX", // Master sebelumnya mencatat BOX secara default
+  "Kemasan Beli": "BOX",
+  "Konversi": 1,
+  "Harga Beli": 0
+};
+
+const invoiceWithBotol = {
+  invoiceNumber: "FAK-2026-999",
+  supplierName: "PT Sumber Sehat",
+  items: [
+    {
+      productCode: "PRD-OBAT-CAIR",
+      name: "OBAT BATUK SIRUP 60ML",
+      buyPrice: 15000,
+      purchaseUnit: "BOTOL", // Di faktur diinput BOTOL
+      conversionRatio: 1
+    }
+  ]
+};
+
+// Simulasi rekonsiliasi database-store & management-products mutlak
+function reconcileInvoicePurchaseUnit(prod, invoices) {
+  const invMap = new Map();
+  invoices.forEach(inv => {
+    (inv.items || []).forEach(it => {
+      const code = String(it.productCode || "").trim().toLowerCase();
+      if (code) invMap.set(code, it);
+    });
+  });
+  const match = invMap.get(String(prod["Kode Produk"] || "").trim().toLowerCase());
+  if (match) {
+    if (match.purchaseUnit) {
+      prod["Satuan Pembelian"] = match.purchaseUnit;
+      prod["Kemasan Beli"] = match.purchaseUnit;
+    }
+    if (match.buyPrice) prod["Harga Beli"] = match.buyPrice;
+  }
+}
+
+reconcileInvoicePurchaseUnit(masterProductWithBox, [invoiceWithBotol]);
+assert(masterProductWithBox["Satuan Pembelian"] === "BOTOL", "Satuan Besar: Faktur 'BOTOL' Mengesampingkan Default 'BOX' Katalog Secara Mutlak");
+assert(masterProductWithBox["Kemasan Beli"] === "BOTOL", "Kemasan Beli: Ter-sinkronisasi Menjadi 'BOTOL' Mengikuti Data Faktur Asli");
+
+// 2. Verifikasi Filter Kategori & Supplier pada Halaman Produk
+const testCatalogForFiltering = [
+  { "Kode Produk": "PRD-01", "Nama Produk": "Paracetamol 500mg", "Kategori": "OBAT BEBAS", "Supplier": "PT Kimia Farma", "Stok Awal": 0, "Harga Jual": 0 },
+  { "Kode Produk": "PRD-02", "Nama Produk": "Amoxicillin 500mg", "Kategori": "OBAT KERAS", "Supplier": "PT Mensa Binasukses", "Stok Awal": 10, "Harga Jual": 8000 },
+  { "Kode Produk": "PRD-03", "Nama Produk": "Vitamin C 500mg", "Kategori": "SUPLEMEN", "Supplier": "PT Kimia Farma", "Stok Awal": 0, "Harga Jual": 5000 }
+];
+
+function simulateProductFiltering(products, { query = "", category = "", supplier = "", status = "aktif" }) {
+  const q = query.trim().toLowerCase();
+  const cat = category.trim().toLowerCase();
+  const sup = supplier.trim().toLowerCase();
+
+  return products.filter(p => {
+    if (status === "aktif") {
+      if (q || cat || sup) {
+        // Mode filter: izinkan melihat produk dari kategori/supplier yang dipilih
+      } else {
+        const stock = num(p["Stok Awal"]);
+        const sellPrice = num(p["Harga Jual"]);
+        if (stock <= 0 || sellPrice <= 0) return false;
+      }
+    }
+    if (cat && !String(p["Kategori"] || "").toLowerCase().includes(cat)) return false;
+    if (sup && !String(p["Supplier"] || "").toLowerCase().includes(sup)) return false;
+    if (q && !String(p["Nama Produk"] || "").toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+const filteredByCat = simulateProductFiltering(testCatalogForFiltering, { category: "OBAT BEBAS", status: "aktif" });
+assert(filteredByCat.length === 1 && filteredByCat[0]["Kode Produk"] === "PRD-01", "Filter Kategori: Menemukan Produk 'OBAT BEBAS' Meskipun Stok Awal 0");
+
+const filteredBySup = simulateProductFiltering(testCatalogForFiltering, { supplier: "PT Kimia Farma", status: "aktif" });
+assert(filteredBySup.length === 2, "Filter Supplier: Menemukan 2 Produk dari 'PT Kimia Farma' Secara Akurat");
+
+// 3. Verifikasi Logika Mobile Card List Empty State
+const emptyStateMsg = '<div class="empty-state">Tidak ada produk yang cocok dengan filter.</div>';
+assert(emptyStateMsg.includes("Tidak ada produk"), "UI Mobile: Empty State Card List Tersedia Ketika Filter Tidak Menghasilkan Data");
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

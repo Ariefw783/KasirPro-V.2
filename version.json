@@ -1,13 +1,13 @@
 {
-  "version": "2.2.52",
-  "build": "20261010.01",
+  "version": "2.2.53",
+  "build": "20261010.02",
   "releaseDate": "10 Oktober 2026",
-  "title": "Strict Classic Table Elimination & Universal Reports Cards",
-  "description": "Eliminasi menyeluruh tabel scroll klasik di semua menu operasional dan pelaporan, digantikan kartu adaptif vertikal modern.",
+  "title": "Enforce Invoice Units And Filters",
+  "description": "Sinkronisasi mutlak satuan kemasan beli faktur dan perbaikan filter kategori serta supplier halaman produk.",
   "changelog": [
-    "Strictly eliminate classic data tables",
-    "Add universal cards for reports",
-    "Enforce responsive vertical cards everywhere",
-    "Update service worker cache v105"
+    "Enforce invoice purchase unit mutlak",
+    "Fix category and supplier filters",
+    "Improve mobile card empty state",
+    "Update service worker cache v106"
   ]
 }

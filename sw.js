@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v105-clean-medical-universal-cards";
+const CACHE_VERSION = "kasirpro-pwa-v106-invoice-unit-filters";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
