@@ -1,13 +1,13 @@
 {
   "version": "2.2.60",
-  "build": "20261011.01",
+  "build": "20261011.02",
   "releaseDate": "11 Oktober 2026",
-  "title": "Bulk Excel Pricing Auto Formulas",
-  "description": "Ekspor dan impor Excel khusus produk perlu harga jual dengan rumus otomatis multi-satuan.",
+  "title": "Colored Multi-Unit Pricing Excel",
+  "description": "Format Excel 9 kolom berwarna, rapi, terstruktur, non-standar dengan warna kuning soft dan abu gelap.",
   "changelog": [
-    "Add pricing excel export feature",
-    "Support multi unit auto formulas",
-    "Add owner excel pricing import",
-    "Update service worker cache v113"
+    "Implement colored pricing excel structure",
+    "Support soft yellow optional tier",
+    "Add dark slate inactive cell",
+    "Format rupiah currency automatically"
   ]
 }

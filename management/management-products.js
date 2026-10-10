@@ -833,7 +833,7 @@ export function updatePricingActionBar() {
 /**
  * Handle Export Excel Khusus Perlu Harga Jual dengan Rumus Otomatis Multi-Satuan
  */
-export function handleExportPricingExcel() {
+export async function handleExportPricingExcel() {
   try {
     const master = readStore(STORE_KEYS.master, {});
     const prods = Array.isArray(master.produk) ? master.produk : [];
@@ -865,7 +865,7 @@ export function handleExportPricingExcel() {
     // Pastikan data faktur (harga beli faktur, kemasan beli, satuan dasar) tersinkronisasi
     targets.forEach(p => resolveProductInvoiceData(p, invoiceLookup));
 
-    const res = exportPricingWorkbook(targets);
+    const res = await exportPricingWorkbook(targets);
     window.KasirProDialog?.success(
       "Export Excel Berhasil",
       `Berhasil mengekspor ${res.count} produk ke berkas:\n${res.fileName}\n\nSilakan buka di Excel, tentukan harga jual, lalu upload kembali!`
