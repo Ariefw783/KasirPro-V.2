@@ -1,13 +1,13 @@
 {
-  "version": "2.2.55",
-  "build": "20261010.04",
+  "version": "2.2.56",
+  "build": "20261010.05",
   "releaseDate": "10 Oktober 2026",
-  "title": "Invoice Base Unit Sync & Intuitive Pricing",
-  "description": "Sinkronisasi mutlak satuan terkecil faktur ke produk dan penyederhanaan antarmuka atur harga jual tanpa simbol matematika.",
+  "title": "Supplier Acronym & Manual Product Code Format",
+  "description": "Pembaruan penamaan kode produk tambah manual menjadi format [RNA-NEW-0XX] berbasis akronim supplier.",
   "changelog": [
-    "Sync invoice smallest base unit",
-    "Simplify tiered pricing selling terms",
-    "Remove confusing math equal signs",
-    "Update service worker cache v108"
+    "Implement supplier acronym code format",
+    "Support RNA-NEW-0XX manual product naming",
+    "Update invoice auto product code",
+    "Update service worker cache v109"
   ]
 }

@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v108-sync-base-unit";
+const CACHE_VERSION = "kasirpro-pwa-v109-supplier-acronym-code";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

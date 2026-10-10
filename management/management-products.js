@@ -1506,19 +1506,43 @@ async function handleSavePriceModal() {
 }
 
 /**
- * Generate kode produk otomatis format [Nama Supplier-PRD-xxx]
+ * Ekstraksi akronim/singkatan supplier resmi (misal: ROSA NUGRAHA ABADI -> RNA)
  */
-function generateAutoProductCode(supplierName) {
-  const supClean = String(supplierName || "UMUM")
-    .trim()
-    .replace(/[\/\\]/g, "_")
-    .toUpperCase();
+export function getSupplierAcronym(supplierName) {
+  if (!supplierName || !String(supplierName).trim()) return "UMUM";
 
+  let clean = String(supplierName).trim().toUpperCase();
+
+  // Hapus prefiks bentuk badan usaha umum
+  clean = clean.replace(/^(PT\.?|CV\.?|UD\.?|PD\.?|NV\.?|FA\.?|TOKO|APOTEK)\s+/i, "").trim();
+
+  // Pisahkan kata-kata, hilangkan kata kosong atau PT/CV yang tersisa
+  const words = clean.split(/[\s\-_.\/,]+/).filter(w => w.length > 0 && !/^(PT|CV|UD|PD|NV|FA)$/i.test(w));
+
+  if (words.length === 0) return "UMUM";
+
+  if (words.length >= 2) {
+    // Ambil huruf pertama setiap kata (misal: ROSA NUGRAHA ABADI -> RNA)
+    return words.map(w => w[0]).join("").slice(0, 5);
+  }
+
+  // Jika hanya 1 kata
+  const single = words[0];
+  if (single.length <= 4) return single;
+  return single.slice(0, 3);
+}
+
+/**
+ * Generate kode produk otomatis format [SupplierAcronym-NEW-0XX]
+ * Contoh: ROSA NUGRAHA ABADI -> RNA-NEW-001
+ */
+export function generateAutoProductCode(supplierName) {
+  const acronym = getSupplierAcronym(supplierName);
   const master = readStore(STORE_KEYS.master, {});
   const prods = Array.isArray(master.produk) ? master.produk : [];
 
-  // Hitung jumlah produk yang sudah ada untuk supplier ini
-  const prefix = `${supClean}-PRD-`;
+  // Hitung jumlah produk yang sudah ada untuk supplier ini dengan format -NEW-
+  const prefix = `${acronym}-NEW-`;
   const existingNumbers = prods
     .map(p => {
       const code = String(p["Kode Produk"] || p["Kode Produk Internal"] || "").toUpperCase();
@@ -1580,7 +1604,7 @@ function installProductModal() {
                 <label style="font-size:12px;font-weight:700;color:#1e293b;">
                   Kode Produk Internal <span class="text-danger">*</span>
                 </label>
-                <span style="font-size:10.5px;color:#0284c7;font-weight:600;">Otomatis: [Supplier-PRD-xxx]</span>
+                <span style="font-size:10.5px;color:#0284c7;font-weight:600;">Otomatis: [SUP-NEW-0XX] (Contoh: RNA-NEW-001)</span>
               </div>
               <input type="text" id="input-prod-code" required style="width:100%;min-height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;font-weight:700;color:#0f2a43;background:#f8fafc;" placeholder="Pilih supplier terlebih dahulu">
             </div>

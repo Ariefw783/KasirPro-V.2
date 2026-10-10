@@ -1200,6 +1200,62 @@ assert(cssContent.includes(".responsive-data-card.card-primary:not(.is-expanded)
 // 4. Verifikasi Eliminasi Avatar Balok & Perampingan Kartu
 assert(cssContent.includes(".card-avatar") && cssContent.includes("display: none !important"), "Desain Ramping: Avatar Balok Kaku Berhasil Dieliminasi (.card-avatar display none)");
 
+// -----------------------------------------------------------------------------
+// 21. PENGUJIAN PENAMAAN KODE PRODUK TAMBAH MANUAL [RNA-NEW-0XX]
+// -----------------------------------------------------------------------------
+console.log("\n🏷️ BAGIAN 21: PENGUJIAN PENAMAAN KODE PRODUK TAMBAH MANUAL [RNA-NEW-0XX]");
+
+function testGetSupplierAcronym(supplierName) {
+  if (!supplierName || !String(supplierName).trim()) return "UMUM";
+  let clean = String(supplierName).trim().toUpperCase();
+  clean = clean.replace(/^(PT\.?|CV\.?|UD\.?|PD\.?|NV\.?|FA\.?|TOKO|APOTEK)\s+/i, "").trim();
+  const words = clean.split(/[\s\-_.\/,]+/).filter(w => w.length > 0 && !/^(PT|CV|UD|PD|NV|FA)$/i.test(w));
+  if (words.length === 0) return "UMUM";
+  if (words.length >= 2) return words.map(w => w[0]).join("").slice(0, 5);
+  const single = words[0];
+  if (single.length <= 4) return single;
+  return single.slice(0, 3);
+}
+
+function testGenerateAutoProductCode(supplierName, prods = []) {
+  const acronym = testGetSupplierAcronym(supplierName);
+  const prefix = `${acronym}-NEW-`;
+  const existingNumbers = prods
+    .map(p => {
+      const code = String(p["Kode Produk"] || p["Kode Produk Internal"] || "").toUpperCase();
+      if (code.startsWith(prefix)) {
+        const numPart = parseInt(code.replace(prefix, ""), 10);
+        return isNaN(numPart) ? 0 : numPart;
+      }
+      return 0;
+    })
+    .filter(n => n > 0);
+  const nextSeq = (existingNumbers.length > 0 ? Math.max(...existingNumbers) : 0) + 1;
+  const seqStr = String(nextSeq).padStart(3, "0");
+  return `${prefix}${seqStr}`;
+}
+
+// 1. Verifikasi Ekstraksi Akronim Supplier ROSA NUGRAHA ABADI -> RNA
+const rnaAcronym1 = testGetSupplierAcronym("ROSA NUGRAHA ABADI");
+assert(rnaAcronym1 === "RNA", "Akronim Supplier: 'ROSA NUGRAHA ABADI' Menghasilkan 'RNA'");
+const rnaAcronym2 = testGetSupplierAcronym("PT ROSA NUGRAHA ABADI");
+assert(rnaAcronym2 === "RNA", "Akronim Supplier: 'PT ROSA NUGRAHA ABADI' Menghasilkan 'RNA' (Abaikan PT)");
+const rnaAcronym3 = testGetSupplierAcronym("PT. ROSA NUGRAHA ABADI");
+assert(rnaAcronym3 === "RNA", "Akronim Supplier: 'PT. ROSA NUGRAHA ABADI' Menghasilkan 'RNA' (Abaikan PT.)");
+
+// 2. Verifikasi Format Penamaan Kode Produk Tambah Manual [RNA-NEW-0XX]
+const autoCode1 = testGenerateAutoProductCode("ROSA NUGRAHA ABADI", []);
+assert(autoCode1 === "RNA-NEW-001", "Kode Produk Manual: Urutan Pertama Menghasilkan 'RNA-NEW-001'");
+assert(/^[A-Z0-9]+-NEW-\d{3}$/.test(autoCode1), "Kode Produk Manual: Pola Format Sesuai Standar [RNA-NEW-0XX]");
+
+// 3. Verifikasi Increment Nomor Urut Otomatis
+const existingRnaProds = [
+  { "Kode Produk": "RNA-NEW-001", "Nama Produk": "Obat RNA 1" },
+  { "Kode Produk": "RNA-NEW-002", "Nama Produk": "Obat RNA 2" }
+];
+const autoCode2 = testGenerateAutoProductCode("ROSA NUGRAHA ABADI", existingRnaProds);
+assert(autoCode2 === "RNA-NEW-003", "Kode Produk Manual: Increment Otomatis Menghasilkan 'RNA-NEW-003'");
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

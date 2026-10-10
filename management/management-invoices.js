@@ -19,6 +19,7 @@
 import { $, num, parseMoney, text, norm, rupiah, formatNumber, escapeHtml, nowIso, uid, INVOICE_TOLERANCE_RP, normalizeProductName, findBestProductMatch, stringSimilarity } from "../modules/core/utils.js";
 import { STORE_KEYS, readStore, writeStore, writeMasterDelta, readCurrentStock, setActiveStock, writeStockTransaction, databaseStore, deletePurchaseInvoice } from "../modules/database/database-store.js";
 import { generatePurchaseInvoicePdf } from "../modules/core/pdf.js";
+import { generateAutoProductCode } from "./management-products.js";
 
 let currentInvoices = [];
 let activeDetailInvoice = null;
@@ -463,7 +464,7 @@ export async function executeConfirmInvoice(inv) {
         }
       } else {
         // Produk Baru dari Faktur
-        const newCode = `PRD-${Date.now().toString().slice(-5)}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
+        const newCode = item.productCode || (inv.supplierName ? generateAutoProductCode(inv.supplierName) : `PRD-${Date.now().toString().slice(-5)}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`);
         targetProd = {
           id: newCode,
           "Kode Produk": newCode,

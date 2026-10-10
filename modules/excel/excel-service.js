@@ -107,7 +107,7 @@ export function exportMasterData(masterStore = {}) {
   // 2. Sheet PANDUAN_INPUT (Panduan Penulisan Input Paten & Penyelarasan Istilah Satuan)
   const panduanRows = [
     ["KOLOM / FIELD", "ATURAN PENULISAN PATEN (WAJIB DIPATUHI)", "CONTOH VALID", "CONTOH SALAH / TIDAK DITERIMA"],
-    ["Kode Produk Internal", "Format standar [NamaSupplier]-PRD-[Nomor]. Tidak boleh mengandung garis miring (/ atau \\). Unik untuk setiap produk.", "PT. KIMIA FARMA-PRD-001", "PRD/01, /PRD-01 (Karakter miring dilarang)"],
+    ["Kode Produk Internal", "Format standar [KodeSupplier]-NEW-[Nomor]. Tidak boleh mengandung garis miring (/ atau \\). Unik untuk setiap produk.", "RNA-NEW-001", "PRD/01, /PRD-01 (Karakter miring dilarang)"],
     ["Barcode", "Nomor barcode fisik (EAN-13, UPC). Angka murni atau kosong jika produk tidak memiliki barcode fisik.", "8999908123456", "Ada Barcode, N/A"],
     ["Nama Produk", "Nama lengkap produk beserta dosis/kemasan. Wajib diisi.", "Paracetamol 500 mg Box 100 Tab", ""],
     ["Kategori", "Nama kategori produk resmi. Dikelola langsung di Menu Kategori UI.", "Obat Bebas, Generik, Alkes", "KAT001, -"],
