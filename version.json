@@ -1,14 +1,13 @@
 {
-  "version": "2.2.57",
-  "build": "20261010.06",
+  "version": "2.2.58",
+  "build": "20261010.07",
   "releaseDate": "10 Oktober 2026",
-  "title": "Tempo Invoice Due Tracking",
-  "description": "Warna faktur tempo dinamis, pengingat H-3, pelunasan sudah bayar, dan fuzzy match non-destruktif.",
+  "title": "Fix Dashboard Layout Hierarchy",
+  "description": "Perbaikan penutupan tag HTML toolbar dashboard desktop dan penyelarasan tata letak grid kartu keuangan.",
   "changelog": [
-    "Colorize tempo payment invoice cards",
-    "Add dynamic H-3 due reminder",
-    "Implement mark paid invoice action",
-    "Preserve row data on match",
-    "Update service worker cache v110"
+    "Fix dashboard toolbar closing tag",
+    "Restore desktop grid card layout",
+    "Align alert banner full width",
+    "Update service worker cache v111"
   ]
 }
