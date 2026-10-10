@@ -1850,3 +1850,39 @@ table.desktop-only-table,
         --topbar-height: 52px !important;
     }
 }
+
+/* ==============================================================================
+   PENGINGAT & FILTER PEMBAYARAN FAKTUR TEMPO (H-3 & OVERDUE)
+   ============================================================================== */
+.invoice-filter-pills {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 10px 0 14px 0;
+}
+
+.invoice-pill-btn {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+    user-select: none;
+}
+
+.invoice-pill-btn:hover {
+    border-color: #0284c7 !important;
+    color: #0284c7 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(2, 132, 199, 0.12);
+}
+
+.invoice-pill-btn[data-filter="due_soon"]:hover {
+    border-color: #f59e0b !important;
+    color: #d97706 !important;
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.15);
+}
+
+.invoice-pill-btn[data-filter="overdue"]:hover {
+    border-color: #ef4444 !important;
+    color: #dc2626 !important;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.15);
+}
+

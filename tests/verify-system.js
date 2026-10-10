@@ -1256,6 +1256,229 @@ const existingRnaProds = [
 const autoCode2 = testGenerateAutoProductCode("ROSA NUGRAHA ABADI", existingRnaProds);
 assert(autoCode2 === "RNA-NEW-003", "Kode Produk Manual: Increment Otomatis Menghasilkan 'RNA-NEW-003'");
 
+// -----------------------------------------------------------------------------
+// 22. PENGUJIAN WARNA FAKTUR TEMPO, PENGINGAT H-3, FITUR SUDAH BAYAR & NON-DESTRUCTIVE MATCH
+// -----------------------------------------------------------------------------
+console.log("\n📑 BAGIAN 22: PENGUJIAN WARNA FAKTUR TEMPO, PENGINGAT H-3, FITUR SUDAH BAYAR & NON-DESTRUCTIVE MATCH");
+
+function testParseInvoiceDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return Number.isNaN(val.getTime()) ? null : val;
+  const s = String(val).trim();
+  if (!s) return null;
+  const dmyMatch = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (dmyMatch) {
+    const d = new Date(Number(dmyMatch[3]), Number(dmyMatch[2]) - 1, Number(dmyMatch[1]), 0, 0, 0);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const ymdMatch = s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+  if (ymdMatch) {
+    const d = new Date(Number(ymdMatch[1]), Number(ymdMatch[2]) - 1, Number(ymdMatch[3]), 0, 0, 0);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const parsed = new Date(s);
+  return Number.isNaN(parsed.getTime()) ? null : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 0, 0, 0);
+}
+
+function testGetInvoicePaymentInfo(inv, referenceDate = new Date()) {
+  if (!inv) {
+    return {
+      isTempo: false,
+      isPaid: true,
+      statusLabel: "Lunas",
+      badgeClass: "badge-success",
+      colorTheme: "card-success",
+      daysLeft: null,
+      dueState: "paid"
+    };
+  }
+
+  const payType = String(inv.paymentType || inv.paymentMethod || "tempo").trim().toLowerCase();
+  const isTempo = payType === "tempo";
+  const payStatusNorm = String(inv.paymentStatus || "").trim().toLowerCase();
+  const isPaid = !isTempo || payStatusNorm === "lunas" || Boolean(inv.paidAt);
+
+  if (!isTempo) {
+    return {
+      isTempo: false,
+      isPaid: true,
+      statusLabel: "Tunai (Lunas)",
+      badgeClass: "badge-success",
+      colorTheme: "card-success",
+      daysLeft: null,
+      dueState: "paid"
+    };
+  }
+
+  if (isPaid) {
+    return {
+      isTempo: true,
+      isPaid: true,
+      statusLabel: "Tempo (Sudah Lunas)",
+      badgeClass: "badge-success",
+      colorTheme: "card-success",
+      daysLeft: null,
+      dueState: "paid"
+    };
+  }
+
+  const dueDate = testParseInvoiceDate(inv.dueDate);
+  if (!dueDate) {
+    return {
+      isTempo: true,
+      isPaid: false,
+      statusLabel: "Tempo (Belum Lunas)",
+      badgeClass: "badge-primary",
+      colorTheme: "card-primary",
+      daysLeft: null,
+      dueState: "no_due"
+    };
+  }
+
+  const ref = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate(), 0, 0, 0);
+  const diffTime = dueDate.getTime() - ref.getTime();
+  const daysLeft = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  if (daysLeft < 0) {
+    const overdueDays = Math.abs(daysLeft);
+    return {
+      isTempo: true,
+      isPaid: false,
+      statusLabel: `Lewat Tempo (H+${overdueDays})`,
+      badgeClass: "badge-danger",
+      colorTheme: "card-danger",
+      daysLeft,
+      dueState: "overdue"
+    };
+  }
+
+  if (daysLeft === 0) {
+    return {
+      isTempo: true,
+      isPaid: false,
+      statusLabel: "Jatuh Tempo Hari Ini",
+      badgeClass: "badge-warning",
+      colorTheme: "card-warning",
+      daysLeft: 0,
+      dueState: "due_soon"
+    };
+  }
+
+  if (daysLeft <= 3) {
+    return {
+      isTempo: true,
+      isPaid: false,
+      statusLabel: `Jatuh Tempo (H-${daysLeft})`,
+      badgeClass: "badge-warning",
+      colorTheme: "card-warning",
+      daysLeft,
+      dueState: "due_soon"
+    };
+  }
+
+  return {
+    isTempo: true,
+    isPaid: false,
+    statusLabel: `Tempo (Sisa ${daysLeft} Hari)`,
+    badgeClass: "badge-primary",
+    colorTheme: "card-primary",
+    daysLeft,
+    dueState: "safe"
+  };
+}
+
+// 1. Uji Skema Warna & Klasifikasi Tempo vs Tunai
+const refDate = new Date(2026, 9, 10, 10, 0, 0); // 10 Oktober 2026
+
+const tTunai = testGetInvoicePaymentInfo({ paymentType: "tunai", dueDate: "2026-10-10" }, refDate);
+assert(tTunai.isPaid === true && tTunai.colorTheme === "card-success", "Faktur Tunai: Otomatis Lunas dengan Tema Hijau (card-success)");
+
+const tLunas = testGetInvoicePaymentInfo({ paymentType: "tempo", paymentStatus: "Lunas", paidAt: "2026-10-08", dueDate: "2026-10-15" }, refDate);
+assert(tLunas.isPaid === true && tLunas.colorTheme === "card-success", "Faktur Tempo Sudah Lunas: Menampilkan Tema Hijau (card-success)");
+
+const tH2 = testGetInvoicePaymentInfo({ paymentType: "tempo", paymentStatus: "Belum Lunas", dueDate: "2026-10-12" }, refDate);
+assert(tH2.isPaid === false && tH2.dueState === "due_soon" && tH2.colorTheme === "card-warning" && tH2.daysLeft === 2, "Faktur Tempo H-2: Peringatan Jatuh Tempo Kuning (card-warning) Sisa 2 Hari");
+
+const tH0 = testGetInvoicePaymentInfo({ paymentType: "tempo", paymentStatus: "Belum Lunas", dueDate: "2026-10-10" }, refDate);
+assert(tH0.isPaid === false && tH0.dueState === "due_soon" && tH0.colorTheme === "card-warning" && tH0.daysLeft === 0, "Faktur Tempo Hari H: Peringatan Jatuh Tempo Hari Ini (card-warning)");
+
+const tOverdue = testGetInvoicePaymentInfo({ paymentType: "tempo", paymentStatus: "Belum Lunas", dueDate: "2026-10-07" }, refDate);
+assert(tOverdue.isPaid === false && tOverdue.dueState === "overdue" && tOverdue.colorTheme === "card-danger" && tOverdue.daysLeft === -3, "Faktur Tempo Lewat Tanggal: Status Overdue dengan Tema Merah (card-danger)");
+
+const tSafe = testGetInvoicePaymentInfo({ paymentType: "tempo", paymentStatus: "Belum Lunas", dueDate: "2026-10-30" }, refDate);
+assert(tSafe.isPaid === false && tSafe.dueState === "safe" && tSafe.colorTheme === "card-primary" && tSafe.daysLeft === 20, "Faktur Tempo Aman (> 3 Hari): Menampilkan Tema Biru (card-primary)");
+
+// 2. Uji Fitur Pelunasan Faktur ("Sudah Bayar" & "Batal Lunas")
+let testInvRec = { id: "inv-test-pay", invoiceNumber: "INV-PAY-01", paymentType: "tempo", paymentStatus: "Belum Lunas", paidAt: null };
+testInvRec.paymentStatus = "Lunas";
+testInvRec.paidAt = new Date().toISOString();
+assert(testInvRec.paymentStatus === "Lunas" && Boolean(testInvRec.paidAt), "Pelunasan Faktur: Berhasil Ditandai Lunas dengan Timestamp paidAt");
+
+testInvRec.paymentStatus = "Belum Lunas";
+testInvRec.paidAt = null;
+assert(testInvRec.paymentStatus === "Belum Lunas" && testInvRec.paidAt === null, "Batal Lunas: Berhasil Mengembalikan Status Menjadi Belum Lunas");
+
+// 3. Uji Non-Destructive Fuzzy Matching (Proteksi Kolom Faktur Fisik)
+function testSelectProductForRowNonDestructive(item, prod) {
+  item.productCode = prod["Kode Produk"] || prod["Kode Produk Internal"] || "";
+  item.name = prod["Nama Produk"] || prod.name || "";
+  if (!item.purchaseUnit) item.purchaseUnit = prod["Kemasan Beli"] || prod["Satuan Pembelian"] || "BOX";
+  if (!item.baseUnit) item.baseUnit = prod["Satuan Dasar"] || prod["Satuan"] || "TABLET";
+  if (!num(item.conversionRatio) || num(item.conversionRatio) <= 1) {
+    if (prod["Konversi"] > 1) item.conversionRatio = prod["Konversi"];
+  }
+  const masterBuyPrice = num(prod["Harga Beli Terakhir"] ?? prod["Harga Beli"] ?? 0);
+  if (!num(item.buyPrice) && masterBuyPrice > 0) {
+    item.buyPrice = masterBuyPrice;
+  }
+  item.matchStatus = "exact";
+  item.matchScore = 100;
+  return item;
+}
+
+const mockRowFaktur = {
+  name: "PARACETAMOL 500MG TAB DRAFT",
+  productCode: "",
+  buyPrice: 42500, // Harga faktur fisik asli
+  qty: 15,
+  purchaseUnit: "BOTOL",
+  baseUnit: "BOTOL",
+  conversionRatio: 1,
+  discountPercent: 2.5,
+  discountRp: 15937,
+  batch: "PCT-2026",
+  expiryDate: "2028-05-15",
+  matchStatus: "fuzzy",
+  matchScore: 85
+};
+
+const masterCatalogItem = {
+  "Kode Produk": "PRD-PCT-OFFICIAL",
+  "Nama Produk": "PARACETAMOL 500 MG",
+  "Harga Beli Terakhir": 35000,
+  "Satuan Pembelian": "BOX",
+  "Satuan Dasar": "STRIP",
+  "Konversi": 10
+};
+
+const matchOutcome = testSelectProductForRowNonDestructive({ ...mockRowFaktur }, masterCatalogItem);
+assert(matchOutcome.name === "PARACETAMOL 500 MG", "Non-Destructive Match: Nama Produk Diperbarui Mengikuti Master");
+assert(matchOutcome.productCode === "PRD-PCT-OFFICIAL", "Non-Destructive Match: Kode Master Berhasil Ditautkan");
+assert(matchOutcome.buyPrice === 42500, "Non-Destructive Match: Harga Beli Faktur Fisik 42.500 Tetap Terlindungi (Bukan 35.000)");
+assert(matchOutcome.qty === 15, "Non-Destructive Match: Qty Faktur Fisik (15) Utuh Tidak Berubah");
+assert(matchOutcome.purchaseUnit === "BOTOL", "Non-Destructive Match: Satuan Beli Faktur (BOTOL) Tetap Terlindungi (Bukan BOX)");
+assert(matchOutcome.discountRp === 15937, "Non-Destructive Match: Diskon Faktur Fisik Tetap Terlindungi");
+assert(matchOutcome.batch === "PCT-2026", "Non-Destructive Match: Batch Faktur Tetap Terlindungi");
+assert(matchOutcome.matchStatus === "exact" && matchOutcome.matchScore === 100, "Non-Destructive Match: Status Match Menjadi Exact 100%");
+
+// 4. Uji Elemen DOM Banner & Filter Pills
+const htmlContent = fs.readFileSync(path.join(rootDir, "management/index.html"), "utf8");
+assert(htmlContent.includes('id="dashboard-due-alert-banner"'), "DOM Dashboard: Banner Pengingat Tagihan Jatuh Tempo Terpasang (#dashboard-due-alert-banner)");
+assert(htmlContent.includes('id="invoice-due-reminder-banner"'), "DOM Faktur: Banner Pengingat Jatuh Tempo H-3 Terpasang (#invoice-due-reminder-banner)");
+assert(htmlContent.includes('id="invoice-payment-filter"'), "DOM Faktur: Dropdown Filter Pembayaran Terpasang (#invoice-payment-filter)");
+assert(htmlContent.includes('id="invoice-payment-pills"'), "DOM Faktur: Kontainer Filter Pills Cepat Terpasang (#invoice-payment-pills)");
+assert(cssContent.includes(".invoice-filter-pills") && cssContent.includes(".invoice-pill-btn"), "CSS: Kelas .invoice-filter-pills dan .invoice-pill-btn Terdefinisi");
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

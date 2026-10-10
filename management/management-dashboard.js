@@ -8,6 +8,7 @@
 
 import { $, num, text, norm, rupiah, formatNumber } from "../modules/core/utils.js";
 import { STORE_KEYS, readStore, readCurrentStock } from "../modules/database/database-store.js";
+import { getInvoicePaymentInfo } from "./management-invoices.js";
 
 let dashboardPeriod = "today";
 
@@ -79,13 +80,20 @@ export function renderDashboard() {
   const filteredInvoices = invoices.filter((invoice) => dashboardDateMatches(invoice?.confirmedAt || invoice?.date || invoice?.createdAt));
 
   const now = new Date();
-  now.setHours(23, 59, 59, 999);
-  const dueInvoices = invoices.filter((invoice) => {
-    const due = new Date(invoice?.dueDate);
-    return (norm(invoice?.status) === "terkonfirmasi" || norm(invoice?.status) === "confirmed")
-      && norm(invoice?.paymentType) === "tempo"
-      && !Number.isNaN(due.getTime())
-      && due <= now;
+  const unpaidTempoInvoices = invoices.filter((invoice) => {
+    const isConf = norm(invoice?.status) === "terkonfirmasi" || norm(invoice?.status) === "confirmed";
+    const payInfo = getInvoicePaymentInfo(invoice, now);
+    return isConf && payInfo.isTempo && !payInfo.isPaid;
+  });
+
+  const dueInvoices = unpaidTempoInvoices.filter((invoice) => {
+    const payInfo = getInvoicePaymentInfo(invoice, now);
+    return payInfo.dueState === "due_soon" || payInfo.dueState === "overdue";
+  });
+
+  const overdueInvoices = dueInvoices.filter((invoice) => {
+    const payInfo = getInvoicePaymentInfo(invoice, now);
+    return payInfo.dueState === "overdue";
   });
 
   const lowStock = products.filter((product) => {
@@ -141,8 +149,58 @@ export function renderDashboard() {
   set("dashboard-total-revenue", rupiah(totalRevenue));
   set("dashboard-sales-profit", rupiah(salesProfit));
   set("dashboard-purchase-invoice-value", rupiah(purchaseInvoiceValue));
-  set("dashboard-supplier-due", rupiah(dueInvoices.reduce((sum, inv) => sum + num(inv.total), 0)));
-  set("dashboard-supplier-due-note", `${dueInvoices.length} faktur tempo jatuh tempo.`);
+  const dueSoonTotal = dueInvoices.reduce((sum, inv) => sum + num(inv.total), 0);
+  set("dashboard-supplier-due", rupiah(dueSoonTotal));
+  if (dueInvoices.length > 0) {
+    const noteText = overdueInvoices.length > 0
+      ? `${dueInvoices.length} faktur tempo jatuh tempo (${overdueInvoices.length} lewat tempo).`
+      : `${dueInvoices.length} faktur tempo jatuh tempo (H-3 s/d Hari H).`;
+    set("dashboard-supplier-due-note", noteText);
+  } else {
+    set("dashboard-supplier-due-note", "0 faktur tempo jatuh tempo.");
+  }
+
+  // Dashboard Due Alert Banner
+  const dashBanner = $("dashboard-due-alert-banner");
+  if (dashBanner) {
+    if (dueInvoices.length > 0) {
+      dashBanner.style.display = "block";
+      dashBanner.innerHTML = `
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-left:5px solid #f59e0b;padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:#fef3c7;color:#b45309;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+              <div style="font-weight:700;color:#92400e;font-size:13.5px;">Pengingat Tagihan Supplier (H-3 Jatuh Tempo)</div>
+              <div style="font-size:12px;color:#b45309;">Ada <strong>${dueInvoices.length} faktur tempo</strong> senilai <strong>${rupiah(dueSoonTotal)}</strong> yang mendekati atau telah lewat jatuh tempo.</div>
+            </div>
+          </div>
+          <button type="button" id="btn-dashboard-view-due" class="button button-small button-warning" style="white-space:nowrap;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+            Lihat Faktur <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      `;
+      $("btn-dashboard-view-due")?.addEventListener("click", () => {
+        if (window.setInvoicePaymentFilter) window.setInvoicePaymentFilter("due_soon");
+        if (window.switchView) window.switchView("purchase-invoices");
+      });
+    } else {
+      dashBanner.style.display = "none";
+      dashBanner.innerHTML = "";
+    }
+  }
+
+  const dashCardDue = $("dashboard-card-due");
+  if (dashCardDue && !dashCardDue.dataset.bound) {
+    dashCardDue.dataset.bound = "true";
+    dashCardDue.style.cursor = "pointer";
+    dashCardDue.addEventListener("click", () => {
+      if (window.setInvoicePaymentFilter) window.setInvoicePaymentFilter("tempo_unpaid");
+      if (window.switchView) window.switchView("purchase-invoices");
+    });
+  }
+
   set("dashboard-stock-value", rupiah(stockValue));
   set("dashboard-total-products", products.length);
   set("dashboard-total-stock", formatNumber(totalItems));

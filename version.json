@@ -1,13 +1,14 @@
 {
-  "version": "2.2.56",
-  "build": "20261010.05",
+  "version": "2.2.57",
+  "build": "20261010.06",
   "releaseDate": "10 Oktober 2026",
-  "title": "Supplier Acronym & Manual Product Code Format",
-  "description": "Pembaruan penamaan kode produk tambah manual menjadi format [RNA-NEW-0XX] berbasis akronim supplier.",
+  "title": "Tempo Invoice Due Tracking",
+  "description": "Warna faktur tempo dinamis, pengingat H-3, pelunasan sudah bayar, dan fuzzy match non-destruktif.",
   "changelog": [
-    "Implement supplier acronym code format",
-    "Support RNA-NEW-0XX manual product naming",
-    "Update invoice auto product code",
-    "Update service worker cache v109"
+    "Colorize tempo payment invoice cards",
+    "Add dynamic H-3 due reminder",
+    "Implement mark paid invoice action",
+    "Preserve row data on match",
+    "Update service worker cache v110"
   ]
 }

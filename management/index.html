@@ -273,7 +273,7 @@
                         <button class="dashboard-period" type="button" data-dashboard-period="month">Bulan Ini</button>
                         <button class="dashboard-period" type="button" data-dashboard-period="all">Sepanjang Waktu</button>
                     </div>
-                </div>
+                <div id="dashboard-due-alert-banner" style="display:none;margin-bottom:16px;"></div>
 
                 <div class="dashboard-grid dashboard-grid-financial">
                     <article class="dashboard-card dashboard-card-primary">
@@ -288,7 +288,7 @@
                         <div class="dashboard-card-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
                         <div><span>Total Nilai Faktur</span><strong id="dashboard-purchase-invoice-value">Rp 0</strong><small>Total nilai faktur pembelian dari supplier pada periode terpilih.</small></div>
                     </article>
-                    <article class="dashboard-card dashboard-card-warning">
+                    <article class="dashboard-card dashboard-card-warning" id="dashboard-card-due" style="cursor:pointer;" title="Klik untuk lihat faktur jatuh tempo">
                         <div class="dashboard-card-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
                         <div><span>Tagihan Supplier Jatuh Tempo</span><strong id="dashboard-supplier-due">Rp 0</strong><small id="dashboard-supplier-due-note">0 faktur tempo jatuh tempo.</small></div>
                     </article>
@@ -1928,7 +1928,44 @@
             <section class="view-section" data-view-section="purchase-invoices" hidden>
                 <div class="ops-page"><header class="module-header"><div><h2>Faktur Pembelian</h2><p>Kelola faktur pembelian distributor farmasi via Input Grid Manual dengan rekonsiliasi matematis.</p></div><div class="module-header-actions"><button id="btn-open-manual-invoice" class="button button-primary" type="button"><i class="fa-solid fa-plus"></i> Input Faktur Manual</button></div></header>
                 <div class="workbook-summary"><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-file-invoice"></i></span><div><span>Total Faktur</span><strong id="invoice-count">0</strong></div></article><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-pen"></i></span><div><span>Review / Pending</span><strong id="invoice-draft-count">0</strong></div></article><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-circle-check"></i></span><div><span>Terkonfirmasi</span><strong id="invoice-confirmed-count">0</strong></div></article><article class="summary-card"><span class="summary-icon"><i class="fa-solid fa-money-bill"></i></span><div><span>Total Nilai</span><strong id="invoice-value-total">Rp0</strong></div></article></div>
-                <section class="ops-card"><div class="preview-toolbar"><div class="preview-search"><i class="fa-solid fa-magnifying-glass"></i><input id="invoice-search" type="search" placeholder="Cari nomor faktur atau supplier..."></div><select id="invoice-status-filter"><option value="">Semua Status</option><option value="perlu review">Perlu Review</option><option value="siap konfirmasi">Siap Konfirmasi</option><option value="terkonfirmasi">Terkonfirmasi</option></select></div><div class="table-wrapper desktop-only-table" style="display: none !important;" hidden><table class="data-table"><thead><tr><th>Nomor Faktur</th><th>Tanggal</th><th>Supplier</th><th>Item</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="invoice-table-body"></tbody></table></div><div id="invoice-card-list" class="mobile-only-card-list responsive-card-list"></div></section></div>
+                <section class="ops-card">
+                  <div id="invoice-due-reminder-banner" style="display:none;margin-bottom:14px;"></div>
+                  <div class="preview-toolbar">
+                    <div class="preview-search"><i class="fa-solid fa-magnifying-glass"></i><input id="invoice-search" type="search" placeholder="Cari nomor faktur atau supplier..."></div>
+                    <select id="invoice-status-filter">
+                      <option value="">Semua Status</option>
+                      <option value="perlu review">Perlu Review</option>
+                      <option value="siap konfirmasi">Siap Konfirmasi</option>
+                      <option value="terkonfirmasi">Terkonfirmasi</option>
+                    </select>
+                    <select id="invoice-payment-filter">
+                      <option value="all">Semua Pembayaran</option>
+                      <option value="tempo_unpaid">Tempo Belum Lunas</option>
+                      <option value="due_soon">Jatuh Tempo (H-3)</option>
+                      <option value="overdue">Lewat Jatuh Tempo</option>
+                      <option value="paid">Lunas</option>
+                    </select>
+                  </div>
+                  <div id="invoice-payment-pills" class="invoice-filter-pills" style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px 0;"></div>
+                  <div class="table-wrapper desktop-only-table" style="display: none !important;" hidden>
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Nomor Faktur</th>
+                          <th>Tanggal</th>
+                          <th>Supplier</th>
+                          <th>Item</th>
+                          <th>Total</th>
+                          <th>Status</th>
+                          <th>Pembayaran</th>
+                          <th>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="invoice-table-body"></tbody>
+                    </table>
+                  </div>
+                  <div id="invoice-card-list" class="mobile-only-card-list responsive-card-list"></div>
+                </section></div>
 
                             </section>
             <section class="view-section" data-view-section="sales" hidden>
@@ -2550,12 +2587,12 @@
 
 <script
     type="module"
-    src="../modules/diagnostic-reporter.js?v=20261010.05"
+    src="../modules/diagnostic-reporter.js?v=20261010.06"
 ></script>
 
 <script
     type="module"
-    src="management.js?v=20261010.05"
+    src="management.js?v=20261010.06"
 ></script>
 
 </body>

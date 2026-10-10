@@ -156,10 +156,247 @@ function bindEvents() {
   // Search & Filter di daftar faktur
   $("invoice-search")?.addEventListener("input", renderInvoicesTable);
   $("invoice-status-filter")?.addEventListener("change", renderInvoicesTable);
+  $("invoice-payment-filter")?.addEventListener("change", (e) => {
+    activeInvoicePaymentFilter = e.target.value;
+    renderInvoicesTable();
+  });
 
   // Detail Modal Actions
   installInvoiceDetailModal();
   installInvoiceCorrectionModal();
+}
+
+let activeInvoicePaymentFilter = "all";
+
+export function parseInvoiceDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return Number.isNaN(val.getTime()) ? null : val;
+  const s = String(val).trim();
+  if (!s) return null;
+  const dmyMatch = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (dmyMatch) {
+    const d = new Date(Number(dmyMatch[3]), Number(dmyMatch[2]) - 1, Number(dmyMatch[1]), 0, 0, 0);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const ymdMatch = s.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+  if (ymdMatch) {
+    const d = new Date(Number(ymdMatch[1]), Number(ymdMatch[2]) - 1, Number(ymdMatch[3]), 0, 0, 0);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const parsed = new Date(s);
+  return Number.isNaN(parsed.getTime()) ? null : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 0, 0, 0);
+}
+
+export function getInvoicePaymentInfo(inv, referenceDate = new Date()) {
+  if (!inv) {
+    return {
+      isTempo: false,
+      isPaid: true,
+      statusLabel: "Lunas",
+      badgeClass: "badge-success",
+      badgeStyle: "background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;",
+      colorTheme: "card-success",
+      daysLeft: null,
+      dueState: "paid",
+      reminderText: "Lunas"
+    };
+  }
+
+  const payType = norm(inv.paymentType || inv.paymentMethod || "tempo");
+  const isTempo = payType === "tempo";
+  const payStatusNorm = norm(inv.paymentStatus || "");
+  const isPaid = !isTempo || payStatusNorm === "lunas" || Boolean(inv.paidAt);
+
+  if (!isTempo) {
+    return {
+      isTempo: false,
+      isPaid: true,
+      statusLabel: "Tunai (Lunas)",
+      badgeClass: "badge-success",
+      badgeStyle: "background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;",
+      colorTheme: "card-success",
+      daysLeft: null,
+      dueState: "paid",
+      reminderText: "Lunas Tunai"
+    };
+  }
+
+  if (isPaid) {
+    return {
+      isTempo: true,
+      isPaid: true,
+      statusLabel: "Tempo (Sudah Lunas)",
+      badgeClass: "badge-success",
+      badgeStyle: "background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;",
+      colorTheme: "card-success",
+      daysLeft: null,
+      dueState: "paid",
+      reminderText: "Sudah Bayar"
+    };
+  }
+
+  // Tempo Belum Lunas
+  const dueDate = parseInvoiceDate(inv.dueDate);
+  if (!dueDate) {
+    return {
+      isTempo: true,
+      isPaid: false,
+      statusLabel: "Tempo (Belum Lunas)",
+      badgeClass: "badge-primary",
+      badgeStyle: "background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;",
+      colorTheme: "card-primary",
+      daysLeft: null,
+      dueState: "no_due",
+      reminderText: "Tempo Belum Lunas"
+    };
+  }
+
+  const ref = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate(), 0, 0, 0);
+  const diffTime = dueDate.getTime() - ref.getTime();
+  const daysLeft = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  if (daysLeft < 0) {
+    const overdueDays = Math.abs(daysLeft);
+    return {
+      isTempo: true,
+      isPaid: false,
+      statusLabel: `Lewat Tempo (H+${overdueDays})`,
+      badgeClass: "badge-danger",
+      badgeStyle: "background:#fef2f2;color:#dc2626;border:1px solid #fecaca;",
+      colorTheme: "card-danger",
+      daysLeft,
+      dueState: "overdue",
+      reminderText: `Terlambat ${overdueDays} hari!`
+    };
+  }
+
+  if (daysLeft === 0) {
+    return {
+      isTempo: true,
+      isPaid: false,
+      statusLabel: "Jatuh Tempo Hari Ini",
+      badgeClass: "badge-warning",
+      badgeStyle: "background:#fffbeb;color:#d97706;border:1px solid #fde68a;",
+      colorTheme: "card-warning",
+      daysLeft: 0,
+      dueState: "due_soon",
+      reminderText: "Jatuh tempo hari ini!"
+    };
+  }
+
+  if (daysLeft <= 3) {
+    return {
+      isTempo: true,
+      isPaid: false,
+      statusLabel: `Jatuh Tempo (H-${daysLeft})`,
+      badgeClass: "badge-warning",
+      badgeStyle: "background:#fffbeb;color:#d97706;border:1px solid #fde68a;",
+      colorTheme: "card-warning",
+      daysLeft,
+      dueState: "due_soon",
+      reminderText: `Sisa ${daysLeft} hari lagi`
+    };
+  }
+
+  return {
+    isTempo: true,
+    isPaid: false,
+    statusLabel: `Tempo (Sisa ${daysLeft} Hari)`,
+    badgeClass: "badge-primary",
+    badgeStyle: "background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;",
+    colorTheme: "card-primary",
+    daysLeft,
+    dueState: "safe",
+    reminderText: `Jatuh tempo: ${inv.dueDate}`
+  };
+}
+
+export function getInvoicePaymentBadge(payInfo) {
+  if (!payInfo) return "";
+  let icon = "fa-calendar-days";
+  if (payInfo.isPaid) {
+    icon = payInfo.isTempo ? "fa-circle-check" : "fa-money-bill-wave";
+  } else if (payInfo.dueState === "overdue") {
+    icon = "fa-circle-exclamation";
+  } else if (payInfo.dueState === "due_soon") {
+    icon = "fa-triangle-exclamation";
+  }
+
+  return `<span class="badge ${payInfo.badgeClass}" style="${payInfo.badgeStyle}padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px;"><i class="fa-solid ${icon}"></i> ${escapeHtml(payInfo.statusLabel)}</span>`;
+}
+
+export async function toggleMarkInvoicePaid(invId, markAsPaid = true) {
+  const existingInvoices = readStore(STORE_KEYS.invoices, []);
+  const idx = existingInvoices.findIndex(x => (x.id === invId || x.invoiceNumber === invId));
+  if (idx < 0) {
+    window.KasirProDialog?.error("Faktur Tidak Ditemukan", "Data faktur tidak ditemukan di penyimpanan lokal.");
+    return false;
+  }
+
+  const inv = existingInvoices[idx];
+  const invNo = inv.invoiceNumber || inv.id;
+  const totalRp = rupiah(inv.total || 0);
+
+  if (markAsPaid) {
+    const ok = await window.KasirProDialog?.confirm(
+      "Konfirmasi Pelunasan Faktur",
+      `Tandai Faktur #${invNo} senilai ${totalRp} dari ${inv.supplierName || inv.supplier || "Supplier"} sebagai SUDAH BAYAR / LUNAS?`
+    );
+    if (!ok) return false;
+
+    const now = nowIso();
+    const updatedInv = {
+      ...inv,
+      paymentStatus: "Lunas",
+      paidAt: now,
+      paidBy: "Admin"
+    };
+    existingInvoices[idx] = updatedInv;
+    await writeStore(STORE_KEYS.invoices, existingInvoices);
+    currentInvoices = existingInvoices;
+    renderInvoices();
+    if (activeDetailInvoice && (activeDetailInvoice.id === invId || activeDetailInvoice.invoiceNumber === invId)) {
+      openInvoiceDetailModal(updatedInv);
+    }
+    window.dispatchEvent(new CustomEvent("kasirpro:database-synced"));
+    window.KasirProDialog?.success("Faktur Lunas", `Faktur #${invNo} berhasil ditandai sebagai Sudah Bayar.`);
+    return true;
+  } else {
+    const ok = await window.KasirProDialog?.confirm(
+      "Batalkan Status Lunas",
+      `Kembalikan status Faktur #${invNo} senilai ${totalRp} menjadi BELUM LUNAS?`
+    );
+    if (!ok) return false;
+
+    const updatedInv = {
+      ...inv,
+      paymentStatus: "Belum Lunas",
+      paidAt: null,
+      paidBy: null
+    };
+    existingInvoices[idx] = updatedInv;
+    await writeStore(STORE_KEYS.invoices, existingInvoices);
+    currentInvoices = existingInvoices;
+    renderInvoices();
+    if (activeDetailInvoice && (activeDetailInvoice.id === invId || activeDetailInvoice.invoiceNumber === invId)) {
+      openInvoiceDetailModal(updatedInv);
+    }
+    window.dispatchEvent(new CustomEvent("kasirpro:database-synced"));
+    window.KasirProDialog?.info("Status Diperbarui", `Status Faktur #${invNo} dikembalikan menjadi Belum Lunas.`);
+    return true;
+  }
+}
+
+// Pasang binding global window
+if (typeof window !== "undefined") {
+  window.toggleMarkInvoicePaid = toggleMarkInvoicePaid;
+  window.getInvoicePaymentInfo = getInvoicePaymentInfo;
+  window.setInvoicePaymentFilter = (filter) => {
+    activeInvoicePaymentFilter = filter;
+    const sel = $("invoice-payment-filter");
+    if (sel) sel.value = filter;
+    renderInvoicesTable();
+  };
 }
 
 export function renderInvoices() {
@@ -182,7 +419,6 @@ function updateKpis() {
 
   const dEl = $("invoice-draft-count");
   if (dEl) {
-    // Ubah label di UI jika ada
     dEl.textContent = reviewCount;
     const parentLabel = dEl.parentElement?.querySelector("span");
     if (parentLabel) parentLabel.textContent = "Review / Pending";
@@ -202,24 +438,136 @@ function renderInvoicesTable() {
 
   const q = norm($("invoice-search")?.value);
   const statusFilter = norm($("invoice-status-filter")?.value);
+  const now = new Date();
 
+  // 1. Hitung counter untuk Filter Pills & Alert Banner
+  let countAll = currentInvoices.length;
+  let countTempoUnpaid = 0;
+  let countDueSoon = 0;
+  let countOverdue = 0;
+  let countPaid = 0;
+  let urgentTotal = 0;
+
+  currentInvoices.forEach(inv => {
+    const pInfo = getInvoicePaymentInfo(inv, now);
+    if (pInfo.isPaid) {
+      countPaid++;
+    } else if (pInfo.isTempo) {
+      countTempoUnpaid++;
+      if (pInfo.dueState === "due_soon") {
+        countDueSoon++;
+        urgentTotal += num(inv.total);
+      } else if (pInfo.dueState === "overdue") {
+        countOverdue++;
+        urgentTotal += num(inv.total);
+      }
+    }
+  });
+
+  // 2. Render Alert Banner Pengingat H-3 di Halaman Faktur
+  const reminderBanner = $("invoice-due-reminder-banner");
+  if (reminderBanner) {
+    const urgentCount = countDueSoon + countOverdue;
+    if (urgentCount > 0) {
+      reminderBanner.style.display = "block";
+      reminderBanner.innerHTML = `
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-left:5px solid #f59e0b;padding:12px 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:#fef3c7;color:#b45309;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+              <div style="font-weight:700;color:#92400e;font-size:13.5px;">Peringatan Jatuh Tempo Faktur Supplier</div>
+              <div style="font-size:12px;color:#b45309;">
+                Terdapat <strong>${urgentCount} faktur tempo</strong> senilai <strong>${rupiah(urgentTotal)}</strong> yang mendekati atau telah lewat tanggal jatuh tempo.
+              </div>
+            </div>
+          </div>
+          <button type="button" id="btn-filter-urgent-invoices" class="button button-small button-warning" style="white-space:nowrap;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+            <i class="fa-solid fa-filter"></i> Tampilkan
+          </button>
+        </div>
+      `;
+      $("btn-filter-urgent-invoices")?.addEventListener("click", () => {
+        activeInvoicePaymentFilter = "due_soon";
+        const sel = $("invoice-payment-filter");
+        if (sel) sel.value = "due_soon";
+        renderInvoicesTable();
+      });
+    } else {
+      reminderBanner.style.display = "none";
+      reminderBanner.innerHTML = "";
+    }
+  }
+
+  // 3. Render Filter Pills Cepat
+  const pillsContainer = $("invoice-payment-pills");
+  if (pillsContainer) {
+    const pillDefs = [
+      { key: "all", label: "Semua", count: countAll, badgeBg: "#e2e8f0", badgeColor: "#334155" },
+      { key: "tempo_unpaid", label: "Tempo Belum Lunas", count: countTempoUnpaid, badgeBg: "#e0f2fe", badgeColor: "#0284c7" },
+      { key: "due_soon", label: "Jatuh Tempo (H-3)", count: countDueSoon, badgeBg: countDueSoon > 0 ? "#fef3c7" : "#f1f5f9", badgeColor: countDueSoon > 0 ? "#b45309" : "#64748b" },
+      { key: "overdue", label: "Lewat Jatuh Tempo", count: countOverdue, badgeBg: countOverdue > 0 ? "#fee2e2" : "#f1f5f9", badgeColor: countOverdue > 0 ? "#b91c1c" : "#64748b" },
+      { key: "paid", label: "Lunas", count: countPaid, badgeBg: "#dcfce7", badgeColor: "#15803d" }
+    ];
+
+    pillsContainer.innerHTML = pillDefs.map(p => {
+      const isActive = activeInvoicePaymentFilter === p.key;
+      const activeStyle = isActive
+        ? "background:#0284c7;color:#fff;border-color:#0284c7;font-weight:700;"
+        : "background:#fff;color:#475569;border-color:#cbd5e1;";
+      const countStyle = isActive
+        ? "background:rgba(255,255,255,0.25);color:#fff;"
+        : `background:${p.badgeBg};color:${p.badgeColor};`;
+
+      return `
+        <button type="button" class="invoice-pill-btn" data-filter="${p.key}" style="border:1px solid;border-radius:20px;padding:4px 12px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s;${activeStyle}">
+          <span>${p.label}</span>
+          <span style="font-size:10px;font-weight:800;padding:1px 6px;border-radius:10px;${countStyle}">${p.count}</span>
+        </button>
+      `;
+    }).join("");
+
+    pillsContainer.querySelectorAll(".invoice-pill-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        activeInvoicePaymentFilter = btn.dataset.filter;
+        const sel = $("invoice-payment-filter");
+        if (sel) sel.value = activeInvoicePaymentFilter;
+        renderInvoicesTable();
+      });
+    });
+  }
+
+  // 4. Filter List Faktur
   const filtered = currentInvoices.filter(inv => {
     const no = norm(inv.invoiceNumber || inv.id);
     const sup = norm(inv.supplierName || inv.supplier);
     const status = norm(inv.status);
+    const payInfo = getInvoicePaymentInfo(inv, now);
 
     if (q && !no.includes(q) && !sup.includes(q)) return false;
     if (statusFilter && status !== statusFilter) return false;
+
+    if (activeInvoicePaymentFilter === "tempo_unpaid") {
+      if (!payInfo.isTempo || payInfo.isPaid) return false;
+    } else if (activeInvoicePaymentFilter === "due_soon") {
+      if (!payInfo.isTempo || payInfo.isPaid || (payInfo.dueState !== "due_soon" && payInfo.dueState !== "overdue")) return false;
+    } else if (activeInvoicePaymentFilter === "overdue") {
+      if (!payInfo.isTempo || payInfo.isPaid || payInfo.dueState !== "overdue") return false;
+    } else if (activeInvoicePaymentFilter === "paid") {
+      if (!payInfo.isPaid) return false;
+    }
+
     return true;
   });
 
   if (!filtered.length) {
-    if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="empty-table-state" style="text-align:center;padding:24px;">Tidak ada faktur pembelian yang ditemukan.</td></tr>`;
-    if (cardList) cardList.innerHTML = `<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;color:#64748b;"><i class="fa-solid fa-file-invoice" style="font-size:28px;margin-bottom:8px;color:#94a3b8;display:block;"></i>Tidak ada faktur pembelian yang ditemukan.</div>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="empty-table-state" style="text-align:center;padding:24px;">Tidak ada faktur pembelian yang sesuai dengan filter.</td></tr>`;
+    if (cardList) cardList.innerHTML = `<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;color:#64748b;"><i class="fa-solid fa-file-invoice" style="font-size:28px;margin-bottom:8px;color:#94a3b8;display:block;"></i>Tidak ada faktur pembelian yang sesuai dengan filter.</div>`;
     return;
   }
 
-  // 1. Render Desktop Table Rows
+  // 5. Render Desktop Table Rows
   if (tbody) {
     tbody.innerHTML = filtered.map(inv => {
       const id = inv.id || inv.invoiceNumber;
@@ -229,6 +577,22 @@ function renderInvoicesTable() {
       const itemCount = (inv.items || []).length;
       const total = num(inv.total);
       const status = inv.status || "Perlu Review";
+      const payInfo = getInvoicePaymentInfo(inv, now);
+
+      let payActionBtn = "";
+      if (payInfo.isTempo && !payInfo.isPaid) {
+        payActionBtn = `
+          <button type="button" class="btn-toggle-paid button button-small button-success" data-id="${escapeHtml(id)}" data-action="mark" style="background:#10b981;color:#fff;" title="Tandai Sudah Bayar">
+            <i class="fa-solid fa-check"></i> Sudah Bayar
+          </button>
+        `;
+      } else if (payInfo.isTempo && payInfo.isPaid) {
+        payActionBtn = `
+          <button type="button" class="btn-toggle-paid button button-small button-secondary" data-id="${escapeHtml(id)}" data-action="unmark" title="Batalkan Lunas">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+        `;
+      }
 
       return `
         <tr>
@@ -238,14 +602,16 @@ function renderInvoicesTable() {
           <td>${itemCount} item</td>
           <td><strong>${rupiah(total)}</strong></td>
           <td>${getInvoiceStatusBadge(status)}</td>
+          <td>${getInvoicePaymentBadge(payInfo)}</td>
           <td>
-            <div style="display:flex;gap:6px;">
+            <div style="display:flex;gap:6px;align-items:center;">
               <button type="button" class="btn-detail-invoice button button-small button-secondary" data-id="${escapeHtml(id)}">
                 <i class="fa-solid fa-eye"></i> Detail
               </button>
               <button type="button" class="btn-pdf-invoice button button-small button-secondary" data-id="${escapeHtml(id)}" title="Cetak PDF">
                 <i class="fa-solid fa-file-pdf"></i>
               </button>
+              ${payActionBtn}
             </div>
           </td>
         </tr>
@@ -253,7 +619,7 @@ function renderInvoicesTable() {
     }).join("");
   }
 
-  // 2. Render Mobile Collapsible Cards (Default Diciutkan)
+  // 6. Render Mobile Collapsible Cards (Default Diciutkan)
   if (cardList) {
     cardList.innerHTML = filtered.map(inv => {
       const id = inv.id || inv.invoiceNumber;
@@ -263,17 +629,37 @@ function renderInvoicesTable() {
       const itemCount = (inv.items || []).length;
       const total = num(inv.total);
       const status = inv.status || "Perlu Review";
+      const payInfo = getInvoicePaymentInfo(inv, now);
 
-      const isConf = norm(status) === "terkonfirmasi" || norm(status) === "confirmed";
-      const cardTheme = isConf ? "card-success" : "card-primary";
+      let cardPayActionBtn = "";
+      if (payInfo.isTempo && !payInfo.isPaid) {
+        cardPayActionBtn = `
+          <button type="button" class="btn-toggle-paid button button-small button-success" data-id="${escapeHtml(id)}" data-action="mark" style="background:#10b981;color:#fff;">
+            <i class="fa-solid fa-check"></i> Sudah Bayar
+          </button>
+        `;
+      } else if (payInfo.isTempo && payInfo.isPaid) {
+        cardPayActionBtn = `
+          <button type="button" class="btn-toggle-paid button button-small button-secondary" data-id="${escapeHtml(id)}" data-action="unmark">
+            <i class="fa-solid fa-rotate-left"></i> Batal Lunas
+          </button>
+        `;
+      }
+
+      const reminderSubHtml = payInfo.isTempo
+        ? `<span>•</span><span style="font-weight:700;font-size:11px;color:${payInfo.isPaid ? '#059669' : (payInfo.dueState === 'overdue' ? '#dc2626' : (payInfo.dueState === 'due_soon' ? '#d97706' : '#2563eb'))};">${escapeHtml(payInfo.reminderText)}</span>`
+        : "";
 
       return `
-        <div class="responsive-data-card ${cardTheme}" data-id="${escapeHtml(id)}">
+        <div class="responsive-data-card ${payInfo.colorTheme}" data-id="${escapeHtml(id)}">
           <div class="card-accordion-header">
             <div class="card-header-main">
-              <div class="card-title-row">
+              <div class="card-title-row" style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;">
                 <div class="card-title">#${escapeHtml(no)}</div>
-                ${getInvoiceStatusBadge(status)}
+                <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+                  ${getInvoiceStatusBadge(status)}
+                  ${getInvoicePaymentBadge(payInfo)}
+                </div>
               </div>
               <div class="card-subtitle-row">
                 <span><strong>${escapeHtml(sup)}</strong></span>
@@ -281,6 +667,7 @@ function renderInvoicesTable() {
                 <span>${escapeHtml(date)}</span>
                 <span>•</span>
                 <span style="color:#0284c7;font-weight:700;">${rupiah(total)}</span>
+                ${reminderSubHtml}
               </div>
             </div>
             <div class="card-toggle-icon">
@@ -302,6 +689,21 @@ function renderInvoicesTable() {
                 <span class="card-detail-value">${escapeHtml(date)}</span>
               </div>
               <div class="card-detail-item">
+                <span class="card-detail-label">Metode & Status Bayar</span>
+                <span class="card-detail-value">${getInvoicePaymentBadge(payInfo)}</span>
+              </div>
+              ${payInfo.isTempo ? `
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Jatuh Tempo</span>
+                  <span class="card-detail-value"><strong>${escapeHtml(inv.dueDate || '—')}</strong> (${escapeHtml(payInfo.statusLabel)})</span>
+                </div>
+              ` : `
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Metode Pembayaran</span>
+                  <span class="card-detail-value">Tunai (Lunas Langsung)</span>
+                </div>
+              `}
+              <div class="card-detail-item">
                 <span class="card-detail-label">Jumlah Item</span>
                 <span class="card-detail-value">${itemCount} Produk</span>
               </div>
@@ -317,6 +719,7 @@ function renderInvoicesTable() {
               <button type="button" class="btn-pdf-invoice button button-small button-secondary" data-id="${escapeHtml(id)}" title="Cetak PDF">
                 <i class="fa-solid fa-file-pdf"></i> Cetak PDF
               </button>
+              ${cardPayActionBtn}
             </div>
           </div>
         </div>
@@ -331,7 +734,7 @@ function renderInvoicesTable() {
     });
   }
 
-  // Bind event Detail & PDF pada seluruh kontainer (baik tabel maupun kartu)
+  // 7. Bind event Detail, PDF & Toggle Paid pada seluruh kontainer (baik tabel maupun kartu)
   const invContainer = document.querySelector('[data-view-section="purchase-invoices"]');
   if (invContainer) {
     invContainer.querySelectorAll(".btn-detail-invoice").forEach(btn => {
@@ -349,6 +752,15 @@ function renderInvoicesTable() {
         const invId = btn.dataset.id;
         const found = currentInvoices.find(i => (i.id || i.invoiceNumber) === invId);
         if (found) handlePrintInvoicePdf(found);
+      });
+    });
+
+    invContainer.querySelectorAll(".btn-toggle-paid").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const invId = btn.dataset.id;
+        const action = btn.dataset.action;
+        toggleMarkInvoicePaid(invId, action === "mark");
       });
     });
   }
@@ -521,10 +933,20 @@ export async function executeConfirmInvoice(inv) {
     master.produk = products;
 
     // 3. Simpan Faktur Terkonfirmasi
+    const payTypeNorm = norm(inv.paymentType || inv.paymentMethod || "tempo");
+    const isTunai = payTypeNorm === "tunai";
+    const initialPaymentStatus = inv.paymentStatus || (isTunai ? "Lunas" : "Belum Lunas");
+    const initialPaidAt = inv.paidAt || (initialPaymentStatus === "Lunas" || isTunai ? (inv.paidAt || now) : null);
+
     const confirmedInvoice = {
       ...inv,
       id: isEditMode ? editingInvoice.id : inv.id,
       status: "Terkonfirmasi",
+      paymentType: payTypeNorm,
+      paymentMethod: payTypeNorm,
+      paymentStatus: initialPaymentStatus,
+      paidAt: initialPaidAt,
+      dueDate: inv.dueDate || "",
       confirmedAt: now,
       confirmedBy: user,
       corrections: isEditMode ? [
@@ -1967,14 +2389,16 @@ function showProductSuggestions(inputEl, idx, query) {
     e.preventDefault();
     hideGlobalAc();
     const prodName = addName;
+    const curItem = manualInvoiceItems[idx] || {};
     if (typeof window.openProductModal === "function") {
       window.openProductModal(
         {
           name: prodName,
           supplier: currentSup,
-          buyUnit: "Box",
-          conversion: 1,
-          baseUnit: "Pcs"
+          buyUnit: curItem.purchaseUnit || "Box",
+          conversion: num(curItem.conversionRatio) || 1,
+          baseUnit: curItem.baseUnit || "Pcs",
+          buyPrice: num(curItem.buyPrice) || 0
         },
         (newProd) => {
           selectProductForRow(idx, newProd);
@@ -1988,36 +2412,44 @@ function selectProductForRow(idx, prod) {
   if (!manualInvoiceItems[idx]) return;
 
   const item = manualInvoiceItems[idx];
+
+  // 1. Tautkan identitas resmi master produk
   item.productCode = prod["Kode Produk"] || prod["Kode Produk Internal"] || "";
   item.name = prod["Nama Produk"] || prod.name || "";
-  item.barcode = prod["Barcode"] || "";
-  item.purchaseUnit = prod["Kemasan Beli"] || prod["Satuan Pembelian"] || "BOX";
+  if (!item.barcode && prod["Barcode"]) {
+    item.barcode = prod["Barcode"];
+  }
+
+  // 2. PROTEKSI NILAI TRANSAKSI FAKTUR FISIK
+  // Hanya isi kolom jika pada baris faktur fisik masih kosong/belum diisi pengguna
+  if (!item.purchaseUnit) {
+    item.purchaseUnit = prod["Kemasan Beli"] || prod["Satuan Pembelian"] || "BOX";
+  }
 
   const baseU = prod["Satuan Dasar"] || prod["Satuan"] || "TABLET";
   const interU = prod["Satuan Antara"] || "";
   const conv = num(prod["Konversi"] ?? prod["Isi Kemasan"] ?? 1) || 1;
   const interQty = num(prod["Isi Satuan Antara"]) || 1;
 
-  item.baseUnit = baseU;
-  item.conversionRatio = conv;
+  if (!item.baseUnit) {
+    item.baseUnit = baseU;
+  }
+  if (!num(item.conversionRatio) || num(item.conversionRatio) <= 1) {
+    if (conv > 1) item.conversionRatio = conv;
+  }
 
-  // Cek fleksibilitas satuan: 1 satuan (Btl/Tube), 2 satuan (Box -> Sachet), atau 3 satuan (Box -> Strip -> Tab)
-  if (norm(item.purchaseUnit) === norm(baseU) || conv <= 1) {
-    // 1 Satuan murni
-    item.intermediateUnit = "";
-    item.intermediateQty = "";
-    item.conversionRatio = 1;
-  } else if (!interU || norm(interU) === norm(baseU) || interQty <= 1 || interQty === conv) {
-    // 2 Satuan murni
-    item.intermediateUnit = "";
-    item.intermediateQty = "";
-  } else {
-    // 3 Satuan lengkap
+  // Isi satuan antara hanya jika di faktur fisik belum diisi
+  if (!item.intermediateUnit && interU) {
     item.intermediateUnit = interU;
     item.intermediateQty = interQty;
   }
 
-  item.buyPrice = num(prod["Harga Beli Terakhir"] ?? prod["Harga Beli"] ?? 0);
+  // HARGA BELI FAKTUR: HANYA ISI JIKA DI BARIS FAKTUR FISIK MASIH KOSONG / 0
+  const masterBuyPrice = num(prod["Harga Beli Terakhir"] ?? prod["Harga Beli"] ?? 0);
+  if (!num(item.buyPrice) && masterBuyPrice > 0) {
+    item.buyPrice = masterBuyPrice;
+  }
+
   item.matchStatus = "exact";
   item.matchScore = 100;
   item.matchedProduct = prod;
@@ -2351,8 +2783,9 @@ function installInvoiceDetailModal() {
           <!-- Konten dinamis -->
         </div>
         <footer style="padding:14px 24px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-          <div>
+          <div style="display:flex;gap:8px;align-items:center;">
             <button type="button" id="btn-print-detail-pdf" class="button button-secondary"><i class="fa-solid fa-file-pdf"></i> Cetak PDF</button>
+            <span id="detail-pay-action-wrapper"></span>
           </div>
           <div style="display:flex;gap:8px;">
             <button type="button" id="btn-invoice-action-danger" class="button button-danger" style="background:#ef4444;color:#fff;"><i class="fa-solid fa-trash-can"></i> Hapus Faktur</button>
@@ -2402,17 +2835,42 @@ function openInvoiceDetailModal(inv) {
     }
   }
 
+  const payInfo = getInvoicePaymentInfo(inv);
+  const payWrapper = $("detail-pay-action-wrapper");
+  if (payWrapper) {
+    if (payInfo.isTempo && !payInfo.isPaid) {
+      payWrapper.innerHTML = `
+        <button type="button" id="btn-detail-toggle-paid" class="button button-success" style="background:#10b981;color:#fff;">
+          <i class="fa-solid fa-check"></i> Tandai Sudah Bayar
+        </button>
+      `;
+    } else if (payInfo.isTempo && payInfo.isPaid) {
+      payWrapper.innerHTML = `
+        <button type="button" id="btn-detail-toggle-paid" class="button button-secondary">
+          <i class="fa-solid fa-rotate-left"></i> Batal Lunas
+        </button>
+      `;
+    } else {
+      payWrapper.innerHTML = "";
+    }
+
+    payWrapper.querySelector("#btn-detail-toggle-paid")?.addEventListener("click", () => {
+      toggleMarkInvoicePaid(inv.id || inv.invoiceNumber, !payInfo.isPaid);
+    });
+  }
+
   const bodyEl = $("invoice-detail-body");
   const items = inv.items || [];
-  const isTunai = (inv.paymentMethod === "tunai" || inv.paymentType === "tunai");
-  const payBadge = isTunai
-    ? `<span class="badge" style="background:#ecfdf5;color:#059669;padding:3.5px 9px;border-radius:6px;font-weight:750;display:inline-flex;align-items:center;gap:5px;"><i class="fa-solid fa-money-bill-wave"></i> Tunai (Lunas Langsung)</span>`
-    : `<span class="badge" style="background:#eff6ff;color:#1d4ed8;padding:3.5px 9px;border-radius:6px;font-weight:750;display:inline-flex;align-items:center;gap:5px;"><i class="fa-solid fa-calendar-days"></i> Tempo (Jatuh Tempo: ${escapeHtml(inv.dueDate || '—')})</span>`;
 
   bodyEl.innerHTML = `
     <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:14px;background:#f8fafc;padding:14px;border-radius:10px;margin-bottom:16px;">
       <div><span style="font-size:12px;color:#64748b;">Status Faktur:</span><br>${getInvoiceStatusBadge(inv.status)}</div>
-      <div><span style="font-size:12px;color:#64748b;">Metode Pembayaran:</span><br>${payBadge}</div>
+      <div><span style="font-size:12px;color:#64748b;">Status Pembayaran:</span><br>${getInvoicePaymentBadge(payInfo)}</div>
+      ${payInfo.isTempo ? `
+        <div><span style="font-size:12px;color:#64748b;">Jatuh Tempo:</span><br><strong>${escapeHtml(inv.dueDate || '—')}</strong> <small style="display:block;color:${payInfo.isPaid ? '#059669' : (payInfo.dueState === 'overdue' ? '#dc2626' : (payInfo.dueState === 'due_soon' ? '#d97706' : '#2563eb'))};font-weight:700;">${escapeHtml(payInfo.reminderText)}</small></div>
+      ` : `
+        <div><span style="font-size:12px;color:#64748b;">Metode Bayar:</span><br><strong>Tunai (Lunas)</strong></div>
+      `}
       <div><span style="font-size:12px;color:#64748b;">Subtotal:</span><br><strong>${rupiah(inv.subtotal || 0)}</strong></div>
       <div><span style="font-size:12px;color:#64748b;">Diskon Global:</span><br><strong>${rupiah(inv.globalDiscountRp || 0)}</strong></div>
       <div><span style="font-size:12px;color:#64748b;">PPN Global:</span><br><strong>${rupiah(inv.globalTaxRp || 0)}</strong></div>
