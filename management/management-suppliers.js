@@ -179,9 +179,6 @@ function renderTable() {
         return `
           <div class="responsive-data-card ${isAktif ? 'card-success' : 'card-warning'}" data-name="${escapeHtml(name)}">
             <div class="card-accordion-header">
-              <div class="card-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#0284c7,#4f46e5);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;">
-                ${escapeHtml(initials)}
-              </div>
               <div class="card-header-main">
                 <div class="card-title-row">
                   <div class="card-title">${escapeHtml(name)}</div>
@@ -190,8 +187,8 @@ function renderTable() {
                   </span>
                 </div>
                 <div class="card-subtitle-row">
-                  <span><i class="fa-solid fa-user" style="font-size:11px;color:#94a3b8;"></i> PIC: <strong>${escapeHtml(pic)}</strong></span>
-                  ${phone ? `<span><i class="fa-solid fa-phone" style="font-size:11px;color:#94a3b8;"></i> ${escapeHtml(phone)}</span>` : ''}
+                  <span>PIC: <strong>${escapeHtml(pic)}</strong></span>
+                  ${phone ? `<span>•</span><span>${escapeHtml(phone)}</span>` : ''}
                 </div>
               </div>
               <div class="card-toggle-icon">

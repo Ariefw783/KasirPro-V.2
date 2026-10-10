@@ -1,13 +1,13 @@
 {
-  "version": "2.2.53",
-  "build": "20261010.02",
+  "version": "2.2.54",
+  "build": "20261010.03",
   "releaseDate": "10 Oktober 2026",
-  "title": "Enforce Invoice Units And Filters",
-  "description": "Sinkronisasi mutlak satuan kemasan beli faktur dan perbaikan filter kategori serta supplier halaman produk.",
+  "title": "Universal Sleek Cards & Collapsed Match Accents",
+  "description": "Transformasi kartu input faktur universal di desktop, pewarnaan kartu saat diciutkan, dan eliminasi ikon mengganggu.",
   "changelog": [
-    "Enforce invoice purchase unit mutlak",
-    "Fix category and supplier filters",
-    "Improve mobile card empty state",
-    "Update service worker cache v106"
+    "Enable universal invoice cards desktop",
+    "Apply colored collapsed card accents",
+    "Remove cluttered distracting card icons",
+    "Update service worker cache v107"
   ]
 }

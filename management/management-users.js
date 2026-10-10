@@ -217,8 +217,10 @@ function renderUsersTable() {
                   </span>
                 </div>
                 <div class="card-subtitle-row">
-                  <span><i class="fa-solid fa-user"></i> <code>${escapeHtml(uname)}</code></span>
-                  <span><i class="fa-solid fa-phone"></i> ${escapeHtml(phone)}</span>
+                  <span>Username: <code>${escapeHtml(uname)}</code></span>
+                  <span>•</span>
+                  <span>${escapeHtml(phone)}</span>
+                  <span>•</span>
                   <span class="badge ${isAktif ? 'badge-success' : 'badge-secondary'}" style="padding:2px 6px;border-radius:4px;font-size:10.5px;">${escapeHtml(statusLabel)}</span>
                 </div>
               </div>

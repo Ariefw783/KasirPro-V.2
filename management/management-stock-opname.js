@@ -150,9 +150,11 @@ export function renderOpnameHistory() {
                   </span>
                 </div>
                 <div class="card-subtitle-row">
-                  <span><i class="fa-solid fa-clock"></i> ${formatDateTime(sess.createdAt || sess.date)}</span>
-                  <span><i class="fa-solid fa-boxes-stacked"></i> ${(sess.items || []).length} produk</span>
-                  <span><i class="fa-solid fa-money-bill"></i> <strong>${rupiah(totalDiffVal)}</strong></span>
+                  <span>${formatDateTime(sess.createdAt || sess.date)}</span>
+                  <span>•</span>
+                  <span>${(sess.items || []).length} produk</span>
+                  <span>•</span>
+                  <span>Selisih: <strong style="color:#d97706;">${rupiah(totalDiffVal)}</strong></span>
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>

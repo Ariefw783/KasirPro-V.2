@@ -269,16 +269,13 @@ function renderInvoicesTable() {
       return `
         <div class="responsive-data-card ${cardTheme}" data-id="${escapeHtml(id)}">
           <div class="card-accordion-header">
-            <div class="card-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#0284c7,#4f46e5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">
-              <i class="fa-solid fa-file-invoice"></i>
-            </div>
             <div class="card-header-main">
               <div class="card-title-row">
                 <div class="card-title">#${escapeHtml(no)}</div>
                 ${getInvoiceStatusBadge(status)}
               </div>
               <div class="card-subtitle-row">
-                <span><i class="fa-solid fa-truck" style="font-size:11px;color:#94a3b8;"></i> <strong>${escapeHtml(sup)}</strong></span>
+                <span><strong>${escapeHtml(sup)}</strong></span>
                 <span>•</span>
                 <span>${escapeHtml(date)}</span>
                 <span>•</span>
@@ -1446,33 +1443,44 @@ function renderManualInvoiceItems() {
     const midQtyStr = (item.intermediateQty !== undefined && item.intermediateQty !== null && item.intermediateQty !== "" && item.intermediateUnit) ? item.intermediateQty : "";
     const isCollapsed = !!item._collapsed;
 
+    let matchClass = "match-new";
+    let headerBadgeHtml = `<span class="header-status-pill" style="font-size:10px;font-weight:700;background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;padding:1px 6px;border-radius:4px;">+ Baru</span>`;
     let matchBadgeHtml = "";
+
     if (item.matchStatus === "exact" && item.productCode) {
+      matchClass = "match-exact";
+      headerBadgeHtml = `<span class="header-status-pill" style="font-size:10px;font-weight:700;background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;padding:1px 6px;border-radius:4px;">Tersambung</span>`;
       matchBadgeHtml = `
         <div style="margin-top:2px;">
-          <span style="font-size:10px;font-weight:700;background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;padding:1px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;" title="Produk cocok 100% dengan master data">
-            <i class="fa-solid fa-circle-check"></i> Tersambung: ${escapeHtml(item.productCode)}
+          <span style="font-size:10px;font-weight:700;background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;padding:1px 6px;border-radius:4px;" title="Produk cocok 100% dengan master data">
+            Tersambung: ${escapeHtml(item.productCode)}
           </span>
         </div>
       `;
     } else if (item.matchStatus === "fuzzy" && item.matchedProduct) {
+      matchClass = "match-fuzzy";
       const matchName = item.matchedProduct["Nama Produk"] || item.productCode || "";
+      headerBadgeHtml = `<span class="header-status-pill" style="font-size:10px;font-weight:700;background:#fffbeb;color:#d97706;border:1px solid #fde68a;padding:1px 6px;border-radius:4px;">Mirip (${item.matchScore || 85}%)</span>`;
       matchBadgeHtml = `
         <div style="margin-top:2px;">
-          <span style="font-size:10px;font-weight:700;background:#fffbeb;color:#d97706;border:1px solid #fde68a;padding:1px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;cursor:pointer;" title="Mirip (${item.matchScore}%). Klik/ketik untuk mengganti jika perlu.">
-            <i class="fa-solid fa-triangle-exclamation"></i> Mirip: ${escapeHtml(matchName)} (${item.matchScore}%)
+          <span style="font-size:10px;font-weight:700;background:#fffbeb;color:#d97706;border:1px solid #fde68a;padding:1px 6px;border-radius:4px;" title="Mirip (${item.matchScore}%). Klik/ketik untuk mengganti jika perlu.">
+            Mirip: ${escapeHtml(matchName)} (${item.matchScore}%)
           </span>
         </div>
       `;
     } else if (item.name && (item.matchStatus === "new" || !item.productCode)) {
+      matchClass = "match-new";
+      headerBadgeHtml = `<span class="header-status-pill" style="font-size:10px;font-weight:700;background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;padding:1px 6px;border-radius:4px;">+ Produk Baru</span>`;
       matchBadgeHtml = `
         <div style="margin-top:2px;">
-          <span style="font-size:10px;font-weight:700;background:#f0f9ff;color:#0284c7;border:1px solid #bae6fd;padding:1px 6px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;" title="Produk belum terdaftar di master data (akan didaftarkan otomatis)">
-            <i class="fa-solid fa-plus-circle"></i> + Produk Baru
+          <span style="font-size:10px;font-weight:700;background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;padding:1px 6px;border-radius:4px;" title="Produk belum terdaftar di master data (akan didaftarkan otomatis)">
+            + Produk Baru
           </span>
         </div>
       `;
     } else if (item.productCode) {
+      matchClass = "match-exact";
+      headerBadgeHtml = `<span class="header-status-pill" style="font-size:10px;font-weight:700;background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;padding:1px 6px;border-radius:4px;">Tersambung</span>`;
       matchBadgeHtml = `
         <div style="font-size:10.5px;color:#0284c7;display:flex;gap:6px;margin-top:2px;">
           <span>Kode: ${escapeHtml(item.productCode)}</span>
@@ -1485,24 +1493,21 @@ function renderManualInvoiceItems() {
     const unitDisplay = qNum ? `${qNum} ${itemUnit}` : itemUnit;
 
     return `
-      <tr data-index="${idx}" class="manual-inv-row ${isCollapsed ? 'is-collapsed' : 'is-expanded'}">
+      <tr data-index="${idx}" class="manual-inv-row ${matchClass} ${isCollapsed ? 'is-collapsed' : 'is-expanded'}">
         <td class="col-mobile-header" data-index="${idx}">
           <div class="mobile-row-header-left" style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">
             <span class="mobile-row-badge" style="background:#0284c7;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;flex-shrink:0;">#${idx + 1}</span>
             <div style="min-width:0;flex:1;">
-              <div class="mobile-row-title" style="font-size:12.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(item.name || '(Obat Baru)')}</div>
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span class="mobile-row-title" style="font-size:12.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(item.name || '(Obat Baru)')}</span>
+                <span class="header-badge-wrapper">${headerBadgeHtml}</span>
+              </div>
               <div class="mobile-row-summary" style="font-size:11px;color:#475569;font-weight:600;margin-top:2px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
-                <span class="mobile-row-supplier-tag" style="color:#64748b;display:inline-flex;align-items:center;gap:3px;" title="Supplier">
-                  <i class="fa-solid fa-truck-field" style="font-size:9.5px;color:#0284c7;"></i> <span class="val-sup">${escapeHtml(itemSupName)}</span>
-                </span>
+                <span class="val-sup">${escapeHtml(itemSupName)}</span>
                 <span style="color:#cbd5e1;">•</span>
-                <span class="mobile-row-unit-tag" style="color:#0284c7;display:inline-flex;align-items:center;gap:3px;" title="Satuan Besar">
-                  <i class="fa-solid fa-box" style="font-size:9.5px;"></i> <span class="val-unit">${escapeHtml(unitDisplay)}</span>
-                </span>
+                <span class="val-unit" style="color:#0284c7;">${escapeHtml(unitDisplay)}</span>
                 <span style="color:#cbd5e1;">•</span>
-                <strong class="mobile-row-subtotal-tag" style="color:#0f172a;font-weight:800;display:inline-flex;align-items:center;gap:3px;" title="Subtotal">
-                  <span class="val-subtotal">${rupiah(item.subtotal || 0)}</span>
-                </strong>
+                <strong class="val-subtotal" style="color:#0f172a;font-weight:800;">${rupiah(item.subtotal || 0)}</strong>
               </div>
             </div>
           </div>
@@ -2030,6 +2035,27 @@ function updateMobileRowHeader(idx) {
   const titleEl = row.querySelector(".mobile-row-title");
   if (titleEl) {
     titleEl.textContent = item.name || "(Obat Baru)";
+  }
+
+  let matchClass = "match-new";
+  let badgeText = "+ Baru";
+  let badgeStyle = "background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;";
+  if (item.matchStatus === "exact" && item.productCode) {
+    matchClass = "match-exact";
+    badgeText = "Tersambung";
+    badgeStyle = "background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;";
+  } else if (item.matchStatus === "fuzzy" && item.matchedProduct) {
+    matchClass = "match-fuzzy";
+    badgeText = `Mirip (${item.matchScore || 85}%)`;
+    badgeStyle = "background:#fffbeb;color:#d97706;border:1px solid #fde68a;";
+  }
+
+  row.classList.remove("match-exact", "match-fuzzy", "match-new");
+  row.classList.add(matchClass);
+
+  const badgeWrapper = row.querySelector(".header-badge-wrapper");
+  if (badgeWrapper) {
+    badgeWrapper.innerHTML = `<span class="header-status-pill" style="font-size:10px;font-weight:700;${badgeStyle}padding:1px 6px;border-radius:4px;">${badgeText}</span>`;
   }
 
   const currentSup = text($("manual-inv-supplier")?.value);

@@ -1163,6 +1163,28 @@ assert(filteredBySup.length === 2, "Filter Supplier: Menemukan 2 Produk dari 'PT
 const emptyStateMsg = '<div class="empty-state">Tidak ada produk yang cocok dengan filter.</div>';
 assert(emptyStateMsg.includes("Tidak ada produk"), "UI Mobile: Empty State Card List Tersedia Ketika Filter Tidak Menghasilkan Data");
 
+// -----------------------------------------------------------------------------
+// 20. PENGUJIAN KARTU ADAPTIF UNIVERSAL INPUT FAKTUR & WARNA STATUS SAAT DICIUTKAN
+// -----------------------------------------------------------------------------
+console.log("\n📑 BAGIAN 20: PENGUJIAN KARTU ADAPTIF UNIVERSAL INPUT FAKTUR & WARNA STATUS SAAT DICIUTKAN");
+
+// 1. Verifikasi Format Kartu Dinamis Universal untuk Poin 2 Input Faktur (Bebas Tabel 1320px)
+assert(cssContent.includes(".manual-grid-table thead") && cssContent.includes("display: none !important"), "Input Faktur: Tabel Desktop Kolom 1320px Dihapus & Digantikan Format Kartu Dinamis");
+assert(cssContent.includes(".manual-grid-table tbody tr.manual-inv-row"), "Input Faktur: Baris Obat Menggunakan Format Kartu Adaptif (.manual-inv-row)");
+
+// 2. Verifikasi Warna Status Ketika Kartu Diciutkan
+assert(cssContent.includes(".manual-grid-table tbody tr.manual-inv-row.match-exact.is-collapsed") && cssContent.includes("#86efac"), "Warna Kartu Ciut: Hijau Tersambung (#86efac / #10b981) untuk Exact Match");
+assert(cssContent.includes(".manual-grid-table tbody tr.manual-inv-row.match-fuzzy.is-collapsed") && cssContent.includes("#fde68a"), "Warna Kartu Ciut: Kuning Mirip (#fde68a / #f59e0b) untuk Fuze/Fuzzy Match");
+assert(cssContent.includes(".manual-grid-table tbody tr.manual-inv-row.match-new.is-collapsed") && cssContent.includes("#bae6fd"), "Warna Kartu Ciut: Biru Produk Baru (#bae6fd / #0284c7) untuk Produk Belum Ada");
+
+// 3. Verifikasi Warna Kartu Modul Utama Ketika Diciutkan
+assert(cssContent.includes(".responsive-data-card.card-success:not(.is-expanded)") && cssContent.includes("#86efac"), "Warna Kartu Ciut Modul: Hijau untuk card-success");
+assert(cssContent.includes(".responsive-data-card.card-warning:not(.is-expanded)") && cssContent.includes("#fde68a"), "Warna Kartu Ciut Modul: Kuning untuk card-warning");
+assert(cssContent.includes(".responsive-data-card.card-primary:not(.is-expanded)") && cssContent.includes("#bae6fd"), "Warna Kartu Ciut Modul: Biru untuk card-primary");
+
+// 4. Verifikasi Eliminasi Avatar Balok & Perampingan Kartu
+assert(cssContent.includes(".card-avatar") && cssContent.includes("display: none !important"), "Desain Ramping: Avatar Balok Kaku Berhasil Dieliminasi (.card-avatar display none)");
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

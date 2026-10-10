@@ -167,115 +167,316 @@
     background-color: #f8fafc;
 }
 
-/* Desktop: Sticky Header & Frozen Columns */
-@media (min-width: 769px) {
-    #btn-toggle-all-inv-rows {
-        display: none !important;
+/* ==============================================================================
+   UNIVERSAL ADAPTIVE INVOICE CARDS (SEMUA PERANGKAT: DESKTOP & MOBILE)
+   Transformasi Poin 2 Input Faktur Manual menjadi kartu dinamis dengan aksen warna
+   ============================================================================== */
+
+/* Wrapper & Container */
+.manual-invoice-grid-wrapper {
+    width: 100%;
+    overflow: visible !important;
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    max-height: none !important;
+}
+
+.manual-grid-table {
+    width: 100% !important;
+    display: block !important;
+    border: none !important;
+}
+
+.manual-grid-table thead {
+    display: none !important;
+}
+
+.manual-grid-table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+}
+
+/* Base Card Container */
+.manual-grid-table tbody tr.manual-inv-row {
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    border-radius: 10px !important;
+    border: 1px solid #cbd5e1 !important;
+    background: #ffffff !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+
+/* Sembunyikan sel kolom lama desktop yang tidak terpakai */
+.manual-grid-table tbody td.col-num,
+.manual-grid-table tbody td.col-action {
+    display: none !important;
+}
+
+/* Header Kartu Dinamis (col-mobile-header) */
+.manual-grid-table tbody td.col-mobile-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 9px 12px !important;
+    border: none !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    gap: 8px !important;
+}
+
+/* Mode Ciut (Collapsed) - Warna Khusus Sesuai Status Match */
+.manual-grid-table tbody tr.manual-inv-row.is-collapsed {
+    padding: 0 !important;
+}
+
+.manual-grid-table tbody tr.manual-inv-row.is-collapsed td:not(.col-mobile-header) {
+    display: none !important;
+}
+
+/* 1. HIJAU: Exact Match (Cocok 100%) */
+.manual-grid-table tbody tr.manual-inv-row.match-exact.is-collapsed {
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%) !important;
+    border-color: #86efac !important;
+    border-left: 4px solid #10b981 !important;
+}
+
+/* 2. KUNING: Fuzzy Match (Mirip / Fuze Match) */
+.manual-grid-table tbody tr.manual-inv-row.match-fuzzy.is-collapsed {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+    border-color: #fde68a !important;
+    border-left: 4px solid #f59e0b !important;
+}
+
+/* 3. BIRU: New Product / Unmatched (Tidak Cocok / Produk Baru) */
+.manual-grid-table tbody tr.manual-inv-row.match-new.is-collapsed {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
+    border-color: #bae6fd !important;
+    border-left: 4px solid #0284c7 !important;
+}
+
+/* Mode Terbuka (Expanded) */
+.manual-grid-table tbody tr.manual-inv-row.is-expanded {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+}
+
+.manual-grid-table tbody tr.manual-inv-row.match-exact.is-expanded {
+    border-left: 4px solid #10b981 !important;
+}
+
+.manual-grid-table tbody tr.manual-inv-row.match-fuzzy.is-expanded {
+    border-left: 4px solid #f59e0b !important;
+}
+
+.manual-grid-table tbody tr.manual-inv-row.match-new.is-expanded {
+    border-left: 4px solid #0284c7 !important;
+}
+
+.manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-mobile-header {
+    border-bottom: 1px solid #f1f5f9 !important;
+    background: #f8fafc !important;
+    padding: 8px 12px !important;
+}
+
+/* Input Sel Dalam Mode Terbuka (Universal) */
+.manual-grid-table tbody td:not(.col-mobile-header):not(.col-num):not(.col-action) {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    padding: 0 !important;
+    border: none !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+}
+
+.manual-grid-table tbody td:not(.col-mobile-header)::before {
+    content: attr(data-mobile-label);
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: #64748b !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.3px !important;
+    display: block !important;
+    line-height: 1.2 !important;
+}
+
+.manual-grid-table tbody td.col-mobile-header::before {
+    display: none !important;
+}
+
+/* Desktop Grid Layout (Screens >= 821px) */
+@media (min-width: 821px) {
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded {
+        display: grid !important;
+        grid-template-columns: repeat(12, 1fr) !important;
+        gap: 8px 12px !important;
+        padding: 0 12px 12px !important;
     }
 
-    .manual-invoice-grid-wrapper {
-        max-height: calc(88vh - 260px);
-        min-height: 420px;
-        overflow: auto;
-        position: relative;
-        border: 1px solid #cbd5e1;
-        border-radius: 8px;
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-mobile-header {
+        grid-column: 1 / -1 !important;
+        margin: 0 -12px 6px -12px !important;
+        width: calc(100% + 24px) !important;
     }
 
-    .manual-grid-table {
-        min-width: 1320px;
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 12.5px;
-        display: table;
+    /* Baris 1: Identitas Produk */
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-prod {
+        grid-column: span 6 !important;
+    }
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-batch {
+        grid-column: span 3 !important;
+    }
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-exp {
+        grid-column: span 3 !important;
     }
 
-    .manual-grid-table thead {
-        display: table-header-group;
+    /* Baris 2: Wadah Konversi & Satuan */
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-unit-buy {
+        grid-column: span 3 !important;
+    }
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-unit-mid {
+        grid-column: span 3 !important;
+    }
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-unit-base {
+        grid-column: span 3 !important;
+    }
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-conv {
+        grid-column: span 3 !important;
     }
 
-    .manual-grid-table tbody {
-        display: table-row-group;
+    /* Baris 3: Kuantitas, Harga Beli, Diskon & Subtotal */
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-qty {
+        grid-column: span 2 !important;
+    }
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-total-base {
+        grid-column: span 2 !important;
+        background: #f0f9ff !important;
+        border: 1px solid #bae6fd !important;
+        border-radius: 6px !important;
+        padding: 4px 6px !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-buy-price {
+        grid-column: span 3 !important;
+    }
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-disc-pct {
+        grid-column: span 2 !important;
+    }
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-disc-rp {
+        grid-column: span 3 !important;
+    }
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-subtotal {
+        grid-column: 1 / -1 !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        background: #f8fafc !important;
+        border: 1px dashed #cbd5e1 !important;
+        border-radius: 6px !important;
+        padding: 8px 14px !important;
+        font-size: 13.5px !important;
+        font-weight: 800 !important;
+        color: #0f172a !important;
+        margin-top: 2px !important;
+    }
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-subtotal::before {
+        font-size: 11px !important;
+        font-weight: 800 !important;
+        color: #475569 !important;
+        margin-bottom: 0 !important;
+    }
+}
+
+/* Mobile Grid Layout (Screens <= 820px) */
+@media (max-width: 820px) {
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px 10px !important;
+        padding: 0 10px 10px !important;
     }
 
-    .manual-grid-table tbody tr {
-        display: table-row;
+    .manual-grid-table tbody tr.manual-inv-row.is-expanded td.col-mobile-header {
+        grid-column: 1 / -1 !important;
+        margin: 0 -10px 4px -10px !important;
+        width: calc(100% + 20px) !important;
     }
 
-    .manual-grid-table tbody td {
-        display: table-cell;
-    }
-
-    .manual-grid-table tbody td.col-mobile-header {
-        display: none !important;
-    }
-
-    .manual-grid-table thead th {
-        position: sticky;
-        top: 0;
-        z-index: 20;
-        background: #f1f5f9;
-        box-shadow: inset 0 -1px 0 #cbd5e1;
-    }
-
-    /* Sticky Kolom Kiri: # dan Nama Produk */
-    .manual-grid-table thead th.col-num,
-    .manual-grid-table tbody td.col-num {
-        position: sticky;
-        left: 0;
-        background: #f8fafc;
-        z-index: 21;
-    }
-    .manual-grid-table tbody td.col-num {
-        background: #ffffff;
-        z-index: 10;
-    }
-
-    .manual-grid-table thead th.col-prod,
     .manual-grid-table tbody td.col-prod {
-        position: sticky;
-        left: 36px;
-        background: #f8fafc;
-        z-index: 21;
-        box-shadow: 3px 0 6px -2px rgba(0, 0, 0, 0.08);
+        grid-column: 1 / -1 !important;
     }
-    .manual-grid-table tbody td.col-prod {
-        background: #ffffff;
-        z-index: 10;
+    .manual-grid-table tbody td.col-batch {
+        grid-column: 1 !important;
     }
-    .manual-grid-table tr:hover td.col-num,
-    .manual-grid-table tr:hover td.col-prod {
-        background: #f8fafc;
+    .manual-grid-table tbody td.col-exp {
+        grid-column: 2 !important;
     }
-
-    /* Sticky Kolom Kanan: Subtotal dan Aksi Hapus */
-    .manual-grid-table thead th.col-subtotal,
+    .manual-grid-table tbody td.col-unit-buy {
+        grid-column: 1 !important;
+    }
+    .manual-grid-table tbody td.col-unit-base {
+        grid-column: 2 !important;
+    }
+    .manual-grid-table tbody td.col-unit-mid {
+        grid-column: 1 !important;
+    }
+    .manual-grid-table tbody td.col-unit-mid > div {
+        display: flex !important;
+        gap: 4px !important;
+    }
+    .manual-grid-table tbody td.col-conv {
+        grid-column: 2 !important;
+    }
+    .manual-grid-table tbody td.col-qty {
+        grid-column: 1 !important;
+    }
+    .manual-grid-table tbody td.col-total-base {
+        grid-column: 2 !important;
+        background: #f0f9ff !important;
+        border: 1px solid #bae6fd !important;
+        border-radius: 6px !important;
+        padding: 4px 6px !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+    .manual-grid-table tbody td.col-buy-price {
+        grid-column: 1 / -1 !important;
+    }
+    .manual-grid-table tbody td.col-disc-pct {
+        grid-column: 1 !important;
+    }
+    .manual-grid-table tbody td.col-disc-rp {
+        grid-column: 2 !important;
+    }
     .manual-grid-table tbody td.col-subtotal {
-        position: sticky;
-        right: 42px;
-        background: #f8fafc;
-        z-index: 21;
-        box-shadow: -3px 0 6px -2px rgba(0, 0, 0, 0.08);
+        grid-column: 1 / -1 !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        background: #f8fafc !important;
+        border: 1px dashed #cbd5e1 !important;
+        border-radius: 6px !important;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+        font-weight: 800 !important;
+        color: #0f172a !important;
+        margin-top: 2px !important;
     }
-    .manual-grid-table tbody td.col-subtotal {
-        background: #ffffff;
-        z-index: 10;
-    }
-
-    .manual-grid-table thead th.col-action,
-    .manual-grid-table tbody td.col-action {
-        position: sticky;
-        right: 0;
-        background: #f8fafc;
-        z-index: 21;
-    }
-    .manual-grid-table tbody td.col-action {
-        background: #ffffff;
-        z-index: 10;
-    }
-    .manual-grid-table tr:hover td.col-subtotal,
-    .manual-grid-table tr:hover td.col-action {
-        background: #f8fafc;
+    .manual-grid-table tbody td.col-subtotal::before {
+        font-size: 11px !important;
+        font-weight: 800 !important;
+        color: #475569 !important;
+        margin-bottom: 0 !important;
     }
 }
 
@@ -1133,66 +1334,108 @@ table.desktop-only-table,
 #report-cashiers-cards {
     display: flex !important;
     flex-direction: column;
-    gap: 12px;
-    margin-top: 8px;
+    gap: 7px;
+    margin-top: 6px;
     width: 100%;
 }
 
 .responsive-data-card {
     background: #ffffff;
-    border-radius: 14px;
+    border-radius: 10px;
     border: 1px solid #e2e8f0;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
     overflow: hidden;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
 }
 
 .responsive-data-card:hover {
     border-color: #cbd5e1;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.07);
 }
 
-.responsive-data-card::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #0284c7 0%, #4f46e5 50%, #10b981 100%);
-    opacity: 0.9;
+/* Sembunyikan avatar balok besar yang kaku dan memenuhi layar */
+.card-avatar {
+    display: none !important;
 }
 
-.responsive-data-card.card-success::before {
-    background: linear-gradient(90deg, #059669 0%, #10b981 100%);
+/* -------------------------------------------------------------
+   WARNA KARTU KETIKA DICIUTKAN (COLLAPSED STATE) DI SEMUA PERANGKAT
+   - Hijau: Cocok (card-success)
+   - Kuning: Fuze match / Perlu Perhatian (card-warning)
+   - Biru: Produk Baru / Info (card-primary & card-purple)
+   - Merah: Void / Defisit (card-danger)
+   ------------------------------------------------------------- */
+.responsive-data-card.card-success:not(.is-expanded) {
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%) !important;
+    border-color: #86efac !important;
+    border-left: 4px solid #10b981 !important;
 }
 
-.responsive-data-card.card-warning::before {
-    background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%);
+.responsive-data-card.card-warning:not(.is-expanded) {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+    border-color: #fde68a !important;
+    border-left: 4px solid #f59e0b !important;
 }
 
-.responsive-data-card.card-danger::before {
-    background: linear-gradient(90deg, #dc2626 0%, #f43f5e 100%);
+.responsive-data-card.card-primary:not(.is-expanded),
+.responsive-data-card.card-purple:not(.is-expanded) {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
+    border-color: #bae6fd !important;
+    border-left: 4px solid #0284c7 !important;
 }
 
-.responsive-data-card.card-purple::before {
-    background: linear-gradient(90deg, #7c3aed 0%, #6366f1 100%);
+.responsive-data-card.card-danger:not(.is-expanded) {
+    background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%) !important;
+    border-color: #fecdd3 !important;
+    border-left: 4px solid #ef4444 !important;
+}
+
+.responsive-data-card:not(.card-success):not(.card-warning):not(.card-primary):not(.card-purple):not(.card-danger):not(.is-expanded) {
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    border-left: 4px solid #94a3b8 !important;
+}
+
+/* State Terbuka (Expanded) - Putih Bersih dengan Garis Aksen Sisi */
+.responsive-data-card.is-expanded {
+    background: #ffffff !important;
+}
+
+.responsive-data-card.card-success.is-expanded {
+    border-left: 4px solid #10b981 !important;
+    border-color: #cbd5e1 !important;
+}
+
+.responsive-data-card.card-warning.is-expanded {
+    border-left: 4px solid #f59e0b !important;
+    border-color: #cbd5e1 !important;
+}
+
+.responsive-data-card.card-primary.is-expanded,
+.responsive-data-card.card-purple.is-expanded {
+    border-left: 4px solid #0284c7 !important;
+    border-color: #cbd5e1 !important;
+}
+
+.responsive-data-card.card-danger.is-expanded {
+    border-left: 4px solid #ef4444 !important;
+    border-color: #cbd5e1 !important;
 }
 
 .card-accordion-header {
-    padding: 13px 15px;
+    padding: 8px 12px !important;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     user-select: none;
-    background: #ffffff;
+    background: transparent;
     transition: background-color 0.15s ease;
 }
 
 .card-accordion-header:hover {
-    background: #f8fafc;
+    background: rgba(15, 23, 42, 0.02);
 }
 
 .card-header-main {
@@ -1205,12 +1448,12 @@ table.desktop-only-table,
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 .card-title {
-    font-size: 0.92rem;
-    font-weight: 750;
+    font-size: 0.86rem;
+    font-weight: 700;
     color: #0f172a;
     white-space: nowrap;
     overflow: hidden;
@@ -1221,22 +1464,23 @@ table.desktop-only-table,
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 4px 10px;
-    font-size: 0.76rem;
+    gap: 3px 8px;
+    font-size: 0.74rem;
     color: #64748b;
+    line-height: 1.3;
 }
 
 .card-toggle-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    background: #f1f5f9;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(15, 23, 42, 0.05);
     color: #64748b;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.72rem;
-    transition: transform 0.25s ease, background-color 0.2s ease, color 0.2s ease;
+    font-size: 0.68rem;
+    transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease;
     flex-shrink: 0;
 }
 
@@ -1248,10 +1492,10 @@ table.desktop-only-table,
 
 .card-accordion-body {
     display: none;
-    padding: 14px 15px 16px;
+    padding: 10px 12px 12px;
     border-top: 1px dashed #e2e8f0;
-    background: #fbfcfe;
-    animation: fadeInSlide 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    background: #ffffff;
+    animation: fadeInSlide 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .responsive-data-card.is-expanded .card-accordion-body {
@@ -1261,7 +1505,7 @@ table.desktop-only-table,
 @keyframes fadeInSlide {
     from {
         opacity: 0;
-        transform: translateY(-5px);
+        transform: translateY(-4px);
     }
     to {
         opacity: 1;
@@ -1272,18 +1516,18 @@ table.desktop-only-table,
 .card-detail-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 10px 14px;
-    margin-bottom: 12px;
+    gap: 6px 12px;
+    margin-bottom: 8px;
 }
 
 .card-detail-item {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
 }
 
 .card-detail-label {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -1291,7 +1535,7 @@ table.desktop-only-table,
 }
 
 .card-detail-value {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: #1e293b;
     word-break: break-word;
@@ -1302,9 +1546,9 @@ table.desktop-only-table,
     align-items: center;
     justify-content: flex-end;
     flex-wrap: wrap;
-    gap: 8px;
-    padding-top: 10px;
-    border-top: 1px solid #edf2f7;
+    gap: 6px;
+    padding-top: 8px;
+    border-top: 1px solid #f1f5f9;
 }
 
 /* ==============================================================================

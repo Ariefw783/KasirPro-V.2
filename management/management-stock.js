@@ -297,9 +297,11 @@ function renderStockTable() {
                   ${getStockStatusBadge(item.status)}
                 </div>
                 <div class="card-subtitle-row">
-                  <span><i class="fa-solid fa-barcode"></i> ${escapeHtml(item.code)}</span>
-                  <span><i class="fa-solid fa-tags"></i> ${escapeHtml(item.category || 'Umum')}</span>
-                  <span><i class="fa-solid fa-boxes-stacked"></i> <strong>${formatNumber(item.stock)}</strong> ${escapeHtml(item.unit)}</span>
+                  <span>Kode: <strong>${escapeHtml(item.code)}</strong></span>
+                  <span>•</span>
+                  <span>${escapeHtml(item.category || 'Umum')}</span>
+                  <span>•</span>
+                  <span>Stok: <strong>${formatNumber(item.stock)}</strong> ${escapeHtml(item.unit)}</span>
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
@@ -462,9 +464,11 @@ function renderMovementTable() {
                   <span class="badge ${isPositive ? 'badge-success' : 'badge-danger'}" style="font-weight:700;font-size:12px;padding:3px 8px;border-radius:6px;">${deltaStr}</span>
                 </div>
                 <div class="card-subtitle-row">
-                  <span><i class="fa-solid fa-tag"></i> <strong>${escapeHtml(m.type || 'Mutasi')}</strong></span>
-                  <span><i class="fa-solid fa-file-lines"></i> ${escapeHtml(m.reference || '—')}</span>
-                  <span><i class="fa-solid fa-clock"></i> ${formatDateTime(m.createdAt || m.date)}</span>
+                  <span><strong>${escapeHtml(m.type || 'Mutasi')}</strong></span>
+                  <span>•</span>
+                  <span>Ref: ${escapeHtml(m.reference || '—')}</span>
+                  <span>•</span>
+                  <span>${formatDateTime(m.createdAt || m.date)}</span>
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>

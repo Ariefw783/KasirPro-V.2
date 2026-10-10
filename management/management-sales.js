@@ -187,9 +187,6 @@ function renderSalesTable() {
         return `
           <div class="responsive-data-card ${isVoid ? 'card-danger' : 'card-success'}" data-id="${escapeHtml(id)}">
             <div class="card-accordion-header">
-              <div class="card-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#059669,#0284c7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">
-                <i class="fa-solid fa-receipt"></i>
-              </div>
               <div class="card-header-main">
                 <div class="card-title-row">
                   <div class="card-title">#${escapeHtml(no)}</div>
@@ -200,7 +197,7 @@ function renderSalesTable() {
                 <div class="card-subtitle-row">
                   <span>${date}</span>
                   <span>•</span>
-                  <span><i class="fa-solid fa-user" style="font-size:10px;color:#94a3b8;"></i> ${escapeHtml(cashier)}</span>
+                  <span>Kasir: ${escapeHtml(cashier)}</span>
                   <span>•</span>
                   <span style="color:#059669;font-weight:700;">${rupiah(total)}</span>
                 </div>

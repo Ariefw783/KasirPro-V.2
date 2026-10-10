@@ -343,9 +343,11 @@ function renderDailySummary(completedSales, productsMap) {
                 <strong style="color:#059669;font-size:0.95rem;">${rupiah(d.omzet)}</strong>
               </div>
               <div class="card-subtitle-row">
-                <span><i class="fa-solid fa-receipt"></i> <strong>${formatNumber(d.trx)}</strong> transaksi</span>
-                <span><i class="fa-solid fa-box"></i> <strong>${formatNumber(d.items)}</strong> unit</span>
-                <span><i class="fa-solid fa-chart-line"></i> Laba: <b style="color:#059669;">${rupiah(d.profit)}</b></span>
+                <span><strong>${formatNumber(d.trx)}</strong> transaksi</span>
+                <span>•</span>
+                <span><strong>${formatNumber(d.items)}</strong> unit</span>
+                <span>•</span>
+                <span>Laba: <b style="color:#059669;">${rupiah(d.profit)}</b></span>
               </div>
             </div>
             <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
@@ -446,9 +448,12 @@ function renderSalesSubReport(salesList) {
                   </span>
                 </div>
                 <div class="card-subtitle-row">
-                  <span><i class="fa-solid fa-clock"></i> ${formatDateTime(s.at || s.createdAt)}</span>
-                  <span><i class="fa-solid fa-user"></i> ${escapeHtml(s.cashierName || s.cashier || 'Kasir')}</span>
-                  <span><i class="fa-solid fa-credit-card"></i> ${escapeHtml(s.paymentMethod || 'Cash')}</span>
+                  <span>${formatDateTime(s.at || s.createdAt)}</span>
+                  <span>•</span>
+                  <span>Kasir: ${escapeHtml(s.cashierName || s.cashier || 'Kasir')}</span>
+                  <span>•</span>
+                  <span>${escapeHtml(s.paymentMethod || 'Cash')}</span>
+                  <span>•</span>
                   <strong style="color:${isVoid ? '#dc2626' : '#059669'};font-size:0.95rem;">${rupiah(s.total)}</strong>
                 </div>
               </div>
@@ -587,9 +592,11 @@ function renderProductsSoldSubReport(completedSales, products) {
                   <strong style="color:#059669;font-size:0.95rem;">${rupiah(item.omzet)}</strong>
                 </div>
                 <div class="card-subtitle-row">
-                  <span><i class="fa-solid fa-barcode"></i> ${escapeHtml(item.code)}</span>
-                  <span><i class="fa-solid fa-boxes-stacked"></i> <strong>${formatNumber(item.qty)}</strong> unit terjual</span>
-                  <span><i class="fa-solid fa-chart-line"></i> Laba: <b style="color:#059669;">${rupiah(profit)}</b></span>
+                  <span>Kode: <strong>${escapeHtml(item.code)}</strong></span>
+                  <span>•</span>
+                  <span><strong>${formatNumber(item.qty)}</strong> unit terjual</span>
+                  <span>•</span>
+                  <span>Laba: <b style="color:#059669;">${rupiah(profit)}</b></span>
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
@@ -666,9 +673,12 @@ function renderInvoicesSubReport(invoices) {
                 </span>
               </div>
               <div class="card-subtitle-row">
-                <span><i class="fa-solid fa-building"></i> ${escapeHtml(inv.supplierName || inv.supplier || '—')}</span>
-                <span><i class="fa-solid fa-calendar"></i> ${inv.date || inv.invoiceDate || '—'}</span>
-                <span><i class="fa-solid fa-box"></i> ${(inv.items || []).length} item</span>
+                <span><strong>${escapeHtml(inv.supplierName || inv.supplier || '—')}</strong></span>
+                <span>•</span>
+                <span>${inv.date || inv.invoiceDate || '—'}</span>
+                <span>•</span>
+                <span>${(inv.items || []).length} item</span>
+                <span>•</span>
                 <strong style="color:#0284c7;font-size:0.95rem;">${rupiah(inv.total)}</strong>
               </div>
             </div>
@@ -777,9 +787,12 @@ function renderStockSubReport(products) {
                   ${statusBadge}
                 </div>
                 <div class="card-subtitle-row">
-                  <span><i class="fa-solid fa-barcode"></i> ${escapeHtml(code)}</span>
-                  <span><i class="fa-solid fa-tags"></i> ${escapeHtml(p["Kategori"] || '—')}</span>
-                  <span><i class="fa-solid fa-boxes-stacked"></i> <strong>${formatNumber(stock)}</strong> ${escapeHtml(p["Satuan Dasar"] || 'Pcs')}</span>
+                  <span>Kode: <strong>${escapeHtml(code)}</strong></span>
+                  <span>•</span>
+                  <span>${escapeHtml(p["Kategori"] || '—')}</span>
+                  <span>•</span>
+                  <span><strong>${formatNumber(stock)}</strong> ${escapeHtml(p["Satuan Dasar"] || 'Pcs')}</span>
+                  <span>•</span>
                   <strong style="color:#0284c7;font-size:0.95rem;">${rupiah(val)}</strong>
                 </div>
               </div>
@@ -876,9 +889,11 @@ function renderGoodsInSubReport(movements, invoices, start, end, q) {
                   <strong style="color:#059669;font-size:0.95rem;">+${formatNumber(qty)} unit</strong>
                 </div>
                 <div class="card-subtitle-row">
-                  <span><i class="fa-solid fa-file-invoice"></i> Ref: ${escapeHtml(m.reference || '—')}</span>
-                  <span><i class="fa-solid fa-barcode"></i> ${escapeHtml(m.productCode || '—')}</span>
-                  <span><i class="fa-solid fa-clock"></i> ${formatDateTime(m.createdAt || m.date)}</span>
+                  <span>Ref: <strong>${escapeHtml(m.reference || '—')}</strong></span>
+                  <span>•</span>
+                  <span>Kode: ${escapeHtml(m.productCode || '—')}</span>
+                  <span>•</span>
+                  <span>${formatDateTime(m.createdAt || m.date)}</span>
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
@@ -998,9 +1013,10 @@ function renderCashiersSubReport(completedSales, filteredSales, productsMap) {
                   <strong style="color:#059669;font-size:0.95rem;">${rupiah(c.omzet)}</strong>
                 </div>
                 <div class="card-subtitle-row">
-                  <span><i class="fa-solid fa-receipt"></i> <strong>${formatNumber(c.completedCount)}</strong> transaksi</span>
-                  <span><i class="fa-solid fa-box"></i> <strong>${formatNumber(c.unitCount)}</strong> unit</span>
-                  ${c.voidCount > 0 ? `<span><i class="fa-solid fa-ban" style="color:#ef4444;"></i> ${c.voidCount} VOID</span>` : ''}
+                  <span><strong>${formatNumber(c.completedCount)}</strong> transaksi</span>
+                  <span>•</span>
+                  <span><strong>${formatNumber(c.unitCount)}</strong> unit</span>
+                  ${c.voidCount > 0 ? `<span>•</span><span style="color:#ef4444;font-weight:700;">${c.voidCount} VOID</span>` : ''}
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>

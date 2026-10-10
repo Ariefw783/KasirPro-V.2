@@ -162,9 +162,6 @@ function renderTable() {
         return `
           <div class="responsive-data-card card-purple" data-code="${escapeHtml(code)}">
             <div class="card-accordion-header">
-              <div class="card-avatar" style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">
-                <i class="fa-solid fa-pills"></i>
-              </div>
               <div class="card-header-main">
                 <div class="card-title-row">
                   <div class="card-title">${escapeHtml(name)}</div>
