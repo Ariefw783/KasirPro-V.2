@@ -2030,3 +2030,27 @@ table.desktop-only-table,
     box-shadow: 0 2px 4px rgba(239, 68, 68, 0.15);
 }
 
+/* ==============================================================================
+   PRICING EXCEL ACTION BAR (EKSPOR/IMPOR RUMUS OTOMATIS)
+   ============================================================================== */
+.pricing-excel-banner {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pricing-excel-banner:hover {
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.12);
+}
+
+#btn-export-pricing-excel:hover {
+    background: #047857 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+}
+
+#btn-import-pricing-excel:hover {
+    background: #0369a1 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+}
+
+

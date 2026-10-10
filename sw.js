@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v112-cards-redesign";
+const CACHE_VERSION = "kasirpro-pwa-v113-pricing-excel";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

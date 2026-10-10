@@ -1,13 +1,13 @@
 {
-  "version": "2.2.59",
-  "build": "20261010.08",
-  "releaseDate": "10 Oktober 2026",
-  "title": "Clean Medical Responsive Cards Redesign",
-  "description": "Redesain menyeluruh kartu lipat adaptif menjadi layout bersih per baris dan kolom KPI strip.",
+  "version": "2.2.60",
+  "build": "20261011.01",
+  "releaseDate": "11 Oktober 2026",
+  "title": "Bulk Excel Pricing Auto Formulas",
+  "description": "Ekspor dan impor Excel khusus produk perlu harga jual dengan rumus otomatis multi-satuan.",
   "changelog": [
-    "Redesign adaptive card layouts",
-    "Add clean KPI data strips",
-    "Improve mobile desktop scannability",
-    "Update service worker cache v112"
+    "Add pricing excel export feature",
+    "Support multi unit auto formulas",
+    "Add owner excel pricing import",
+    "Update service worker cache v113"
   ]
 }

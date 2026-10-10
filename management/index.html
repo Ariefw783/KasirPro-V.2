@@ -14,10 +14,10 @@
     <link rel="icon" type="image/png" sizes="192x192" href="../assets/icon-192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="../assets/apple-touch-icon-180.png">
 
-    <link rel="stylesheet" href="management.css?v=20261010-v112">
-    <link rel="stylesheet" href="management-mobile.css?v=20261010-v112">
-    <link rel="stylesheet" href="../ui-modal.css?v=20261010-v112">
-    <link rel="stylesheet" href="../modules/diagnostic-reporter.css?v=20261010-v112">
+    <link rel="stylesheet" href="management.css?v=20261011-v113">
+    <link rel="stylesheet" href="management-mobile.css?v=20261011-v113">
+    <link rel="stylesheet" href="../ui-modal.css?v=20261011-v113">
+    <link rel="stylesheet" href="../modules/diagnostic-reporter.css?v=20261011-v113">
 
     <link
         rel="stylesheet"
@@ -1459,6 +1459,64 @@
         </section>
 
 
+        <!-- ACTION BAR EKSPOR & IMPOR EXCEL HARGA JUAL DENGAN RUMUS OTOMATIS -->
+        <section
+            id="pricing-excel-action-bar"
+            class="pricing-excel-banner"
+            style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border: 1px solid #a7f3d0; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.06); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;"
+        >
+            <div style="display: flex; align-items: center; gap: 12px; min-width: 260px;">
+                <div style="width: 40px; height: 40px; border-radius: 10px; background: #10b981; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);">
+                    <i class="fa-solid fa-file-excel"></i>
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: #065f46;">
+                            Alur Cepat Input Harga Jual Excel
+                        </h4>
+                        <span id="badge-pending-pricing-count" class="badge" style="background: #047857; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;">
+                            0 Perlu Harga
+                        </span>
+                    </div>
+                    <p style="margin: 3px 0 0; font-size: 12px; color: #047857; line-height: 1.4;">
+                        Download file Excel dengan rumus otomatis laba & kelipatan strip/box. Cukup isi di Excel lalu upload kembali agar obat langsung siap dijual di kasir POS.
+                    </p>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <button
+                    type="button"
+                    id="btn-export-pricing-excel"
+                    class="button button-success"
+                    style="background: #059669; color: #fff; border: 1px solid #047857; font-size: 12.5px; font-weight: 600; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; transition: all 0.15s ease;"
+                    title="Download Excel khusus produk yang belum memiliki harga jual lengkap dengan rumus otomatis"
+                >
+                    <i class="fa-solid fa-file-excel"></i>
+                    <span>Download Excel Perlu Harga</span>
+                </button>
+
+                <button
+                    type="button"
+                    id="btn-import-pricing-excel"
+                    class="button button-primary"
+                    style="background: #0284c7; color: #fff; border: 1px solid #0369a1; font-size: 12.5px; font-weight: 600; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; transition: all 0.15s ease;"
+                    title="Upload kembali file Excel yang sudah diisi harga jualnya oleh Owner"
+                >
+                    <i class="fa-solid fa-file-arrow-up"></i>
+                    <span>Upload & Terapkan Harga Jual</span>
+                </button>
+
+                <input
+                    type="file"
+                    id="input-import-pricing-excel"
+                    accept=".xlsx, .xls"
+                    style="display: none;"
+                >
+            </div>
+        </section>
+
+
         <!-- TABEL PRODUK -->
         <section class="import-panel" style="background:#fff;border-radius:12px;padding:16px 20px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
 
@@ -2572,7 +2630,7 @@
 </div>
 
 
-<script src="../pwa.js?v=20261010.05" defer></script>
+<script src="../pwa.js?v=20261011.01" defer></script>
 
 <script
     src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
@@ -2588,12 +2646,12 @@
 
 <script
     type="module"
-    src="../modules/diagnostic-reporter.js?v=20261010.08"
+    src="../modules/diagnostic-reporter.js?v=20261011.01"
 ></script>
 
 <script
     type="module"
-    src="management.js?v=20261010.08"
+    src="management.js?v=20261011.01"
 ></script>
 
 </body>

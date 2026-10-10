@@ -7,7 +7,7 @@
 import { num, text, norm, rupiah, INVOICE_TOLERANCE_RP, isWithinTolerance } from "../core/utils.js";
 
 function getXLSX() {
-  const x = window.XLSX;
+  const x = typeof window !== "undefined" ? window.XLSX : (typeof globalThis !== "undefined" ? globalThis.XLSX : null);
   if (!x) throw new Error("Pustaka SheetJS (XLSX) belum dimuat.");
   return x;
 }
@@ -319,6 +319,284 @@ export async function parseMasterWorkbook(file, currentMaster = {}) {
       { Properti: "Versi Master", Nilai: fileVersion },
       { Properti: "Format Template", Nilai: "Template_Master_KasirPro_V2" }
     ]
+  };
+}
+
+/**
+ * 2b. EXPORT KHUSUS PERLU HARGA JUAL DENGAN RUMUS OTOMATIS EXCEL MULTI-SATUAN
+ * ------------------------------------------------------------------------
+ * Menghasilkan file Excel dengan 11 kolom baku terstruktur dan sheet PANDUAN_OWNER:
+ * Kolom A: Kode Produk (Kunci pencocokan)
+ * Kolom B: Nama Produk
+ * Kolom C: Satuan Terkecil (Eceran: Kaplet, Botol, Tube, Sachet, Tablet, Pcs)
+ * Kolom D: Modal Terkecil (Rp) (Harga Beli Faktur / Total Konversi)
+ * Kolom E: Harga Jual Terkecil (Formula: ROUNDUP(D{row}*1.2,-2) atau angka manual)
+ * Kolom F: Satuan Sedang (Strip, Blister, Pack, atau -)
+ * Kolom G: Isi Satuan Sedang (Angka konversi sedang atau -)
+ * Kolom H: Harga Jual Sedang (Formula: E{row}*G{row} jika ada satuan sedang)
+ * Kolom I: Kemasan Beli (Box, Dus, Karton, Botol, dll)
+ * Kolom J: Total Isi Beli (Angka konversi kemasan beli ke satuan terkecil)
+ * Kolom K: Harga Jual Kemasan Beli (Formula: E{row}*J{row} jika ada kemasan beli)
+ */
+export function exportPricingWorkbook(items = []) {
+  const XLSX = getXLSX();
+  const wb = XLSX.utils.book_new();
+
+  const ts = getTimestampString();
+  const fileName = `KasirPro_Perlu_Harga_Jual_${ts}.xlsx`;
+
+  // 1. Sheet DAFTAR_HARGA
+  const headers = [
+    "Kode Produk",
+    "Nama Produk",
+    "Satuan Terkecil",
+    "Modal Terkecil (Rp)",
+    "Harga Jual Terkecil",
+    "Satuan Sedang",
+    "Isi Satuan Sedang",
+    "Harga Jual Sedang",
+    "Kemasan Beli",
+    "Total Isi Beli",
+    "Harga Jual Kemasan Beli"
+  ];
+
+  const rows = [headers];
+
+  items.forEach((p, idx) => {
+    const r = idx + 2; // Baris Excel (1-indexed, header baris 1)
+
+    const code = p["Kode Produk"] || p["Kode Produk Internal"] || p.id || "";
+    const name = p["Nama Produk"] || p.name || "";
+
+    // Satuan & Konversi
+    const baseUnit = String(p["Satuan Dasar"] || p["Satuan"] || "Pcs").trim();
+    const midUnit = String(p["Satuan Antara"] || "").trim();
+    const midQty = num(p["Isi Satuan Antara"] || 1);
+    const buyUnit = String(p["Kemasan Beli"] || p["Satuan Pembelian"] || "").trim();
+    const conversion = num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1);
+
+    const hasMid = Boolean(midUnit && norm(midUnit) !== norm(baseUnit) && midQty > 1);
+    const hasBuy = Boolean(buyUnit && norm(buyUnit) !== norm(baseUnit) && (!midUnit || norm(buyUnit) !== norm(midUnit)) && conversion > 1);
+
+    // Modal faktur fisik
+    const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
+    const modalTerkecil = Math.round(buyPrice / Math.max(1, conversion));
+
+    // Nilai awal harga jual
+    const existingSellBase = num(p["Harga Jual"]);
+    const defaultSellBase = existingSellBase > 0
+      ? existingSellBase
+      : (modalTerkecil > 0 ? Math.ceil((modalTerkecil * 1.2) / 100) * 100 : 0);
+
+    const existingSellMid = num(p["Harga Jual Satuan Sedang"]);
+    const defaultSellMid = existingSellMid > 0
+      ? existingSellMid
+      : (hasMid ? defaultSellBase * midQty : 0);
+
+    const existingSellBuy = num(p["Harga Jual Satuan Besar"]);
+    const defaultSellBuy = existingSellBuy > 0
+      ? existingSellBuy
+      : (hasBuy ? defaultSellBase * conversion : 0);
+
+    // Bangun cell formula SheetJS
+    const cellSellBase = {
+      t: "n",
+      v: defaultSellBase,
+      f: `ROUNDUP(D${r}*1.2,-2)`
+    };
+
+    const cellSellMid = hasMid
+      ? { t: "n", v: defaultSellMid, f: `E${r}*G${r}` }
+      : "-";
+
+    const cellSellBuy = hasBuy
+      ? { t: "n", v: defaultSellBuy, f: `E${r}*J${r}` }
+      : "-";
+
+    rows.push([
+      code,
+      name,
+      baseUnit,
+      modalTerkecil,
+      cellSellBase,
+      hasMid ? midUnit : "-",
+      hasMid ? midQty : "-",
+      cellSellMid,
+      hasBuy ? buyUnit : (buyUnit || baseUnit),
+      hasBuy ? conversion : "-",
+      cellSellBuy
+    ]);
+  });
+
+  const wsHarga = XLSX.utils.aoa_to_sheet(rows);
+
+  // Format lebar kolom optimal
+  wsHarga["!cols"] = [
+    { wch: 18 }, // A: Kode Produk
+    { wch: 38 }, // B: Nama Produk
+    { wch: 16 }, // C: Satuan Terkecil
+    { wch: 18 }, // D: Modal Terkecil (Rp)
+    { wch: 20 }, // E: Harga Jual Terkecil
+    { wch: 15 }, // F: Satuan Sedang
+    { wch: 16 }, // G: Isi Satuan Sedang
+    { wch: 18 }, // H: Harga Jual Sedang
+    { wch: 15 }, // I: Kemasan Beli
+    { wch: 15 }, // J: Total Isi Beli
+    { wch: 22 }  // K: Harga Jual Kemasan Beli
+  ];
+
+  XLSX.utils.book_append_sheet(wb, wsHarga, "DAFTAR_HARGA");
+
+  // 2. Sheet PANDUAN_OWNER
+  const guideRows = [
+    ["PANDUAN PENGISIAN HARGA JUAL OBAT - KASIRPRO V2"],
+    [""],
+    ["NO", "BAGIAN", "PETUNJUK LENGKAP UNTUK OWNER / PEMILIK APOTEK"],
+    [1, "Kolom E (Harga Jual Terkecil)", "Kolom ini adalah harga satuan eceran (Kaplet/Botol/Tablet/Pcs). Sistem sudah mengisi rumus otomatis laba 20% pembulatan ratusan (ROUNDUP(D*1.2,-2)). Anda bebas langsung mengetik nominal yang Anda inginkan (misal: 1500, 2000, 5000)."],
+    [2, "Kolom H (Harga Jual Sedang)", "Kolom ini otomatis menghitung kelipatan dari Kolom E (misal Strip = 10 x Harga Eceran). Jika Anda ingin memberi harga khusus per Strip, Anda cukup ketik langsung angkanya."],
+    [3, "Kolom K (Harga Jual Kemasan Beli)", "Kolom ini otomatis menghitung kelipatan Box/Dus dari Kolom E. Jika Anda ingin memberikan harga grosir yang lebih murah untuk pembelian 1 Box utuh, ketik langsung harga grosir tersebut."],
+    [4, "Kolom A (Kode Produk)", "JANGAN mengubah atau menghapus isi Kolom A. Kolom ini adalah kunci pencocokan otomatis sistem KasIRPro."],
+    [5, "Cara Simpan & Upload", "Setelah selesai mengisi, simpan file ini (Ctrl+S / Save). Lalu buka halaman Master Produk di KasirPro dan klik tombol 'Upload & Terapkan Harga Jual'. Produk akan langsung AKTIF dan bisa dijual di kasir POS!"]
+  ];
+
+  const wsGuide = XLSX.utils.aoa_to_sheet(guideRows);
+  wsGuide["!cols"] = [
+    { wch: 6 },
+    { wch: 32 },
+    { wch: 80 }
+  ];
+  XLSX.utils.book_append_sheet(wb, wsGuide, "PANDUAN_OWNER");
+
+  XLSX.writeFile(wb, fileName);
+  return { fileName, count: items.length };
+}
+
+/**
+ * 2c. PARSE & TERAPKAN HARGA JUAL DARI EXCEL OWNER
+ * ------------------------------------------------
+ * Membaca sheet DAFTAR_HARGA, mencocokkan kode produk,
+ * memperbarui harga multi-satuan, menyetel opsi jual dan satuan dijual,
+ * serta mengubah status produk menjadi Aktif (Siap Jual).
+ */
+export async function parsePricingWorkbook(file, currentMaster = {}) {
+  const XLSX = getXLSX();
+  const buffer = await file.arrayBuffer();
+  const wb = XLSX.read(buffer, { type: "array" });
+
+  const sheetName = wb.SheetNames.find(n => norm(n).includes("harga") || norm(n).includes("daftar")) || wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  if (!ws) {
+    throw new Error("Sheet daftar harga tidak ditemukan di dalam berkas Excel.");
+  }
+
+  const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+  if (!rows || rows.length === 0) {
+    throw new Error("Berkas Excel kosong atau tidak memiliki baris data harga jual.");
+  }
+
+  const currentProducts = Array.isArray(currentMaster.produk) ? currentMaster.produk : [];
+  const prodByCode = new Map();
+  const prodByName = new Map();
+  currentProducts.forEach(p => {
+    if (p._isDeleted) return;
+    const code = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
+    const name = norm(p["Nama Produk"] || p.name);
+    if (code) prodByCode.set(code, p);
+    if (name) prodByName.set(name, p);
+  });
+
+  const updatedProducts = [];
+  const errors = [];
+  let processedCount = 0;
+
+  for (const row of rows) {
+    const rawCode = text(row["Kode Produk"] || row["Kode Produk Internal"] || row["Kode"] || row.code);
+    const rawName = text(row["Nama Produk"] || row["Nama"] || row.name);
+
+    if (!rawCode && !rawName) continue;
+    processedCount++;
+
+    const code = norm(rawCode);
+    const name = norm(rawName);
+
+    // Cari produk di master (prioritas kode, fallback nama)
+    const target = (code ? prodByCode.get(code) : null) || (name ? prodByName.get(name) : null);
+    if (!target) {
+      errors.push(`Produk '${rawName || rawCode}' tidak ditemukan di Master Produk.`);
+      continue;
+    }
+
+    // Ambil harga dari baris Excel
+    let priceBase = num(row["Harga Jual Terkecil"] ?? row["Harga Jual"] ?? row["Harga Eceran"]);
+    let priceMid = num(row["Harga Jual Sedang"] ?? row["Harga Jual Satuan Sedang"]);
+    let priceBuy = num(row["Harga Jual Kemasan Beli"] ?? row["Harga Jual Satuan Besar"] ?? row["Harga Jual Besar"]);
+
+    const baseUnit = String(target["Satuan Dasar"] || target["Satuan"] || "Pcs").trim();
+    const midUnit = String(target["Satuan Antara"] || "").trim();
+    const midQty = num(target["Isi Satuan Antara"] || 1);
+    const buyUnit = String(target["Kemasan Beli"] || target["Satuan Pembelian"] || "").trim();
+    const conversion = num(target["Konversi"] ?? target["Isi Kemasan"] ?? 1);
+
+    const hasMid = Boolean(midUnit && norm(midUnit) !== norm(baseUnit) && midQty > 1);
+    const hasBuy = Boolean(buyUnit && norm(buyUnit) !== norm(baseUnit) && (!midUnit || norm(buyUnit) !== norm(midUnit)) && conversion > 1);
+
+    // Fallback kalkulasi jika harga dasar kosong tapi harga sedang/besar diisi
+    if (priceBase <= 0) {
+      if (priceMid > 0 && midQty > 1) {
+        priceBase = Math.round(priceMid / midQty);
+      } else if (priceBuy > 0 && conversion > 1) {
+        priceBase = Math.round(priceBuy / conversion);
+      }
+    }
+
+    if (priceBase <= 0) {
+      errors.push(`Produk '${target["Nama Produk"]}' dilewati karena harga jual belum diisi (> 0).`);
+      continue;
+    }
+
+    // Jika harga satuan sedang / besar kosong di Excel, hitung otomatis dari harga terkecil
+    if (hasMid && priceMid <= 0) {
+      priceMid = Math.round(priceBase * midQty);
+    }
+    if (hasBuy && priceBuy <= 0) {
+      priceBuy = Math.round(priceBase * conversion);
+    }
+
+    // Tentukan opsi jual & satuan dijual yang aktif
+    let mode = "1";
+    let allowedUnits = ["base"];
+
+    if (hasMid && hasBuy) {
+      mode = "3";
+      allowedUnits = ["base", "mid", "buy"];
+    } else if (hasBuy) {
+      mode = "2";
+      allowedUnits = ["base", "buy"];
+    } else if (hasMid) {
+      mode = "2";
+      allowedUnits = ["base", "mid"];
+    } else {
+      mode = "1";
+      allowedUnits = ["base"];
+    }
+
+    // Perbarui target produk
+    target["Harga Jual"] = priceBase;
+    target["Harga Jual Satuan Sedang"] = priceMid > 0 ? priceMid : 0;
+    target["Harga Jual Satuan Besar"] = priceBuy > 0 ? priceBuy : 0;
+    target["Opsi Jual"] = mode;
+    target["Satuan Dijual"] = allowedUnits;
+    target["Status"] = "Aktif";
+    target["Status Produk"] = "Aktif";
+
+    updatedProducts.push(target);
+  }
+
+  return {
+    updatedProducts,
+    totalProcessed: processedCount,
+    totalUpdated: updatedProducts.length,
+    errors
   };
 }
 

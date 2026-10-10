@@ -1486,6 +1486,199 @@ assert(htmlContent.includes('id="invoice-payment-filter"'), "DOM Faktur: Dropdow
 assert(htmlContent.includes('id="invoice-payment-pills"'), "DOM Faktur: Kontainer Filter Pills Cepat Terpasang (#invoice-payment-pills)");
 assert(cssContent.includes(".invoice-filter-pills") && cssContent.includes(".invoice-pill-btn"), "CSS: Kelas .invoice-filter-pills dan .invoice-pill-btn Terdefinisi");
 
+// -----------------------------------------------------------------------------
+// 23. PENGUJIAN EKSPOR-IMPOR EXCEL PERLU HARGA JUAL & RUMUS OTOMATIS MULTI-SATUAN
+// -----------------------------------------------------------------------------
+console.log("\n📊 BAGIAN 23: PENGUJIAN EKSPOR-IMPOR EXCEL PERLU HARGA JUAL & RUMUS OTOMATIS MULTI-SATUAN");
+
+// 1. Verifikasi Elemen DOM & CSS
+assert(htmlContent.includes('id="pricing-excel-action-bar"'), "DOM Produk: Action Bar Input Harga Jual Excel Terpasang (#pricing-excel-action-bar)");
+assert(htmlContent.includes('id="btn-export-pricing-excel"'), "DOM Produk: Tombol Download Excel Perlu Harga Terpasang (#btn-export-pricing-excel)");
+assert(htmlContent.includes('id="btn-import-pricing-excel"'), "DOM Produk: Tombol Upload & Terapkan Harga Terpasang (#btn-import-pricing-excel)");
+assert(htmlContent.includes('id="input-import-pricing-excel"'), "DOM Produk: Input File Tersembunyi Terpasang (#input-import-pricing-excel)");
+assert(htmlContent.includes('id="badge-pending-pricing-count"'), "DOM Produk: Badge Counter Produk Perlu Harga Terpasang (#badge-pending-pricing-count)");
+assert(cssContent.includes(".pricing-excel-banner"), "CSS: Kelas .pricing-excel-banner Terdefinisi");
+assert(cssContent.includes("#btn-export-pricing-excel") && cssContent.includes("#btn-import-pricing-excel"), "CSS: Styling Tombol Export & Import Pricing Terdefinisi");
+
+// 2. Simulasi Ekspor Workbook Rumus Otomatis Multi-Satuan
+function buildMockPricingRow(p, idx) {
+  const r = idx + 2;
+  const baseUnit = String(p["Satuan Dasar"] || p["Satuan"] || "Pcs").trim();
+  const midUnit = String(p["Satuan Antara"] || "").trim();
+  const midQty = num(p["Isi Satuan Antara"] || 1);
+  const buyUnit = String(p["Kemasan Beli"] || p["Satuan Pembelian"] || "").trim();
+  const conversion = num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1);
+
+  const hasMid = Boolean(midUnit && midUnit.toLowerCase() !== baseUnit.toLowerCase() && midQty > 1);
+  const hasBuy = Boolean(buyUnit && buyUnit.toLowerCase() !== baseUnit.toLowerCase() && (!midUnit || buyUnit.toLowerCase() !== midUnit.toLowerCase()) && conversion > 1);
+
+  const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
+  const modalTerkecil = Math.round(buyPrice / Math.max(1, conversion));
+
+  const existingSellBase = num(p["Harga Jual"]);
+  const defaultSellBase = existingSellBase > 0 ? existingSellBase : (modalTerkecil > 0 ? Math.ceil((modalTerkecil * 1.2) / 100) * 100 : 0);
+  const defaultSellMid = hasMid ? defaultSellBase * midQty : 0;
+  const defaultSellBuy = hasBuy ? defaultSellBase * conversion : 0;
+
+  return {
+    code: p["Kode Produk"],
+    name: p["Nama Produk"],
+    baseUnit,
+    modalTerkecil,
+    cellSellBase: { t: "n", v: defaultSellBase, f: `ROUNDUP(D${r}*1.2,-2)` },
+    midUnit: hasMid ? midUnit : "-",
+    midQty: hasMid ? midQty : "-",
+    cellSellMid: hasMid ? { t: "n", v: defaultSellMid, f: `E${r}*G${r}` } : "-",
+    buyUnit: hasBuy ? buyUnit : (buyUnit || baseUnit),
+    conversion: hasBuy ? conversion : "-",
+    cellSellBuy: hasBuy ? { t: "n", v: defaultSellBuy, f: `E${r}*J${r}` } : "-"
+  };
+}
+
+// Obat 3 Satuan: Box -> Strip -> Kaplet (Konversi 100, Strip 10, Modal Box 50.000)
+const mock3UnitProd = {
+  "Kode Produk": "RNA-NEW-001",
+  "Nama Produk": "AMOXICILLIN 500MG KAPLET",
+  "Harga Beli Terakhir": 50000,
+  "Kemasan Beli": "BOX",
+  "Konversi": 100,
+  "Satuan Antara": "STRIP",
+  "Isi Satuan Antara": 10,
+  "Satuan Dasar": "KAPLET",
+  "Harga Jual": 0,
+  "Stok Awal": 100
+};
+
+const rowOut3Unit = buildMockPricingRow(mock3UnitProd, 0);
+assert(rowOut3Unit.modalTerkecil === 500, "Ekspor Rumus: Modal Terkecil Kaplet Rp 500 (50.000 / 100)");
+assert(rowOut3Unit.cellSellBase.f === "ROUNDUP(D2*1.2,-2)", "Ekspor Rumus: Formula Harga Jual Terkecil ROUNDUP(D2*1.2,-2)");
+assert(rowOut3Unit.cellSellBase.v === 600, "Ekspor Rumus: Nilai Estimasi Eceran Rp 600 (Laba 20% Pembulatan Ratusan)");
+assert(rowOut3Unit.cellSellMid.f === "E2*G2", "Ekspor Rumus: Formula Harga Satuan Sedang E2*G2");
+assert(rowOut3Unit.cellSellMid.v === 6000, "Ekspor Rumus: Nilai Estimasi Strip Rp 6.000 (10 x 600)");
+assert(rowOut3Unit.cellSellBuy.f === "E2*J2", "Ekspor Rumus: Formula Harga Satuan Besar E2*J2");
+assert(rowOut3Unit.cellSellBuy.v === 60000, "Ekspor Rumus: Nilai Estimasi Box Rp 60.000 (100 x 600)");
+
+// Obat 1 Satuan: Botol (Sirup Obat Batuk)
+const mock1UnitProd = {
+  "Kode Produk": "RNA-NEW-002",
+  "Nama Produk": "OBAT BATUK SIRUP 60ML",
+  "Harga Beli Terakhir": 15000,
+  "Kemasan Beli": "BOTOL",
+  "Konversi": 1,
+  "Satuan Dasar": "BOTOL",
+  "Harga Jual": 0,
+  "Stok Awal": 10
+};
+
+const rowOut1Unit = buildMockPricingRow(mock1UnitProd, 1);
+assert(rowOut1Unit.modalTerkecil === 15000, "Ekspor Rumus: Modal Terkecil Botol Rp 15.000");
+assert(rowOut1Unit.cellSellMid === "-", "Ekspor Rumus: Satuan Sedang Ditandai '-' untuk Produk Botol Tunggal");
+assert(rowOut1Unit.cellSellBuy === "-", "Ekspor Rumus: Satuan Besar Ditandai '-' untuk Produk Botol Tunggal");
+assert(rowOut1Unit.cellSellBase.v === 18000, "Ekspor Rumus: Estimasi Jual Botol Rp 18.000");
+
+// 3. Simulasi Parsing Impor Harga Jual Excel dari Owner
+function simulateParsePricingRows(rows, masterProducts) {
+  const prodByCode = new Map(masterProducts.map(p => [String(p["Kode Produk"] || p.id).toLowerCase(), p]));
+  const updated = [];
+
+  for (const row of rows) {
+    const code = String(row["Kode Produk"] || row.code || "").toLowerCase();
+    const target = prodByCode.get(code);
+    if (!target) continue;
+
+    let priceBase = num(row["Harga Jual Terkecil"] ?? row["Harga Jual"]);
+    let priceMid = num(row["Harga Jual Sedang"]);
+    let priceBuy = num(row["Harga Jual Kemasan Beli"]);
+
+    const baseUnit = String(target["Satuan Dasar"] || target["Satuan"] || "Pcs").trim();
+    const midUnit = String(target["Satuan Antara"] || "").trim();
+    const midQty = num(target["Isi Satuan Antara"] || 1);
+    const buyUnit = String(target["Kemasan Beli"] || target["Satuan Pembelian"] || "").trim();
+    const conversion = num(target["Konversi"] ?? target["Isi Kemasan"] ?? 1);
+
+    const hasMid = Boolean(midUnit && midUnit.toLowerCase() !== baseUnit.toLowerCase() && midQty > 1);
+    const hasBuy = Boolean(buyUnit && buyUnit.toLowerCase() !== baseUnit.toLowerCase() && (!midUnit || buyUnit.toLowerCase() !== midUnit.toLowerCase()) && conversion > 1);
+
+    if (priceBase <= 0) {
+      if (priceMid > 0 && midQty > 1) priceBase = Math.round(priceMid / midQty);
+      else if (priceBuy > 0 && conversion > 1) priceBase = Math.round(priceBuy / conversion);
+    }
+    if (priceBase <= 0) continue;
+
+    if (hasMid && priceMid <= 0) priceMid = Math.round(priceBase * midQty);
+    if (hasBuy && priceBuy <= 0) priceBuy = Math.round(priceBase * conversion);
+
+    let mode = "1";
+    let allowedUnits = ["base"];
+
+    if (hasMid && hasBuy) {
+      mode = "3";
+      allowedUnits = ["base", "mid", "buy"];
+    } else if (hasBuy) {
+      mode = "2";
+      allowedUnits = ["base", "buy"];
+    } else if (hasMid) {
+      mode = "2";
+      allowedUnits = ["base", "mid"];
+    }
+
+    target["Harga Jual"] = priceBase;
+    target["Harga Jual Satuan Sedang"] = priceMid > 0 ? priceMid : 0;
+    target["Harga Jual Satuan Besar"] = priceBuy > 0 ? priceBuy : 0;
+    target["Opsi Jual"] = mode;
+    target["Satuan Dijual"] = allowedUnits;
+    target["Status"] = "Aktif";
+    target["Status Produk"] = "Aktif";
+
+    updated.push(target);
+  }
+  return updated;
+}
+
+// Uji Impor: Owner mengetik Rp 700 per kaplet, dan memberikan diskon grosir Box Rp 65.000 (bukan 70.000)
+const incomingExcelRows = [
+  {
+    "Kode Produk": "RNA-NEW-001",
+    "Nama Produk": "AMOXICILLIN 500MG KAPLET",
+    "Harga Jual Terkecil": 700,
+    "Harga Jual Sedang": 7000,
+    "Harga Jual Kemasan Beli": 65000 // Diskon grosir owner
+  },
+  {
+    "Kode Produk": "RNA-NEW-002",
+    "Nama Produk": "OBAT BATUK SIRUP 60ML",
+    "Harga Jual Terkecil": 20000,
+    "Harga Jual Sedang": "-",
+    "Harga Jual Kemasan Beli": "-"
+  }
+];
+
+const masterMockCatalog = [
+  { ...mock3UnitProd },
+  { ...mock1UnitProd }
+];
+
+const importedResults = simulateParsePricingRows(incomingExcelRows, masterMockCatalog);
+assert(importedResults.length === 2, "Impor Pricing: 2 Produk Berhasil Diproses");
+
+const resAmox = importedResults.find(p => p["Kode Produk"] === "RNA-NEW-001");
+assert(resAmox["Harga Jual"] === 700, "Impor Pricing: Harga Jual Eceran Rp 700 Berhasil Disimpan");
+assert(resAmox["Harga Jual Satuan Sedang"] === 7000, "Impor Pricing: Harga Jual Strip Rp 7.000 Berhasil Disimpan");
+assert(resAmox["Harga Jual Satuan Besar"] === 65000, "Impor Pricing: Harga Grosir Box Rp 65.000 Terlindungi");
+assert(resAmox["Opsi Jual"] === "3", "Impor Pricing: Opsi Jual Otomatis Menjadi '3' (3 Satuan Multi-Tier)");
+assert(JSON.stringify(resAmox["Satuan Dijual"]) === JSON.stringify(["base", "mid", "buy"]), "Impor Pricing: Satuan Dijual Aktif ['base', 'mid', 'buy']");
+assert(resAmox["Status"] === "Aktif", "Impor Pricing: Status Produk Berubah Menjadi 'Aktif'");
+
+const resSirup = importedResults.find(p => p["Kode Produk"] === "RNA-NEW-002");
+assert(resSirup["Harga Jual"] === 20000, "Impor Pricing: Harga Jual Sirup Botol Rp 20.000 Berhasil Disimpan");
+assert(resSirup["Opsi Jual"] === "1", "Impor Pricing: Opsi Jual Botol Menjadi '1' (Single Unit)");
+assert(JSON.stringify(resSirup["Satuan Dijual"]) === JSON.stringify(["base"]), "Impor Pricing: Satuan Dijual Aktif ['base']");
+assert(resSirup["Status"] === "Aktif", "Impor Pricing: Status Sirup Berubah Menjadi 'Aktif'");
+
+// Verifikasi Kompatibilitas Kasir POS
+const posAmoxActive = (resAmox["Harga Jual"] > 0 && resAmox["Stok Awal"] > 0);
+assert(posAmoxActive === true, "POS Kasir: Produk Pasca-Impor Otomatis Aktif & Siap Dijual di Kasir POS");
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

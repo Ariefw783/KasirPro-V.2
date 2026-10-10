@@ -16,7 +16,7 @@
 import { $, num, text, norm, rupiah, formatNumber, escapeHtml } from "../modules/core/utils.js";
 import { STORE_KEYS, readStore, writeMasterDelta, deleteMasterProduct, readCurrentStock } from "../modules/database/database-store.js";
 import { indexedDBStore, STORES } from "../modules/local/indexeddb-store.js";
-import { exportMasterData, parseMasterWorkbook } from "../modules/excel/excel-service.js";
+import { exportMasterData, parseMasterWorkbook, exportPricingWorkbook, parsePricingWorkbook } from "../modules/excel/excel-service.js";
 
 const PAGE_SIZE = 25;
 let currentPage = 1;
@@ -108,6 +108,13 @@ function bindEvents() {
   // Tombol Export Master Seluruh Data
   const exportBtn = $("export-master-button") || $("export-products");
   exportBtn?.addEventListener("click", handleExportMaster);
+
+  // Tombol Ekspor & Impor Khusus Perlu Harga Jual
+  $("btn-export-pricing-excel")?.addEventListener("click", handleExportPricingExcel);
+  $("btn-import-pricing-excel")?.addEventListener("click", () => {
+    $("input-import-pricing-excel")?.click();
+  });
+  $("input-import-pricing-excel")?.addEventListener("change", handleImportPricingExcel);
 
   // Modal Edit Harga Jual & Tambah Produk
   installEditPriceModal();
@@ -224,6 +231,7 @@ export function renderProducts() {
   applyFilters();
   syncProductStatusPills();
   updateSummaryKpis();
+  updatePricingActionBar();
 }
 
 function syncProductStatusPills() {
@@ -232,6 +240,7 @@ function syncProductStatusPills() {
     const s = norm(btn.dataset.status ?? "");
     btn.classList.toggle("active", s === currentVal);
   });
+  updatePricingActionBar();
 }
 
 function populateFilterDropdowns(master) {
@@ -779,6 +788,126 @@ export function handleExportMaster() {
   } catch (err) {
     console.error("[ExportMaster] Error exporting:", err);
     window.KasirProDialog?.error("Gagal Export Master", err.message || "Terjadi kesalahan saat membuat file Excel.");
+  }
+}
+
+/**
+ * Update UI dan Status Action Bar Khusus Perlu Harga Jual Excel
+ */
+export function updatePricingActionBar() {
+  const bar = $("pricing-excel-action-bar");
+  const badge = $("badge-pending-pricing-count");
+  if (!bar) return;
+
+  const invoiceLookup = getInvoiceLookupMap();
+  const pendingCount = currentProducts.filter(p => {
+    if (p._isDeleted) return false;
+    const code = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
+    const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
+    const sellPrice = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
+    return stock > 0 && sellPrice <= 0;
+  }).length;
+
+  if (badge) {
+    if (pendingCount > 0) {
+      badge.textContent = `${pendingCount} Perlu Harga Jual`;
+      badge.style.background = "#d97706";
+      badge.style.color = "#ffffff";
+    } else {
+      badge.textContent = "Semua Obat Sudah Berharga";
+      badge.style.background = "#059669";
+      badge.style.color = "#ffffff";
+    }
+  }
+
+  const statusVal = norm($("product-status-filter")?.value || "");
+  if (statusVal === "belum aktif" || statusVal === "perlu harga jual") {
+    bar.style.border = "2px solid #f59e0b";
+    bar.style.background = "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)";
+  } else {
+    bar.style.border = "1px solid #a7f3d0";
+    bar.style.background = "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)";
+  }
+}
+
+/**
+ * Handle Export Excel Khusus Perlu Harga Jual dengan Rumus Otomatis Multi-Satuan
+ */
+export function handleExportPricingExcel() {
+  try {
+    const master = readStore(STORE_KEYS.master, {});
+    const prods = Array.isArray(master.produk) ? master.produk : [];
+    if (!prods.length) {
+      window.KasirProDialog?.warning("Master Kosong", "Belum ada produk yang tersimpan.");
+      return;
+    }
+
+    const invoiceLookup = getInvoiceLookupMap();
+    // Prioritas 1: Produk yang membutuhkan harga jual (stok > 0 dan harga jual <= 0)
+    let targets = prods.filter(p => {
+      if (p._isDeleted) return false;
+      const code = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
+      const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
+      const sellPrice = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
+      return stock > 0 && sellPrice <= 0;
+    });
+
+    // Prioritas 2: Jika semua sudah berharga, ekspor produk yang sedang difilter atau semua produk berstok
+    if (targets.length === 0) {
+      if (filteredProducts.length > 0 && filteredProducts.length < prods.length) {
+        targets = filteredProducts;
+      } else {
+        targets = prods.filter(p => !p._isDeleted && Math.max(readCurrentStock(norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id)), num(p["Stok Awal"] ?? p.stock ?? 0)) > 0);
+        if (!targets.length) targets = prods.filter(p => !p._isDeleted);
+      }
+    }
+
+    // Pastikan data faktur (harga beli faktur, kemasan beli, satuan dasar) tersinkronisasi
+    targets.forEach(p => resolveProductInvoiceData(p, invoiceLookup));
+
+    const res = exportPricingWorkbook(targets);
+    window.KasirProDialog?.success(
+      "Export Excel Berhasil",
+      `Berhasil mengekspor ${res.count} produk ke berkas:\n${res.fileName}\n\nSilakan buka di Excel, tentukan harga jual, lalu upload kembali!`
+    );
+  } catch (err) {
+    console.error("[ExportPricing] Error exporting:", err);
+    window.KasirProDialog?.error("Gagal Export", err.message || "Terjadi kesalahan saat membuat file Excel harga jual.");
+  }
+}
+
+/**
+ * Handle Import Excel Harga Jual dari Owner (Update Opsi Multi-Satuan & Aktifkan Produk)
+ */
+export async function handleImportPricingExcel(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  try {
+    const master = readStore(STORE_KEYS.master, {});
+    const res = await parsePricingWorkbook(file, master);
+
+    if (res.updatedProducts.length === 0) {
+      window.KasirProDialog?.warning(
+        "Tidak Ada Data Diperbarui",
+        res.errors.length ? res.errors.slice(0, 3).join("\n") : "Tidak ada harga jual yang valid dalam berkas Excel."
+      );
+      return;
+    }
+
+    // Simpan pembaruan harga ke store (IndexedDB & Firebase)
+    await writeMasterDelta({ produk: res.updatedProducts });
+    renderProducts();
+
+    window.KasirProDialog?.success(
+      "Harga Jual Berhasil Diterapkan!",
+      `Berhasil memperbarui harga multi-satuan untuk ${res.totalUpdated} produk.\nStatus produk kini Aktif (Siap Jual) dan langsung aktif di meja kasir POS!`
+    );
+  } catch (err) {
+    console.error("[ImportPricing] Error importing:", err);
+    window.KasirProDialog?.error("Gagal Import", err.message || "Terjadi kesalahan saat memproses file Excel harga jual.");
+  } finally {
+    e.target.value = "";
   }
 }
 
