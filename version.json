@@ -1,13 +1,13 @@
 {
-  "version": "2.2.54",
-  "build": "20261010.03",
+  "version": "2.2.55",
+  "build": "20261010.04",
   "releaseDate": "10 Oktober 2026",
-  "title": "Universal Sleek Cards & Collapsed Match Accents",
-  "description": "Transformasi kartu input faktur universal di desktop, pewarnaan kartu saat diciutkan, dan eliminasi ikon mengganggu.",
+  "title": "Invoice Base Unit Sync & Intuitive Pricing",
+  "description": "Sinkronisasi mutlak satuan terkecil faktur ke produk dan penyederhanaan antarmuka atur harga jual tanpa simbol matematika.",
   "changelog": [
-    "Enable universal invoice cards desktop",
-    "Apply colored collapsed card accents",
-    "Remove cluttered distracting card icons",
-    "Update service worker cache v107"
+    "Sync invoice smallest base unit",
+    "Simplify tiered pricing selling terms",
+    "Remove confusing math equal signs",
+    "Update service worker cache v108"
   ]
 }

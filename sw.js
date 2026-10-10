@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v107-sleek-universal-cards";
+const CACHE_VERSION = "kasirpro-pwa-v108-sync-base-unit";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

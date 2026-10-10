@@ -259,6 +259,11 @@ export function reconcileProductsWithInvoices(products, invoices) {
         p["Satuan Pembelian"] = invMatch.purchaseUnit;
         p["Kemasan Beli"] = invMatch.purchaseUnit;
       }
+      // MUTLAK: Mengikuti satuan terkecil / dasar dari faktur pembelian
+      if (invMatch.baseUnit) {
+        p["Satuan Dasar"] = invMatch.baseUnit;
+        p["Satuan"] = invMatch.baseUnit;
+      }
       if (invMatch.conversionRatio > 1 || (!num(p["Konversi"]) && invMatch.conversionRatio)) {
         p["Konversi"] = invMatch.conversionRatio;
         p["Isi Kemasan"] = invMatch.conversionRatio;

@@ -1075,12 +1075,12 @@ assert(!cardClassList.includes("is-expanded"), "Accordion Toggle: Kartu Berhasil
 // -----------------------------------------------------------------------------
 console.log("\n🏷️ BAGIAN 19: PENGUJIAN FILTER PRODUK (KATEGORI & SUPPLIER) & MUTLAK SATUAN BESAR FAKTUR");
 
-// 1. Verifikasi Mutlak Satuan Besar Faktur Menggantikan Default Katalog Master
+// 1. Verifikasi Mutlak Satuan Besar & Satuan Terkecil Faktur Menggantikan Default Katalog Master
 const masterProductWithBox = {
   "Kode Produk": "PRD-OBAT-CAIR",
   "Nama Produk": "OBAT BATUK SIRUP 60ML",
-  "Satuan Dasar": "BOTOL",
-  "Satuan": "BOTOL",
+  "Satuan Dasar": "Pcs", // Master sebelumnya mencatat Pcs secara default
+  "Satuan": "Pcs",
   "Satuan Pembelian": "BOX", // Master sebelumnya mencatat BOX secara default
   "Kemasan Beli": "BOX",
   "Konversi": 1,
@@ -1096,13 +1096,14 @@ const invoiceWithBotol = {
       name: "OBAT BATUK SIRUP 60ML",
       buyPrice: 15000,
       purchaseUnit: "BOTOL", // Di faktur diinput BOTOL
+      baseUnit: "BOTOL",     // Di faktur diinput BOTOL (satuan terkecil)
       conversionRatio: 1
     }
   ]
 };
 
 // Simulasi rekonsiliasi database-store & management-products mutlak
-function reconcileInvoicePurchaseUnit(prod, invoices) {
+function reconcileInvoiceUnits(prod, invoices) {
   const invMap = new Map();
   invoices.forEach(inv => {
     (inv.items || []).forEach(it => {
@@ -1116,13 +1117,27 @@ function reconcileInvoicePurchaseUnit(prod, invoices) {
       prod["Satuan Pembelian"] = match.purchaseUnit;
       prod["Kemasan Beli"] = match.purchaseUnit;
     }
+    if (match.baseUnit) {
+      prod["Satuan Dasar"] = match.baseUnit;
+      prod["Satuan"] = match.baseUnit;
+    }
     if (match.buyPrice) prod["Harga Beli"] = match.buyPrice;
   }
 }
 
-reconcileInvoicePurchaseUnit(masterProductWithBox, [invoiceWithBotol]);
+reconcileInvoiceUnits(masterProductWithBox, [invoiceWithBotol]);
 assert(masterProductWithBox["Satuan Pembelian"] === "BOTOL", "Satuan Besar: Faktur 'BOTOL' Mengesampingkan Default 'BOX' Katalog Secara Mutlak");
 assert(masterProductWithBox["Kemasan Beli"] === "BOTOL", "Kemasan Beli: Ter-sinkronisasi Menjadi 'BOTOL' Mengikuti Data Faktur Asli");
+assert(masterProductWithBox["Satuan Dasar"] === "BOTOL", "Satuan Terkecil: Faktur 'BOTOL' Mengesampingkan Default 'Pcs' Katalog Secara Mutlak");
+assert(masterProductWithBox["Satuan"] === "BOTOL", "Satuan Dasar: Ter-sinkronisasi Menjadi 'BOTOL' Mengikuti Data Faktur Asli");
+
+// Verifikasi Format Konversi Alami Tanpa Simbol Persamaan Matematika (=)
+function formatPackagingConversion(buyUnit, baseUnit, conv) {
+  return conv > 1 ? `1 ${buyUnit} (isi ${conv} ${baseUnit})` : `${buyUnit || baseUnit}`;
+}
+const convText = formatPackagingConversion("BOX", "Kaplet", 100);
+assert(convText === "1 BOX (isi 100 Kaplet)", "Format Kemasan: Deskriptif Alami Tanpa Simbol Sama Dengan (=)");
+assert(!convText.includes("="), "Format Kemasan: Bersih dari Simbol Matematika =");
 
 // 2. Verifikasi Filter Kategori & Supplier pada Halaman Produk
 const testCatalogForFiltering = [

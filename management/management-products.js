@@ -134,11 +134,13 @@ export function getInvoiceLookupMap() {
         const itName = norm(it.name);
         const itBuyPrice = num(it.buyPrice);
         const purchaseUnit = String(it.purchaseUnit || it.satuanBesar || it.unit || "").trim();
+        const baseUnit = String(it.baseUnit || it.satuanTerkecil || "").trim();
         const conv = num(it.conversionRatio || it.conversion) || 1;
 
         const info = {
           buyPrice: itBuyPrice,
           purchaseUnit,
+          baseUnit,
           conversionRatio: conv,
           supplierName
         };
@@ -154,13 +156,14 @@ export function getInvoiceLookupMap() {
 
 /**
  * Resolusi harga beli fisik dan informasi kemasan dari histori faktur pembelian
- * Mengikuti data input faktur secara mutlak (termasuk satuan besar / kemasan beli).
+ * Mengikuti data input faktur secara mutlak (termasuk satuan besar / kemasan beli & satuan dasar/terkecil).
  * Menggunakan Index Hash Map O(1) untuk kecepatan pemuatan instan 0ms.
  */
 export function resolveProductInvoiceData(prod, lookup = null) {
-  if (!prod) return { buyPrice: 0, purchaseUnit: "", conversionRatio: 1, supplierName: "" };
+  if (!prod) return { buyPrice: 0, purchaseUnit: "", baseUnit: "", conversionRatio: 1, supplierName: "" };
   let buyPrice = num(prod["Harga Beli Terakhir"] ?? prod["Harga Beli"] ?? 0);
   let purchaseUnit = String(prod["Kemasan Beli"] || prod["Satuan Pembelian"] || "").trim();
+  let baseUnit = String(prod["Satuan Dasar"] || prod["Satuan"] || "").trim();
   let conversionRatio = num(prod["Konversi"] ?? prod["Isi Kemasan"] ?? 1);
   let supplierName = String(prod["Supplier"] || "").trim();
 
@@ -182,6 +185,12 @@ export function resolveProductInvoiceData(prod, lookup = null) {
       prod["Kemasan Beli"] = match.purchaseUnit;
       prod["Satuan Pembelian"] = match.purchaseUnit;
     }
+    // MUTLAK: Mengikuti satuan terkecil / dasar dari faktur pembelian
+    if (match.baseUnit) {
+      baseUnit = match.baseUnit;
+      prod["Satuan Dasar"] = match.baseUnit;
+      prod["Satuan"] = match.baseUnit;
+    }
     if (match.conversionRatio > 1 || (conversionRatio <= 1 && match.conversionRatio)) {
       conversionRatio = match.conversionRatio;
       prod["Konversi"] = match.conversionRatio;
@@ -193,7 +202,7 @@ export function resolveProductInvoiceData(prod, lookup = null) {
     }
   }
 
-  return { buyPrice, purchaseUnit, conversionRatio, supplierName };
+  return { buyPrice, purchaseUnit, baseUnit, conversionRatio, supplierName };
 }
 
 export function renderProducts() {
@@ -516,11 +525,11 @@ function renderTable() {
       const buyPrice = invData.buyPrice;
       const sellPrice = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
       const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
-      const unit = p["Satuan Dasar"] || p["Satuan"] || "Pcs";
+      const unit = invData.baseUnit || p["Satuan Dasar"] || p["Satuan"] || "Pcs";
       const buyUnit = invData.purchaseUnit || p["Kemasan Beli"] || p["Satuan Pembelian"] || unit;
       const conv = num(invData.conversionRatio) || num(p["Konversi"]) || 1;
       const unitLabel = norm(buyUnit) !== norm(unit) && conv > 1
-        ? `<strong>${escapeHtml(buyUnit)}</strong> <small class="text-muted">(1 ${escapeHtml(buyUnit)} = ${formatNumber(conv)} ${escapeHtml(unit)})</small>`
+        ? `<strong>${escapeHtml(buyUnit)}</strong> <small class="text-muted">(isi ${formatNumber(conv)} ${escapeHtml(unit)})</small>`
         : `<strong>${escapeHtml(buyUnit || unit)}</strong>`;
       const minStock = num(p["Stok Minimum"]);
       const rawStatus = p["Status"] || p["Status Produk"];
@@ -595,11 +604,11 @@ function renderTable() {
         const buyPrice = invData.buyPrice;
         const sellPrice = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
         const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
-        const unit = p["Satuan Dasar"] || p["Satuan"] || "Pcs";
+        const unit = invData.baseUnit || p["Satuan Dasar"] || p["Satuan"] || "Pcs";
         const buyUnit = invData.purchaseUnit || p["Kemasan Beli"] || p["Satuan Pembelian"] || unit;
         const conv = num(invData.conversionRatio) || num(p["Konversi"]) || 1;
         const unitLabel = norm(buyUnit) !== norm(unit) && conv > 1
-          ? `1 ${escapeHtml(buyUnit)} = ${formatNumber(conv)} ${escapeHtml(unit)}`
+          ? `1 ${escapeHtml(buyUnit)} (isi ${formatNumber(conv)} ${escapeHtml(unit)})`
           : `${escapeHtml(buyUnit || unit)}`;
         const minStock = num(p["Stok Minimum"]);
         const rawStatus = p["Status"] || p["Status Produk"];
@@ -880,8 +889,8 @@ function installEditPriceModal() {
       <section class="kp-dialog-v4__card" style="width:min(96vw,540px);max-height:92vh;overflow-y:auto;" role="dialog">
         <header style="padding:16px 20px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#0f172a;color:#fff;">
           <div>
-            <h2 style="font-size:16px;font-weight:800;margin:0;color:#f8fafc;"><i class="fa-solid fa-tags text-primary"></i> Atur Harga Jual Bertingkat</h2>
-            <p style="font-size:11px;color:#94a3b8;margin:2px 0 0;">Tentukan satuan konversi yang boleh dijual ke pembeli di kasir</p>
+            <h2 style="font-size:16px;font-weight:800;margin:0;color:#f8fafc;"><i class="fa-solid fa-tags text-primary"></i> Atur Harga Jual &amp; Kemasan</h2>
+            <p style="font-size:11px;color:#94a3b8;margin:2px 0 0;">Tentukan satuan yang boleh ditransaksikan di kasir (POS)</p>
           </div>
           <button type="button" id="close-modal-price" class="button button-small button-secondary" style="padding:4px 8px;color:#cbd5e1;" title="Tutup"><i class="fa-solid fa-xmark"></i></button>
         </header>
@@ -900,33 +909,33 @@ function installEditPriceModal() {
           <!-- Opsi Berapa Satuan Yang Dijual ke Pembeli -->
           <div style="background:#fff;padding:14px;border-radius:10px;border:1px solid #cbd5e1;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
             <label style="display:block;font-size:12px;font-weight:800;color:#0f172a;margin-bottom:8px;">
-              <i class="fa-solid fa-cart-shopping text-primary"></i> Opsi Satuan yang Ingin Dijual ke Pembeli (POS):
+              <i class="fa-solid fa-cart-shopping text-primary"></i> Pilihan Satuan Penjualan di Kasir (POS):
             </label>
             <div style="display:grid;gap:8px;">
               <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;font-weight:600;color:#334155;background:#f8fafc;padding:8px 10px;border-radius:6px;border:1px solid #e2e8f0;">
                 <input type="radio" name="price-selling-mode" value="1" checked style="accent-color:#2563eb;">
-                <span><strong>Hanya Jual 1 Satuan Konversi</strong> <span style="font-size:11px;color:#64748b;display:block;font-weight:400;">Input harga satuan pilihan, 2 satuan lainnya terisi otomatis</span></span>
+                <span><strong>Jual Satuan Eceran Saja</strong> <span style="font-size:11px;color:#64748b;display:block;font-weight:400;">Hanya menjual 1 jenis satuan pilihan di kasir (default eceran)</span></span>
               </label>
               <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;font-weight:600;color:#334155;background:#f8fafc;padding:8px 10px;border-radius:6px;border:1px solid #e2e8f0;">
                 <input type="radio" name="price-selling-mode" value="2" style="accent-color:#2563eb;">
-                <span><strong>Jual 2 Satuan Konversi</strong> <span style="font-size:11px;color:#64748b;display:block;font-weight:400;">Input 2 harga satuan pilihan, 1 satuan lainnya terisi otomatis</span></span>
+                <span><strong>Jual Eceran &amp; Grosir/Kemasan</strong> <span style="font-size:11px;color:#64748b;display:block;font-weight:400;">Menjual 2 pilihan satuan di kasir (misal eceran dan strip/box)</span></span>
               </label>
               <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;font-weight:600;color:#334155;background:#f8fafc;padding:8px 10px;border-radius:6px;border:1px solid #e2e8f0;">
                 <input type="radio" name="price-selling-mode" value="3" style="accent-color:#2563eb;">
-                <span><strong>Jual Semua (3 Satuan Konversi)</strong> <span style="font-size:11px;color:#64748b;display:block;font-weight:400;">Wajib mengisi harga jual dari ketiga satuan konversi</span></span>
+                <span><strong>Jual Semua Satuan Kemasan</strong> <span style="font-size:11px;color:#64748b;display:block;font-weight:400;">Menjual lengkap seluruh satuan (Eceran, Sedang, dan Box) di kasir</span></span>
               </label>
             </div>
 
             <!-- Selector Pilihan Satuan untuk Mode 1 -->
             <div id="box-mode-1-selector" style="margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0;">
-              <label style="display:block;font-size:11.5px;font-weight:700;color:#0369a1;margin-bottom:4px;">Pilih Satuan Tunggal Yang Boleh Dijual ke Pembeli:</label>
+              <label style="display:block;font-size:11.5px;font-weight:700;color:#0369a1;margin-bottom:4px;">Pilih Satuan yang Ingin Dijual di Kasir:</label>
               <select id="select-active-single-unit" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;font-weight:700;background:#fff;">
               </select>
             </div>
 
             <!-- Selector Pilihan Satuan untuk Mode 2 -->
             <div id="box-mode-2-selector" style="margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0;" hidden>
-              <label style="display:block;font-size:11.5px;font-weight:700;color:#0369a1;margin-bottom:4px;">Centang Tepat 2 Satuan Yang Boleh Dijual ke Pembeli:</label>
+              <label style="display:block;font-size:11.5px;font-weight:700;color:#0369a1;margin-bottom:4px;">Pilih Tepat 2 Satuan yang Ingin Dijual di Kasir:</label>
               <div id="checkboxes-dual-unit" style="display:flex;gap:12px;flex-wrap:wrap;">
               </div>
             </div>
@@ -938,9 +947,9 @@ function installEditPriceModal() {
             <div id="box-price-row-base">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                 <label id="label-edit-sell-price" style="font-size:12px;font-weight:700;color:#1e293b;">
-                  Harga Jual Satuan Terkecil / Ecer <span class="text-danger">*</span>
+                  Harga Eceran <span class="text-danger">*</span>
                 </label>
-                <span id="badge-auto-base" style="font-size:10px;padding:2px 8px;border-radius:4px;background:#e0f2fe;color:#0369a1;font-weight:700;" hidden><i class="fa-solid fa-calculator"></i> Terisi Otomatis (Perhitungan Satuan Terbesar Faktur)</span>
+                <span id="badge-auto-base" style="font-size:10px;padding:2px 8px;border-radius:4px;background:#e0f2fe;color:#0369a1;font-weight:700;" hidden><i class="fa-solid fa-calculator"></i> Dihitung Otomatis</span>
               </div>
               <div style="position:relative;">
                 <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-weight:700;color:#64748b;font-size:12.5px;">Rp</span>
@@ -953,9 +962,9 @@ function installEditPriceModal() {
             <div id="box-edit-price-mid">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                 <label id="label-edit-price-mid" style="font-size:12px;font-weight:700;color:#0369a1;">
-                  Harga Jual Satuan Sedang
+                  Harga Satuan Sedang
                 </label>
-                <span id="badge-auto-mid" style="font-size:10px;padding:2px 8px;border-radius:4px;background:#e0f2fe;color:#0369a1;font-weight:700;" hidden><i class="fa-solid fa-calculator"></i> Terisi Otomatis (Perhitungan Satuan Terbesar Faktur)</span>
+                <span id="badge-auto-mid" style="font-size:10px;padding:2px 8px;border-radius:4px;background:#e0f2fe;color:#0369a1;font-weight:700;" hidden><i class="fa-solid fa-calculator"></i> Dihitung Otomatis</span>
               </div>
               <div style="position:relative;">
                 <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-weight:700;color:#64748b;font-size:12.5px;">Rp</span>
@@ -968,9 +977,9 @@ function installEditPriceModal() {
             <div id="box-edit-price-buy">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                 <label id="label-edit-price-buy" style="font-size:12px;font-weight:700;color:#047857;">
-                  Harga Jual Satuan Besar
+                  Harga Satuan Besar
                 </label>
-                <span id="badge-auto-buy" style="font-size:10px;padding:2px 8px;border-radius:4px;background:#e0f2fe;color:#0369a1;font-weight:700;" hidden><i class="fa-solid fa-calculator"></i> Terisi Otomatis (Perhitungan Satuan Terbesar Faktur)</span>
+                <span id="badge-auto-buy" style="font-size:10px;padding:2px 8px;border-radius:4px;background:#e0f2fe;color:#0369a1;font-weight:700;" hidden><i class="fa-solid fa-calculator"></i> Dihitung Otomatis</span>
               </div>
               <div style="position:relative;">
                 <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-weight:700;color:#64748b;font-size:12.5px;">Rp</span>
@@ -1235,7 +1244,7 @@ function openEditPriceModal(prod) {
   const buyPrice = invData.buyPrice;
   $("price-modal-buy").textContent = rupiah(buyPrice);
 
-  const baseUnit = String(prod["Satuan Dasar"] || prod["Satuan"] || "Pcs").trim();
+  const baseUnit = String(invData.baseUnit || prod["Satuan Dasar"] || prod["Satuan"] || "Pcs").trim();
   const midUnit = String(prod["Satuan Antara"] || "").trim();
   const midQty = num(prod["Isi Satuan Antara"] || 1);
   const buyUnit = String(invData.purchaseUnit || prod["Kemasan Beli"] || prod["Satuan Pembelian"] || "").trim();
@@ -1260,12 +1269,12 @@ function openEditPriceModal(prod) {
   // Populate Selector Mode 1 (Single Unit)
   const selSingle = $("select-active-single-unit");
   if (selSingle) {
-    let opts = `<option value="base">Satuan Terkecil (${escapeHtml(baseUnit)})</option>`;
+    let opts = `<option value="base">Satuan Eceran (${escapeHtml(baseUnit)})</option>`;
     if (priceModalState.midUnit) {
-      opts += `<option value="mid">Satuan Sedang (${escapeHtml(priceModalState.midUnit)} - isi ${priceModalState.midQty} ${escapeHtml(baseUnit)})</option>`;
+      opts += `<option value="mid">Satuan Sedang (${escapeHtml(priceModalState.midUnit)} — isi ${priceModalState.midQty} ${escapeHtml(baseUnit)})</option>`;
     }
     if (priceModalState.buyUnit) {
-      opts += `<option value="buy">Satuan Besar (${escapeHtml(priceModalState.buyUnit)} - isi ${priceModalState.conversion} ${escapeHtml(baseUnit)})</option>`;
+      opts += `<option value="buy">Satuan Besar (${escapeHtml(priceModalState.buyUnit)} — isi ${priceModalState.conversion} ${escapeHtml(baseUnit)})</option>`;
     }
     selSingle.innerHTML = opts;
     selSingle.value = "base";
@@ -1277,18 +1286,18 @@ function openEditPriceModal(prod) {
     boxDual.innerHTML = `
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
         <input type="checkbox" class="chk-dual-unit" value="base" checked style="accent-color:#2563eb;">
-        <span>${escapeHtml(baseUnit)} (Terkecil)</span>
+        <span>${escapeHtml(baseUnit)} (Eceran)</span>
       </label>
       ${priceModalState.midUnit ? `
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
           <input type="checkbox" class="chk-dual-unit" value="mid" checked style="accent-color:#2563eb;">
-          <span>${escapeHtml(priceModalState.midUnit)} (Sedang)</span>
+          <span>${escapeHtml(priceModalState.midUnit)} (Sedang — isi ${priceModalState.midQty} ${escapeHtml(baseUnit)})</span>
         </label>
       ` : ''}
       ${priceModalState.buyUnit ? `
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
           <input type="checkbox" class="chk-dual-unit" value="buy" style="accent-color:#2563eb;">
-          <span>${escapeHtml(priceModalState.buyUnit)} (Besar)</span>
+          <span>${escapeHtml(priceModalState.buyUnit)} (Besar — isi ${priceModalState.conversion} ${escapeHtml(baseUnit)})</span>
         </label>
       ` : ''}
     `;
@@ -1313,22 +1322,22 @@ function openEditPriceModal(prod) {
     r.checked = r.value === priceModalState.mode;
   });
 
-  // Label & Nilai Awal Satuan Terkecil
-  $("label-edit-sell-price").innerHTML = `Harga Jual Satuan Terkecil / Ecer (<strong>${escapeHtml(baseUnit)}</strong>) <span class="text-danger">*</span>`;
+  // Label & Nilai Awal Satuan Terkecil / Ecer
+  $("label-edit-sell-price").innerHTML = `Harga Eceran (<strong>${escapeHtml(baseUnit)}</strong>) <span class="text-danger">*</span>`;
   const curBase = num(prod["Harga Jual"]);
   $("input-edit-sell-price").value = curBase > 0 ? formatNumber(curBase) : "";
-  if ($("hint-price-base")) $("hint-price-base").textContent = `Modal dasar: ${rupiah(Math.round(buyPrice / priceModalState.conversion))}`;
+  if ($("hint-price-base")) $("hint-price-base").textContent = `Modal beli faktur: ${rupiah(Math.round(buyPrice / priceModalState.conversion))} per ${baseUnit}`;
 
   // Satuan Sedang
   const midBox = $("box-edit-price-mid");
   if (midBox) {
     midBox.hidden = !priceModalState.midUnit;
     if (priceModalState.midUnit) {
-      $("label-edit-price-mid").innerHTML = `Harga Jual Satuan Sedang (<strong>${escapeHtml(priceModalState.midUnit)}</strong> - isi ${priceModalState.midQty} ${escapeHtml(baseUnit)})`;
+      $("label-edit-price-mid").innerHTML = `Harga Satuan Sedang (<strong>${escapeHtml(priceModalState.midUnit)}</strong> — isi ${priceModalState.midQty} ${escapeHtml(baseUnit)})`;
       const curMid = num(prod["Harga Jual Satuan Sedang"]);
       const initMid = curMid > 0 ? curMid : (curBase ? curBase * priceModalState.midQty : Math.round((buyPrice / priceModalState.conversion) * priceModalState.midQty));
       $("input-edit-price-mid").value = initMid > 0 ? formatNumber(initMid) : "";
-      if ($("hint-price-mid")) $("hint-price-mid").textContent = `Modal dasar: ${rupiah(Math.round((buyPrice / priceModalState.conversion) * priceModalState.midQty))}`;
+      if ($("hint-price-mid")) $("hint-price-mid").textContent = `Modal beli faktur: ${rupiah(Math.round((buyPrice / priceModalState.conversion) * priceModalState.midQty))} per ${priceModalState.midUnit}`;
     }
   }
 
@@ -1337,11 +1346,11 @@ function openEditPriceModal(prod) {
   if (buyBox) {
     buyBox.hidden = !priceModalState.buyUnit;
     if (priceModalState.buyUnit) {
-      $("label-edit-price-buy").innerHTML = `Harga Jual Satuan Besar (<strong>${escapeHtml(priceModalState.buyUnit)}</strong> - isi ${priceModalState.conversion} ${escapeHtml(baseUnit)})`;
+      $("label-edit-price-buy").innerHTML = `Harga Satuan Besar (<strong>${escapeHtml(priceModalState.buyUnit)}</strong> — isi ${priceModalState.conversion} ${escapeHtml(baseUnit)})`;
       const curBuy = num(prod["Harga Jual Satuan Besar"]);
       const initBuy = curBuy > 0 ? curBuy : (curBase ? curBase * priceModalState.conversion : buyPrice);
       $("input-edit-price-buy").value = initBuy > 0 ? formatNumber(initBuy) : "";
-      if ($("hint-price-buy")) $("hint-price-buy").textContent = `Modal faktur fisik: ${rupiah(buyPrice)}`;
+      if ($("hint-price-buy")) $("hint-price-buy").textContent = `Modal beli faktur: ${rupiah(buyPrice)} per ${priceModalState.buyUnit}`;
     }
   }
 
@@ -1464,6 +1473,15 @@ async function handleSavePriceModal() {
   target["Status"] = "Aktif";
   target["Status Produk"] = "Aktif";
 
+  if (priceModalState.baseUnit) {
+    target["Satuan Dasar"] = priceModalState.baseUnit;
+    target["Satuan"] = priceModalState.baseUnit;
+  }
+  if (priceModalState.buyUnit) {
+    target["Kemasan Beli"] = priceModalState.buyUnit;
+    target["Satuan Pembelian"] = priceModalState.buyUnit;
+  }
+
   if (priceModalState.buyPrice > 0) {
     if (!num(target["Harga Beli Terakhir"])) target["Harga Beli Terakhir"] = priceModalState.buyPrice;
     if (!num(target["Harga Beli"])) target["Harga Beli"] = priceModalState.buyPrice;
@@ -1477,8 +1495,8 @@ async function handleSavePriceModal() {
     closeEditPriceModal();
     renderProducts();
     window.KasirProDialog?.success(
-      "Harga Jual Bertingkat Disimpan",
-      `Harga jual ${target["Nama Produk"]} berhasil diperbarui (${allowedUnits.length} satuan aktif). Status produk kini Aktif.`
+      "Harga Jual Disimpan",
+      `Harga jual ${target["Nama Produk"]} berhasil diperbarui. Status produk kini Aktif (Siap Jual).`
     );
   } catch (err) {
     window.KasirProDialog?.error("Gagal Menyimpan", err.message);

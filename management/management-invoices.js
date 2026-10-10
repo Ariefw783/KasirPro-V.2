@@ -1905,7 +1905,7 @@ function showProductSuggestions(inputEl, idx, query) {
             <div style="color:#64748b;font-size:11px;display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;">
               <span>Kode: <strong>${escapeHtml(code)}</strong></span>
               <span>•</span>
-              <span style="color:#0284c7;">1 ${escapeHtml(buyUnit)} = ${conv} ${escapeHtml(baseUnit)}</span>
+              <span style="color:#0284c7;">${conv > 1 ? `1 ${escapeHtml(buyUnit)} (isi ${conv} ${escapeHtml(baseUnit)})` : `${escapeHtml(buyUnit || baseUnit)}`}</span>
               ${!isCurrentSup && pSup ? `<span style="color:#ca8a04;">(Supplier: ${escapeHtml(pSup)})</span>` : ''}
             </div>
           </div>
