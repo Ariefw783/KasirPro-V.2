@@ -627,14 +627,25 @@ function renderTable() {
                   <div class="card-title">${escapeHtml(name)}</div>
                   ${statusBadge}
                 </div>
-                <div class="card-subtitle-row">
-                  <span>Kode: <strong>${escapeHtml(code)}</strong></span>
-                  <span>•</span>
-                  <span style="color:#0284c7;font-weight:700;">Beli: ${rupiah(buyPrice)}</span>
-                  <span>•</span>
-                  <span style="color:#059669;font-weight:700;">Jual: ${sellPrice > 0 ? rupiah(sellPrice) : '<span style="color:#dc2626;">Rp0 (Wajib)</span>'}</span>
-                  <span>•</span>
-                  <span>Stok: <strong>${formatNumber(stock)}</strong> ${escapeHtml(unit)}</span>
+                <div class="card-meta-row">
+                  <span class="card-meta-code">${escapeHtml(code)}</span>
+                  <span class="card-meta-dot">•</span>
+                  <span class="card-meta-sub">${escapeHtml(cat || 'Umum')}</span>
+                  ${sup ? `<span class="card-meta-dot">•</span><span class="card-meta-sub">${escapeHtml(sup)}</span>` : ''}
+                </div>
+                <div class="card-kpi-strip">
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Modal Beli</span>
+                    <span class="kpi-strip-val val-buy">${rupiah(buyPrice)}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Harga Jual</span>
+                    <span class="kpi-strip-val val-sell ${sellPrice <= 0 ? 'text-danger' : ''}">${sellPrice > 0 ? rupiah(sellPrice) : 'Rp0 (Wajib)'}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Stok Aktual</span>
+                    <span class="kpi-strip-val val-stock ${stock <= 0 ? 'stock-empty' : ''}">${formatNumber(stock)} <small>${escapeHtml(unit)}</small></span>
+                  </div>
                 </div>
               </div>
               <div class="card-toggle-icon">

@@ -216,12 +216,23 @@ function renderUsersTable() {
                     ${escapeHtml(roleLabel)}
                   </span>
                 </div>
-                <div class="card-subtitle-row">
-                  <span>Username: <code>${escapeHtml(uname)}</code></span>
-                  <span>•</span>
-                  <span>${escapeHtml(phone)}</span>
-                  <span>•</span>
-                  <span class="badge ${isAktif ? 'badge-success' : 'badge-secondary'}" style="padding:2px 6px;border-radius:4px;font-size:10.5px;">${escapeHtml(statusLabel)}</span>
+                <div class="card-meta-row">
+                  <span class="card-meta-code">@${escapeHtml(uname)}</span>
+                  ${phone && phone !== '—' ? `<span class="card-meta-dot">•</span><span class="card-meta-sub">${escapeHtml(phone)}</span>` : ''}
+                </div>
+                <div class="card-kpi-strip">
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Hak Akses</span>
+                    <span class="kpi-strip-val">${escapeHtml(roleLabel)}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Status Akun</span>
+                    <span class="kpi-strip-val ${isAktif ? 'val-sell' : 'text-danger'}">${escapeHtml(statusLabel)}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Kontak HP</span>
+                    <span class="kpi-strip-val">${escapeHtml(phone || '—')}</span>
+                  </div>
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>

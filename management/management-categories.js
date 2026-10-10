@@ -169,9 +169,22 @@ function renderTable() {
                     ${isAktif ? 'Aktif' : 'Nonaktif'}
                   </span>
                 </div>
-                <div class="card-subtitle-row">
-                  <span>Kode: <strong>${escapeHtml(code)}</strong></span>
-                  ${desc ? `<span>• ${escapeHtml(desc)}</span>` : ''}
+                <div class="card-meta-row">
+                  <span class="card-meta-code">${escapeHtml(code)}</span>
+                </div>
+                <div class="card-kpi-strip">
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Kode Kategori</span>
+                    <span class="kpi-strip-val">${escapeHtml(code)}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Status</span>
+                    <span class="kpi-strip-val ${isAktif ? 'val-sell' : 'text-danger'}">${isAktif ? 'Aktif' : 'Nonaktif'}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Keterangan</span>
+                    <span class="kpi-strip-val">${escapeHtml(desc ? (desc.length > 20 ? desc.slice(0, 18) + '...' : desc) : '—')}</span>
+                  </div>
                 </div>
               </div>
               <div class="card-toggle-icon">

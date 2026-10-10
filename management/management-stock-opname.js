@@ -149,12 +149,22 @@ export function renderOpnameHistory() {
                     ${hasDiff ? `Selisih ${formatNumber(totalDiffQty)} unit` : 'Sesuai (0 Selisih)'}
                   </span>
                 </div>
-                <div class="card-subtitle-row">
-                  <span>${formatDateTime(sess.createdAt || sess.date)}</span>
-                  <span>•</span>
-                  <span>${(sess.items || []).length} produk</span>
-                  <span>•</span>
-                  <span>Selisih: <strong style="color:#d97706;">${rupiah(totalDiffVal)}</strong></span>
+                <div class="card-meta-row">
+                  <span class="card-meta-code"><i class="fa-regular fa-calendar" style="font-size:10px;"></i> ${formatDateTime(sess.createdAt || sess.date)}</span>
+                </div>
+                <div class="card-kpi-strip">
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Item Dihitung</span>
+                    <span class="kpi-strip-val">${(sess.items || []).length} Produk</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Selisih Unit</span>
+                    <span class="kpi-strip-val ${hasDiff ? 'text-warning' : 'val-sell'}">${formatNumber(totalDiffQty)} unit</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Nilai Selisih</span>
+                    <span class="kpi-strip-val ${hasDiff ? 'text-warning' : 'val-sell'}">${rupiah(totalDiffVal)}</span>
+                  </div>
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>

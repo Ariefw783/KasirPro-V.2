@@ -186,9 +186,23 @@ function renderTable() {
                     ${isAktif ? 'Aktif' : 'Nonaktif'}
                   </span>
                 </div>
-                <div class="card-subtitle-row">
-                  <span>PIC: <strong>${escapeHtml(pic)}</strong></span>
-                  ${phone ? `<span>•</span><span>${escapeHtml(phone)}</span>` : ''}
+                <div class="card-meta-row">
+                  <span class="card-meta-code"><i class="fa-solid fa-user-tie" style="font-size:10px;"></i> ${escapeHtml(pic || 'PIC')}</span>
+                  ${phone ? `<span class="card-meta-dot">•</span><span class="card-meta-sub"><i class="fa-solid fa-phone" style="font-size:10px;"></i> ${escapeHtml(phone)}</span>` : ''}
+                </div>
+                <div class="card-kpi-strip">
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Termin Bayar</span>
+                    <span class="kpi-strip-val">${escapeHtml(terms || 'COD / Net')}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Kontak Telp</span>
+                    <span class="kpi-strip-val">${escapeHtml(phone || '—')}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Status Mitra</span>
+                    <span class="kpi-strip-val ${isAktif ? 'val-sell' : 'text-danger'}">${isAktif ? 'Aktif' : 'Nonaktif'}</span>
+                  </div>
                 </div>
               </div>
               <div class="card-toggle-icon">

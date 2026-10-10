@@ -1,13 +1,13 @@
 {
-  "version": "2.2.58",
-  "build": "20261010.07",
+  "version": "2.2.59",
+  "build": "20261010.08",
   "releaseDate": "10 Oktober 2026",
-  "title": "Fix Dashboard Layout Hierarchy",
-  "description": "Perbaikan penutupan tag HTML toolbar dashboard desktop dan penyelarasan tata letak grid kartu keuangan.",
+  "title": "Clean Medical Responsive Cards Redesign",
+  "description": "Redesain menyeluruh kartu lipat adaptif menjadi layout bersih per baris dan kolom KPI strip.",
   "changelog": [
-    "Fix dashboard toolbar closing tag",
-    "Restore desktop grid card layout",
-    "Align alert banner full width",
-    "Update service worker cache v111"
+    "Redesign adaptive card layouts",
+    "Add clean KPI data strips",
+    "Improve mobile desktop scannability",
+    "Update service worker cache v112"
   ]
 }

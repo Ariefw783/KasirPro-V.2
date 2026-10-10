@@ -296,12 +296,24 @@ function renderStockTable() {
                   <span class="card-title">${escapeHtml(item.name)}</span>
                   ${getStockStatusBadge(item.status)}
                 </div>
-                <div class="card-subtitle-row">
-                  <span>Kode: <strong>${escapeHtml(item.code)}</strong></span>
-                  <span>•</span>
-                  <span>${escapeHtml(item.category || 'Umum')}</span>
-                  <span>•</span>
-                  <span>Stok: <strong>${formatNumber(item.stock)}</strong> ${escapeHtml(item.unit)}</span>
+                <div class="card-meta-row">
+                  <span class="card-meta-code">${escapeHtml(item.code)}</span>
+                  <span class="card-meta-dot">•</span>
+                  <span class="card-meta-sub">${escapeHtml(item.category || 'Umum')}</span>
+                </div>
+                <div class="card-kpi-strip">
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Stok Fisik</span>
+                    <span class="kpi-strip-val ${item.stock <= 0 ? 'stock-empty' : ''}">${formatNumber(item.stock)} <small>${escapeHtml(item.unit)}</small></span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Harga Beli</span>
+                    <span class="kpi-strip-val val-buy">${rupiah(item.unitBuyPrice)}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Nilai Aset</span>
+                    <span class="kpi-strip-val" style="color:#0284c7;">${rupiah(item.totalValue)}</span>
+                  </div>
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
@@ -463,12 +475,24 @@ function renderMovementTable() {
                   <span class="card-title">${escapeHtml(m.productName || m.productCode || 'Mutasi Stok')}</span>
                   <span class="badge ${isPositive ? 'badge-success' : 'badge-danger'}" style="font-weight:700;font-size:12px;padding:3px 8px;border-radius:6px;">${deltaStr}</span>
                 </div>
-                <div class="card-subtitle-row">
-                  <span><strong>${escapeHtml(m.type || 'Mutasi')}</strong></span>
-                  <span>•</span>
-                  <span>Ref: ${escapeHtml(m.reference || '—')}</span>
-                  <span>•</span>
-                  <span>${formatDateTime(m.createdAt || m.date)}</span>
+                <div class="card-meta-row">
+                  <span class="card-meta-code">${escapeHtml(m.type || 'Mutasi')}</span>
+                  <span class="card-meta-dot">•</span>
+                  <span class="card-meta-sub">${formatDateTime(m.createdAt || m.date)}</span>
+                </div>
+                <div class="card-kpi-strip">
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Perubahan</span>
+                    <span class="kpi-strip-val ${isPositive ? 'val-sell' : 'text-danger'}">${deltaStr}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Referensi</span>
+                    <span class="kpi-strip-val">${escapeHtml(m.reference || '—')}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Kode Item</span>
+                    <span class="kpi-strip-val">${escapeHtml(m.productCode || '—')}</span>
+                  </div>
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>

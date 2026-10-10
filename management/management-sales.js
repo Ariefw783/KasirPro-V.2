@@ -194,12 +194,24 @@ function renderSalesTable() {
                     ${isVoid ? 'VOID' : 'Selesai'}
                   </span>
                 </div>
-                <div class="card-subtitle-row">
-                  <span>${date}</span>
-                  <span>•</span>
-                  <span>Kasir: ${escapeHtml(cashier)}</span>
-                  <span>•</span>
-                  <span style="color:#059669;font-weight:700;">${rupiah(total)}</span>
+                <div class="card-meta-row">
+                  <span class="card-meta-code"><i class="fa-solid fa-user" style="font-size:10px;"></i> ${escapeHtml(cashier)}</span>
+                  <span class="card-meta-dot">•</span>
+                  <span class="card-meta-sub"><i class="fa-regular fa-clock" style="font-size:10px;"></i> ${date}</span>
+                </div>
+                <div class="card-kpi-strip">
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Total Omzet</span>
+                    <span class="kpi-strip-val ${isVoid ? 'text-danger' : 'val-sell'}">${rupiah(total)}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Metode Bayar</span>
+                    <span class="kpi-strip-val">${escapeHtml(pay)}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Item Produk</span>
+                    <span class="kpi-strip-val">${itemCount} Produk</span>
+                  </div>
                 </div>
               </div>
               <div class="card-toggle-icon">

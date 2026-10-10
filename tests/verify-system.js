@@ -1199,6 +1199,13 @@ assert(cssContent.includes(".responsive-data-card.card-primary:not(.is-expanded)
 
 // 4. Verifikasi Eliminasi Avatar Balok & Perampingan Kartu
 assert(cssContent.includes(".card-avatar") && cssContent.includes("display: none !important"), "Desain Ramping: Avatar Balok Kaku Berhasil Dieliminasi (.card-avatar display none)");
+assert(cssContent.includes(".card-meta-row") && cssContent.includes(".card-kpi-strip"), "Desain Lega: Komponen Baris Data (.card-meta-row) & KPI Strip (.card-kpi-strip) Terpasang");
+
+const prodsJsContent = fs.readFileSync(path.join(rootDir, "management", "management-products.js"), "utf-8");
+assert(prodsJsContent.includes("card-meta-row") && prodsJsContent.includes("card-kpi-strip"), "Template Kartu Produk: Menggunakan Layout Baris & Strip KPI yang Bernapas");
+
+const invsJsContent = fs.readFileSync(path.join(rootDir, "management", "management-invoices.js"), "utf-8");
+assert(invsJsContent.includes("card-meta-row") && invsJsContent.includes("card-kpi-strip"), "Template Kartu Faktur: Menggunakan Layout Baris & Strip KPI yang Bernapas");
 
 // -----------------------------------------------------------------------------
 // 21. PENGUJIAN PENAMAAN KODE PRODUK TAMBAH MANUAL [RNA-NEW-0XX]

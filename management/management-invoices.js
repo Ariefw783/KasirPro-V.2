@@ -661,13 +661,26 @@ function renderInvoicesTable() {
                   ${getInvoicePaymentBadge(payInfo)}
                 </div>
               </div>
-              <div class="card-subtitle-row">
-                <span><strong>${escapeHtml(sup)}</strong></span>
-                <span>•</span>
-                <span>${escapeHtml(date)}</span>
-                <span>•</span>
-                <span style="color:#0284c7;font-weight:700;">${rupiah(total)}</span>
-                ${reminderSubHtml}
+              <div class="card-meta-row">
+                <span class="card-meta-code"><i class="fa-solid fa-truck" style="font-size:10px;"></i> ${escapeHtml(sup)}</span>
+                <span class="card-meta-dot">•</span>
+                <span class="card-meta-sub"><i class="fa-regular fa-calendar" style="font-size:10px;"></i> ${escapeHtml(date)}</span>
+              </div>
+              <div class="card-kpi-strip">
+                <div class="kpi-strip-item">
+                  <span class="kpi-strip-label">Total Tagihan</span>
+                  <span class="kpi-strip-val val-buy">${rupiah(total)}</span>
+                </div>
+                <div class="kpi-strip-item">
+                  <span class="kpi-strip-label">Jumlah Item</span>
+                  <span class="kpi-strip-val">${itemCount} Produk</span>
+                </div>
+                <div class="kpi-strip-item">
+                  <span class="kpi-strip-label">${payInfo.isTempo ? 'Status Tempo' : 'Metode Bayar'}</span>
+                  <span class="kpi-strip-val ${payInfo.isTempo && !payInfo.isPaid && payInfo.dueState === 'overdue' ? 'text-danger' : (payInfo.isTempo && !payInfo.isPaid && payInfo.dueState === 'due_soon' ? 'text-warning' : '')}">
+                    ${payInfo.isTempo ? (payInfo.isPaid ? 'Lunas' : escapeHtml(payInfo.reminderText || inv.dueDate || 'Tempo')) : 'Tunai Lunas'}
+                  </span>
+                </div>
               </div>
             </div>
             <div class="card-toggle-icon">
@@ -1918,19 +1931,29 @@ function renderManualInvoiceItems() {
     return `
       <tr data-index="${idx}" class="manual-inv-row ${matchClass} ${isCollapsed ? 'is-collapsed' : 'is-expanded'}">
         <td class="col-mobile-header" data-index="${idx}">
-          <div class="mobile-row-header-left" style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">
-            <span class="mobile-row-badge" style="background:#0284c7;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;flex-shrink:0;">#${idx + 1}</span>
+          <div class="mobile-row-header-left" style="display:flex;align-items:flex-start;gap:8px;min-width:0;flex:1;">
+            <span class="mobile-row-badge" style="background:#0284c7;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;flex-shrink:0;margin-top:2px;">#${idx + 1}</span>
             <div style="min-width:0;flex:1;">
               <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                 <span class="mobile-row-title" style="font-size:12.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(item.name || '(Obat Baru)')}</span>
                 <span class="header-badge-wrapper">${headerBadgeHtml}</span>
               </div>
-              <div class="mobile-row-summary" style="font-size:11px;color:#475569;font-weight:600;margin-top:2px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
-                <span class="val-sup">${escapeHtml(itemSupName)}</span>
-                <span style="color:#cbd5e1;">•</span>
-                <span class="val-unit" style="color:#0284c7;">${escapeHtml(unitDisplay)}</span>
-                <span style="color:#cbd5e1;">•</span>
-                <strong class="val-subtotal" style="color:#0f172a;font-weight:800;">${rupiah(item.subtotal || 0)}</strong>
+              <div class="card-meta-row" style="margin-top:2px;margin-bottom:3px;">
+                <span class="card-meta-code val-sup">${escapeHtml(itemSupName)}</span>
+              </div>
+              <div class="card-kpi-strip manual-row-kpi" style="margin-top:4px;">
+                <div class="kpi-strip-item">
+                  <span class="kpi-strip-label">Satuan Beli</span>
+                  <span class="kpi-strip-val val-unit" style="color:#0284c7;">${escapeHtml(unitDisplay)}</span>
+                </div>
+                <div class="kpi-strip-item">
+                  <span class="kpi-strip-label">Harga Satuan</span>
+                  <span class="kpi-strip-val">${rupiah(item.buyPrice || 0)}</span>
+                </div>
+                <div class="kpi-strip-item">
+                  <span class="kpi-strip-label">Subtotal</span>
+                  <span class="kpi-strip-val val-subtotal" style="color:#0f172a;font-weight:800;">${rupiah(item.subtotal || 0)}</span>
+                </div>
               </div>
             </div>
           </div>

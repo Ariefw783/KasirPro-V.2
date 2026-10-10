@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v111-fix-dashboard-layout";
+const CACHE_VERSION = "kasirpro-pwa-v112-cards-redesign";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

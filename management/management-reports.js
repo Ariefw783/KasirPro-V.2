@@ -342,12 +342,22 @@ function renderDailySummary(completedSales, productsMap) {
                 <span class="card-title">${escapeHtml(d.dayLabel)}</span>
                 <strong style="color:#059669;font-size:0.95rem;">${rupiah(d.omzet)}</strong>
               </div>
-              <div class="card-subtitle-row">
-                <span><strong>${formatNumber(d.trx)}</strong> transaksi</span>
-                <span>•</span>
-                <span><strong>${formatNumber(d.items)}</strong> unit</span>
-                <span>•</span>
-                <span>Laba: <b style="color:#059669;">${rupiah(d.profit)}</b></span>
+              <div class="card-meta-row">
+                <span class="card-meta-code"><i class="fa-regular fa-calendar-days" style="font-size:10px;"></i> ${escapeHtml(d.dayLabel)}</span>
+              </div>
+              <div class="card-kpi-strip">
+                <div class="kpi-strip-item">
+                  <span class="kpi-strip-label">Total Omzet</span>
+                  <span class="kpi-strip-val val-sell">${rupiah(d.omzet)}</span>
+                </div>
+                <div class="kpi-strip-item">
+                  <span class="kpi-strip-label">Transaksi</span>
+                  <span class="kpi-strip-val">${formatNumber(d.trx)} Trx (${formatNumber(d.items)} unit)</span>
+                </div>
+                <div class="kpi-strip-item">
+                  <span class="kpi-strip-label">Estimasi Laba</span>
+                  <span class="kpi-strip-val val-buy">${rupiah(d.profit)}</span>
+                </div>
               </div>
             </div>
             <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
@@ -447,14 +457,24 @@ function renderSalesSubReport(salesList) {
                     ${isVoid ? 'VOID' : 'Selesai'}
                   </span>
                 </div>
-                <div class="card-subtitle-row">
-                  <span>${formatDateTime(s.at || s.createdAt)}</span>
-                  <span>•</span>
-                  <span>Kasir: ${escapeHtml(s.cashierName || s.cashier || 'Kasir')}</span>
-                  <span>•</span>
-                  <span>${escapeHtml(s.paymentMethod || 'Cash')}</span>
-                  <span>•</span>
-                  <strong style="color:${isVoid ? '#dc2626' : '#059669'};font-size:0.95rem;">${rupiah(s.total)}</strong>
+                <div class="card-meta-row">
+                  <span class="card-meta-code"><i class="fa-solid fa-user" style="font-size:10px;"></i> ${escapeHtml(s.cashierName || s.cashier || 'Kasir')}</span>
+                  <span class="card-meta-dot">•</span>
+                  <span class="card-meta-sub"><i class="fa-regular fa-clock" style="font-size:10px;"></i> ${formatDateTime(s.at || s.createdAt)}</span>
+                </div>
+                <div class="card-kpi-strip">
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Total Penjualan</span>
+                    <span class="kpi-strip-val ${isVoid ? 'text-danger' : 'val-sell'}">${rupiah(s.total)}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Metode Bayar</span>
+                    <span class="kpi-strip-val">${escapeHtml(s.paymentMethod || 'Cash')}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Total Qty</span>
+                    <span class="kpi-strip-val">${formatNumber(totalQty)} unit</span>
+                  </div>
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
@@ -591,12 +611,22 @@ function renderProductsSoldSubReport(completedSales, products) {
                   <span class="card-title">${escapeHtml(item.name)}</span>
                   <strong style="color:#059669;font-size:0.95rem;">${rupiah(item.omzet)}</strong>
                 </div>
-                <div class="card-subtitle-row">
-                  <span>Kode: <strong>${escapeHtml(item.code)}</strong></span>
-                  <span>•</span>
-                  <span><strong>${formatNumber(item.qty)}</strong> unit terjual</span>
-                  <span>•</span>
-                  <span>Laba: <b style="color:#059669;">${rupiah(profit)}</b></span>
+                <div class="card-meta-row">
+                  <span class="card-meta-code">${escapeHtml(item.code)}</span>
+                </div>
+                <div class="card-kpi-strip">
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Total Omzet</span>
+                    <span class="kpi-strip-val val-sell">${rupiah(item.omzet)}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Qty Terjual</span>
+                    <span class="kpi-strip-val">${formatNumber(item.qty)} unit</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Laba Bersih</span>
+                    <span class="kpi-strip-val val-buy">${rupiah(profit)}</span>
+                  </div>
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
@@ -672,14 +702,24 @@ function renderInvoicesSubReport(invoices) {
                   ${escapeHtml(inv.status || 'Terkonfirmasi')}
                 </span>
               </div>
-              <div class="card-subtitle-row">
-                <span><strong>${escapeHtml(inv.supplierName || inv.supplier || '—')}</strong></span>
-                <span>•</span>
-                <span>${inv.date || inv.invoiceDate || '—'}</span>
-                <span>•</span>
-                <span>${(inv.items || []).length} item</span>
-                <span>•</span>
-                <strong style="color:#0284c7;font-size:0.95rem;">${rupiah(inv.total)}</strong>
+              <div class="card-meta-row">
+                <span class="card-meta-code"><i class="fa-solid fa-truck" style="font-size:10px;"></i> ${escapeHtml(inv.supplierName || inv.supplier || '—')}</span>
+                <span class="card-meta-dot">•</span>
+                <span class="card-meta-sub"><i class="fa-regular fa-calendar" style="font-size:10px;"></i> ${inv.date || inv.invoiceDate || '—'}</span>
+              </div>
+              <div class="card-kpi-strip">
+                <div class="kpi-strip-item">
+                  <span class="kpi-strip-label">Total Faktur</span>
+                  <span class="kpi-strip-val val-buy">${rupiah(inv.total)}</span>
+                </div>
+                <div class="kpi-strip-item">
+                  <span class="kpi-strip-label">Jenis Item</span>
+                  <span class="kpi-strip-val">${(inv.items || []).length} Item</span>
+                </div>
+                <div class="kpi-strip-item">
+                  <span class="kpi-strip-label">Status</span>
+                  <span class="kpi-strip-val val-sell">${escapeHtml(inv.status || 'Terkonfirmasi')}</span>
+                </div>
               </div>
             </div>
             <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
@@ -786,14 +826,24 @@ function renderStockSubReport(products) {
                   <span class="card-title">${escapeHtml(p["Nama Produk"] || '—')}</span>
                   ${statusBadge}
                 </div>
-                <div class="card-subtitle-row">
-                  <span>Kode: <strong>${escapeHtml(code)}</strong></span>
-                  <span>•</span>
-                  <span>${escapeHtml(p["Kategori"] || '—')}</span>
-                  <span>•</span>
-                  <span><strong>${formatNumber(stock)}</strong> ${escapeHtml(p["Satuan Dasar"] || 'Pcs')}</span>
-                  <span>•</span>
-                  <strong style="color:#0284c7;font-size:0.95rem;">${rupiah(val)}</strong>
+                <div class="card-meta-row">
+                  <span class="card-meta-code">${escapeHtml(code)}</span>
+                  <span class="card-meta-dot">•</span>
+                  <span class="card-meta-sub">${escapeHtml(p["Kategori"] || '—')}</span>
+                </div>
+                <div class="card-kpi-strip">
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Stok Fisik</span>
+                    <span class="kpi-strip-val ${stock <= 0 ? 'stock-empty' : ''}">${formatNumber(stock)} <small>${escapeHtml(p["Satuan Dasar"] || 'Pcs')}</small></span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Nilai Aset</span>
+                    <span class="kpi-strip-val val-buy">${rupiah(val)}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Kategori</span>
+                    <span class="kpi-strip-val">${escapeHtml(p["Kategori"] || 'Umum')}</span>
+                  </div>
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
@@ -888,12 +938,24 @@ function renderGoodsInSubReport(movements, invoices, start, end, q) {
                   <span class="card-title">${escapeHtml(m.productName || 'Barang Masuk')}</span>
                   <strong style="color:#059669;font-size:0.95rem;">+${formatNumber(qty)} unit</strong>
                 </div>
-                <div class="card-subtitle-row">
-                  <span>Ref: <strong>${escapeHtml(m.reference || '—')}</strong></span>
-                  <span>•</span>
-                  <span>Kode: ${escapeHtml(m.productCode || '—')}</span>
-                  <span>•</span>
-                  <span>${formatDateTime(m.createdAt || m.date)}</span>
+                <div class="card-meta-row">
+                  <span class="card-meta-code">Ref: ${escapeHtml(m.reference || '—')}</span>
+                  <span class="card-meta-dot">•</span>
+                  <span class="card-meta-sub"><i class="fa-regular fa-clock" style="font-size:10px;"></i> ${formatDateTime(m.createdAt || m.date)}</span>
+                </div>
+                <div class="card-kpi-strip">
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Jumlah Masuk</span>
+                    <span class="kpi-strip-val val-sell">+${formatNumber(qty)} unit</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Kode Item</span>
+                    <span class="kpi-strip-val">${escapeHtml(m.productCode || '—')}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Referensi</span>
+                    <span class="kpi-strip-val">${escapeHtml(m.reference || '—')}</span>
+                  </div>
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
@@ -1012,11 +1074,22 @@ function renderCashiersSubReport(completedSales, filteredSales, productsMap) {
                   <span class="card-title">${escapeHtml(c.name)}</span>
                   <strong style="color:#059669;font-size:0.95rem;">${rupiah(c.omzet)}</strong>
                 </div>
-                <div class="card-subtitle-row">
-                  <span><strong>${formatNumber(c.completedCount)}</strong> transaksi</span>
-                  <span>•</span>
-                  <span><strong>${formatNumber(c.unitCount)}</strong> unit</span>
-                  ${c.voidCount > 0 ? `<span>•</span><span style="color:#ef4444;font-weight:700;">${c.voidCount} VOID</span>` : ''}
+                <div class="card-meta-row">
+                  <span class="card-meta-code"><i class="fa-solid fa-user-tie" style="font-size:10px;"></i> ${escapeHtml(c.name)}</span>
+                </div>
+                <div class="card-kpi-strip">
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Total Omzet</span>
+                    <span class="kpi-strip-val val-sell">${rupiah(c.omzet)}</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Trx Selesai</span>
+                    <span class="kpi-strip-val">${formatNumber(c.completedCount)} Trx (${formatNumber(c.unitCount)} unit)</span>
+                  </div>
+                  <div class="kpi-strip-item">
+                    <span class="kpi-strip-label">Status VOID</span>
+                    <span class="kpi-strip-val ${c.voidCount > 0 ? 'text-danger' : 'val-sell'}">${c.voidCount > 0 ? `${c.voidCount} VOID` : '0 VOID'}</span>
+                  </div>
                 </div>
               </div>
               <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
