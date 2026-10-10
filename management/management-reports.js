@@ -219,36 +219,312 @@ export function renderReports() {
     }
   }
 
-  // Render Panel Aktif
+  // Map master produk untuk lookup HPP
+  const productsMap = new Map();
+  products.forEach(p => productsMap.set(norm(p["Kode Produk"] || p.id), p));
+
+  // Hitung total estimasi laba kotor untuk KPI
+  let totalEstimatedProfit = 0;
+  completedSales.forEach(s => {
+    (s.items || []).forEach(it => {
+      const q = num(it.qty);
+      const sub = num(it.subtotal || (q * num(it.price)));
+      const pData = productsMap.get(norm(it.code || it.productCode));
+      const conv = num(pData?.["Konversi"] ?? pData?.["Isi Kemasan"] ?? 1) || 1;
+      const buyPrice = num(it.buyPrice ?? it.costPrice ?? pData?.["Harga Beli Terakhir"] ?? pData?.["Harga Beli"] ?? 0) / conv;
+      totalEstimatedProfit += (sub - (q * buyPrice));
+    });
+  });
+
+  const profitEl = $("report-profit");
+  if (profitEl) profitEl.textContent = rupiah(totalEstimatedProfit);
+
+  const periodLabelEl = $("report-period-label");
+  if (periodLabelEl) {
+    const pSelect = $("report-period");
+    periodLabelEl.textContent = pSelect?.selectedOptions?.[0]?.textContent || "Bulan Ini";
+  }
+
+  const lastUpdatedEl = $("report-last-updated");
+  if (lastUpdatedEl) {
+    lastUpdatedEl.textContent = `Diperbarui: ${formatDateTime(new Date())}`;
+  }
+
+  // Render Seluruh Panel Laporan (Tabel Tersembunyi + Kartu Adaptif Vertikal)
+  renderDailySummary(completedSales, productsMap);
   renderSalesSubReport(filteredSales);
   renderProductsSoldSubReport(completedSales, products);
-  renderInvoicesSubReport(filteredInvoices);
   renderStockSubReport(products);
+  renderGoodsInSubReport(movements, filteredInvoices, start, end, q);
+  renderInvoicesSubReport(filteredInvoices);
+  renderCashiersSubReport(completedSales, filteredSales, productsMap);
+}
+
+function bindCardAccordions(container) {
+  if (!container) return;
+  container.querySelectorAll(".card-accordion-header").forEach(header => {
+    header.addEventListener("click", () => {
+      const card = header.closest(".responsive-data-card");
+      if (card) card.classList.toggle("is-expanded");
+    });
+  });
+}
+
+function renderDailySummary(completedSales, productsMap) {
+  const tbody = $("report-daily-body");
+  const cardList = $("report-daily-cards");
+  const paymentListEl = $("report-payment-list");
+
+  const dayMap = new Map();
+  const paymentMap = new Map();
+  let totalOmzet = 0;
+
+  completedSales.forEach(s => {
+    const rawDate = s.at || s.createdAt;
+    const dObj = parseEntryDate(rawDate) || new Date();
+    const dateKey = dObj.toISOString().slice(0, 10);
+    const dayLabel = dObj.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+
+    const sTotal = num(s.total);
+    totalOmzet += sTotal;
+
+    let sItems = 0;
+    let sProfit = 0;
+    (s.items || []).forEach(it => {
+      const q = num(it.qty);
+      sItems += q;
+      const sub = num(it.subtotal || (q * num(it.price)));
+      const pData = productsMap?.get(norm(it.code || it.productCode));
+      const conv = num(pData?.["Konversi"] ?? pData?.["Isi Kemasan"] ?? 1) || 1;
+      const buyPrice = num(it.buyPrice ?? it.costPrice ?? pData?.["Harga Beli Terakhir"] ?? pData?.["Harga Beli"] ?? 0) / conv;
+      const hpp = q * buyPrice;
+      sProfit += (sub - hpp);
+    });
+
+    const dayData = dayMap.get(dateKey) || { dateKey, dayLabel, trx: 0, items: 0, omzet: 0, profit: 0 };
+    dayData.trx += 1;
+    dayData.items += sItems;
+    dayData.omzet += sTotal;
+    dayData.profit += sProfit;
+    dayMap.set(dateKey, dayData);
+
+    const pMethod = s.paymentMethod || "Cash";
+    paymentMap.set(pMethod, (paymentMap.get(pMethod) || 0) + sTotal);
+  });
+
+  const dayList = [...dayMap.values()].sort((a, b) => b.dateKey.localeCompare(a.dateKey));
+
+  if (tbody) {
+    if (!dayList.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:#94a3b8;">Belum ada data transaksi harian.</td></tr>`;
+    } else {
+      tbody.innerHTML = dayList.map(d => `
+        <tr>
+          <td><strong>${escapeHtml(d.dayLabel)}</strong></td>
+          <td>${formatNumber(d.trx)}</td>
+          <td>${formatNumber(d.items)}</td>
+          <td><strong>${rupiah(d.omzet)}</strong></td>
+          <td style="color:#059669;font-weight:700;">${rupiah(d.profit)}</td>
+        </tr>
+      `).join("");
+    }
+  }
+
+  if (cardList) {
+    if (!dayList.length) {
+      cardList.innerHTML = `<div style="text-align:center;padding:28px 16px;color:#94a3b8;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;"><i class="fa-solid fa-calendar-days" style="font-size:24px;margin-bottom:8px;display:block;"></i>Belum ada data transaksi harian.</div>`;
+    } else {
+      cardList.innerHTML = dayList.map(d => `
+        <div class="responsive-data-card card-success">
+          <div class="card-accordion-header" role="button" tabindex="0">
+            <div class="card-header-main">
+              <div class="card-title-row">
+                <span class="card-title">${escapeHtml(d.dayLabel)}</span>
+                <strong style="color:#059669;font-size:0.95rem;">${rupiah(d.omzet)}</strong>
+              </div>
+              <div class="card-subtitle-row">
+                <span><i class="fa-solid fa-receipt"></i> <strong>${formatNumber(d.trx)}</strong> transaksi</span>
+                <span><i class="fa-solid fa-box"></i> <strong>${formatNumber(d.items)}</strong> unit</span>
+                <span><i class="fa-solid fa-chart-line"></i> Laba: <b style="color:#059669;">${rupiah(d.profit)}</b></span>
+              </div>
+            </div>
+            <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
+          </div>
+          <div class="card-accordion-body">
+            <div class="card-detail-grid">
+              <div class="card-detail-item">
+                <span class="card-detail-label">Tanggal</span>
+                <span class="card-detail-value"><strong>${escapeHtml(d.dayLabel)}</strong></span>
+              </div>
+              <div class="card-detail-item">
+                <span class="card-detail-label">Jumlah Transaksi</span>
+                <span class="card-detail-value">${formatNumber(d.trx)} transaksi</span>
+              </div>
+              <div class="card-detail-item">
+                <span class="card-detail-label">Produk Terjual</span>
+                <span class="card-detail-value">${formatNumber(d.items)} unit</span>
+              </div>
+              <div class="card-detail-item">
+                <span class="card-detail-label">Total Omzet Bersih</span>
+                <span class="card-detail-value"><strong style="color:#0284c7;font-size:15px;">${rupiah(d.omzet)}</strong></span>
+              </div>
+              <div class="card-detail-item">
+                <span class="card-detail-label">Estimasi Laba Kotor</span>
+                <span class="card-detail-value"><strong style="color:#059669;font-size:15px;">${rupiah(d.profit)}</strong></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join("");
+      bindCardAccordions(cardList);
+    }
+  }
+
+  // Breakdown Metode Pembayaran
+  if (paymentListEl) {
+    if (!paymentMap.size) {
+      paymentListEl.innerHTML = `<div style="text-align:center;padding:20px;color:#94a3b8;font-size:13px;">Belum ada metode pembayaran tercatat.</div>`;
+    } else {
+      paymentListEl.innerHTML = [...paymentMap.entries()].map(([method, val]) => {
+        const pct = totalOmzet > 0 ? Math.round((val / totalOmzet) * 100) : 0;
+        return `
+          <div class="breakdown-item" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8fafc;border-radius:10px;margin-bottom:8px;border:1px solid #e2e8f0;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="badge badge-primary" style="padding:4px 8px;border-radius:6px;font-size:12px;font-weight:700;">${escapeHtml(method)}</span>
+              <span style="font-size:13px;color:#64748b;">${pct}%</span>
+            </div>
+            <strong style="color:#0f172a;font-size:14px;">${rupiah(val)}</strong>
+          </div>
+        `;
+      }).join("");
+    }
+  }
 }
 
 function renderSalesSubReport(salesList) {
   const tbody = $("report-sales-body");
-  if (!tbody) return;
+  const cardList = $("report-sales-cards");
 
-  tbody.innerHTML = salesList.map(s => `
-    <tr>
-      <td>${formatDateTime(s.at || s.createdAt)}</td>
-      <td><strong>${escapeHtml(s.transactionNumber || s.id)}</strong></td>
-      <td>${escapeHtml(s.cashierName || s.cashier || 'Kasir')}</td>
-      <td>${escapeHtml(s.paymentMethod || 'Cash')}</td>
-      <td>${(s.items || []).length}</td>
-      <td>${rupiah(s.subtotal || s.total)}</td>
-      <td>${rupiah(s.transactionDiscount || 0)}</td>
-      <td>${rupiah(s.tax || 0)}</td>
-      <td><strong>${rupiah(s.total)}</strong></td>
-      <td>${norm(s.status) === 'void' ? '<span class="text-danger font-bold">VOID</span>' : 'Selesai'}</td>
-    </tr>
-  `).join("");
+  if (tbody) {
+    if (!salesList.length) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:24px;color:#94a3b8;">Tidak ada transaksi penjualan pada periode terpilih.</td></tr>`;
+    } else {
+      tbody.innerHTML = salesList.map(s => `
+        <tr>
+          <td>${formatDateTime(s.at || s.createdAt)}</td>
+          <td><strong>${escapeHtml(s.transactionNumber || s.id)}</strong></td>
+          <td>${escapeHtml(s.cashierName || s.cashier || 'Kasir')}</td>
+          <td>${escapeHtml(s.paymentMethod || 'Cash')}</td>
+          <td>${(s.items || []).length}</td>
+          <td>${rupiah(s.subtotal || s.total)}</td>
+          <td>${rupiah(s.transactionDiscount || 0)}</td>
+          <td>${rupiah(s.tax || 0)}</td>
+          <td><strong>${rupiah(s.total)}</strong></td>
+          <td>${norm(s.status) === 'void' ? '<span class="text-danger font-bold">VOID</span>' : 'Selesai'}</td>
+        </tr>
+      `).join("");
+    }
+  }
+
+  if (cardList) {
+    if (!salesList.length) {
+      cardList.innerHTML = `<div style="text-align:center;padding:28px 16px;color:#94a3b8;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;"><i class="fa-solid fa-receipt" style="font-size:24px;margin-bottom:8px;display:block;"></i>Tidak ada transaksi penjualan pada periode terpilih.</div>`;
+    } else {
+      cardList.innerHTML = salesList.map(s => {
+        const isVoid = norm(s.status) === "void";
+        const accentClass = isVoid ? "card-danger" : "card-success";
+        const totalQty = (s.items || []).reduce((sum, it) => sum + num(it.qty), 0);
+
+        return `
+          <div class="responsive-data-card ${accentClass}">
+            <div class="card-accordion-header" role="button" tabindex="0">
+              <div class="card-header-main">
+                <div class="card-title-row">
+                  <span class="card-title">${escapeHtml(s.transactionNumber || s.id)}</span>
+                  <span class="badge ${isVoid ? 'badge-danger' : 'badge-success'}" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;">
+                    ${isVoid ? 'VOID' : 'Selesai'}
+                  </span>
+                </div>
+                <div class="card-subtitle-row">
+                  <span><i class="fa-solid fa-clock"></i> ${formatDateTime(s.at || s.createdAt)}</span>
+                  <span><i class="fa-solid fa-user"></i> ${escapeHtml(s.cashierName || s.cashier || 'Kasir')}</span>
+                  <span><i class="fa-solid fa-credit-card"></i> ${escapeHtml(s.paymentMethod || 'Cash')}</span>
+                  <strong style="color:${isVoid ? '#dc2626' : '#059669'};font-size:0.95rem;">${rupiah(s.total)}</strong>
+                </div>
+              </div>
+              <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </div>
+            <div class="card-accordion-body">
+              <div class="card-detail-grid">
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Nomor Transaksi</span>
+                  <span class="card-detail-value"><strong>${escapeHtml(s.transactionNumber || s.id)}</strong></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Waktu Transaksi</span>
+                  <span class="card-detail-value">${formatDateTime(s.at || s.createdAt)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Kasir</span>
+                  <span class="card-detail-value">${escapeHtml(s.cashierName || s.cashier || 'Kasir')}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Metode Pembayaran</span>
+                  <span class="card-detail-value">${escapeHtml(s.paymentMethod || 'Cash')}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Jumlah Produk</span>
+                  <span class="card-detail-value">${(s.items || []).length} jenis (${totalQty} unit)</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Subtotal</span>
+                  <span class="card-detail-value">${rupiah(s.subtotal || s.total)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Diskon Transaksi</span>
+                  <span class="card-detail-value">${rupiah(s.transactionDiscount || 0)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Pajak (PPN)</span>
+                  <span class="card-detail-value">${rupiah(s.tax || 0)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Total Pembayaran</span>
+                  <span class="card-detail-value"><strong style="color:#0284c7;font-size:15px;">${rupiah(s.total)}</strong></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Status Transaksi</span>
+                  <span class="card-detail-value"><span class="badge ${isVoid ? 'badge-danger' : 'badge-success'}" style="padding:2px 6px;border-radius:4px;font-size:11px;">${isVoid ? 'VOID' : 'Selesai'}</span></span>
+                </div>
+              </div>
+              ${(s.items && s.items.length) ? `
+                <div style="margin-top:14px;padding-top:12px;border-top:1px dashed #e2e8f0;">
+                  <strong style="font-size:12px;color:#475569;display:block;margin-bottom:8px;"><i class="fa-solid fa-list-check"></i> Rincian Item:</strong>
+                  <div style="display:flex;flex-direction:column;gap:6px;">
+                    ${s.items.map(it => `
+                      <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;padding:6px 10px;border-radius:6px;border:1px solid #f1f5f9;font-size:12px;">
+                        <span><strong>${escapeHtml(it.name || it.productName || '—')}</strong> <small style="color:#64748b;">(${formatNumber(it.qty)} x ${rupiah(it.price || it.unitPrice || 0)})</small></span>
+                        <strong>${rupiah(it.subtotal || (num(it.qty) * num(it.price)))}</strong>
+                      </div>
+                    `).join("")}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join("");
+      bindCardAccordions(cardList);
+    }
+  }
 }
 
 function renderProductsSoldSubReport(completedSales, products) {
   const tbody = $("report-products-body");
-  if (!tbody) return;
+  const cardList = $("report-products-cards");
+
+  const productsMap = new Map();
+  products.forEach(p => productsMap.set(norm(p["Kode Produk"] || p.id), p));
 
   const soldMap = new Map();
   completedSales.forEach(s => {
@@ -258,74 +534,515 @@ function renderProductsSoldSubReport(completedSales, products) {
         code: it.code || it.productCode || "—",
         name: it.name || it.productName || "—",
         qty: 0,
-        omzet: 0
+        omzet: 0,
+        cost: 0
       };
-      existing.qty += num(it.qty);
-      existing.omzet += num(it.subtotal || (num(it.qty) * num(it.price)));
+      const q = num(it.qty);
+      const sub = num(it.subtotal || (q * num(it.price)));
+      const pData = productsMap.get(code);
+      const conv = num(pData?.["Konversi"] ?? pData?.["Isi Kemasan"] ?? 1) || 1;
+      const buyPrice = num(it.buyPrice ?? it.costPrice ?? pData?.["Harga Beli Terakhir"] ?? pData?.["Harga Beli"] ?? 0) / conv;
+
+      existing.qty += q;
+      existing.omzet += sub;
+      existing.cost += (q * buyPrice);
       soldMap.set(code, existing);
     });
   });
 
   const list = [...soldMap.values()].sort((a, b) => b.omzet - a.omzet);
 
-  tbody.innerHTML = list.map(item => `
-    <tr>
-      <td>${escapeHtml(item.code)}</td>
-      <td><strong>${escapeHtml(item.name)}</strong></td>
-      <td>${formatNumber(item.qty)}</td>
-      <td><strong>${rupiah(item.omzet)}</strong></td>
-      <td>—</td>
-      <td>—</td>
-    </tr>
-  `).join("");
+  const countEl = $("report-products-count");
+  if (countEl) countEl.textContent = `${list.length} produk`;
+
+  if (tbody) {
+    if (!list.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#94a3b8;">Belum ada produk terjual pada periode terpilih.</td></tr>`;
+    } else {
+      tbody.innerHTML = list.map(item => `
+        <tr>
+          <td>${escapeHtml(item.code)}</td>
+          <td><strong>${escapeHtml(item.name)}</strong></td>
+          <td>${formatNumber(item.qty)}</td>
+          <td><strong>${rupiah(item.omzet)}</strong></td>
+          <td>${rupiah(item.cost)}</td>
+          <td style="color:#059669;font-weight:700;">${rupiah(item.omzet - item.cost)}</td>
+        </tr>
+      `).join("");
+    }
+  }
+
+  if (cardList) {
+    if (!list.length) {
+      cardList.innerHTML = `<div style="text-align:center;padding:28px 16px;color:#94a3b8;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;"><i class="fa-solid fa-box" style="font-size:24px;margin-bottom:8px;display:block;"></i>Belum ada produk terjual pada periode terpilih.</div>`;
+    } else {
+      cardList.innerHTML = list.map(item => {
+        const profit = item.omzet - item.cost;
+        return `
+          <div class="responsive-data-card card-purple">
+            <div class="card-accordion-header" role="button" tabindex="0">
+              <div class="card-header-main">
+                <div class="card-title-row">
+                  <span class="card-title">${escapeHtml(item.name)}</span>
+                  <strong style="color:#059669;font-size:0.95rem;">${rupiah(item.omzet)}</strong>
+                </div>
+                <div class="card-subtitle-row">
+                  <span><i class="fa-solid fa-barcode"></i> ${escapeHtml(item.code)}</span>
+                  <span><i class="fa-solid fa-boxes-stacked"></i> <strong>${formatNumber(item.qty)}</strong> unit terjual</span>
+                  <span><i class="fa-solid fa-chart-line"></i> Laba: <b style="color:#059669;">${rupiah(profit)}</b></span>
+                </div>
+              </div>
+              <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </div>
+            <div class="card-accordion-body">
+              <div class="card-detail-grid">
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Kode Produk</span>
+                  <span class="card-detail-value"><code>${escapeHtml(item.code)}</code></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Nama Produk</span>
+                  <span class="card-detail-value"><strong>${escapeHtml(item.name)}</strong></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Kuantitas Terjual</span>
+                  <span class="card-detail-value">${formatNumber(item.qty)} unit</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Total Omzet Bersih</span>
+                  <span class="card-detail-value"><strong style="color:#0284c7;font-size:15px;">${rupiah(item.omzet)}</strong></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Estimasi Total HPP</span>
+                  <span class="card-detail-value">${rupiah(item.cost)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Estimasi Laba Kotor</span>
+                  <span class="card-detail-value"><strong style="color:#059669;font-size:15px;">${rupiah(profit)}</strong></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+      bindCardAccordions(cardList);
+    }
+  }
 }
 
 function renderInvoicesSubReport(invoices) {
   const tbody = $("report-invoices-body");
-  if (!tbody) return;
+  const cardList = $("report-invoices-cards");
 
-  if (!invoices.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:28px 16px;color:#94a3b8;font-size:13px;"><i class="fa-solid fa-file-circle-xmark" style="font-size:22px;display:block;margin-bottom:8px;opacity:0.5;"></i>Belum ada faktur pembelian pada periode terpilih</td></tr>`;
-    return;
+  if (tbody) {
+    if (!invoices.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:28px 16px;color:#94a3b8;font-size:13px;"><i class="fa-solid fa-file-circle-xmark" style="font-size:22px;display:block;margin-bottom:8px;opacity:0.5;"></i>Belum ada faktur pembelian pada periode terpilih</td></tr>`;
+    } else {
+      tbody.innerHTML = invoices.map(inv => `
+        <tr>
+          <td>${inv.date || inv.invoiceDate || '—'}</td>
+          <td><strong>${escapeHtml(inv.invoiceNumber || inv.id)}</strong></td>
+          <td>${escapeHtml(inv.supplierName || inv.supplier || '—')}</td>
+          <td>${(inv.items || []).length} item</td>
+          <td><strong>${rupiah(inv.total)}</strong></td>
+          <td>${escapeHtml(inv.status || 'Terkonfirmasi')}</td>
+        </tr>
+      `).join("");
+    }
   }
 
-  tbody.innerHTML = invoices.map(inv => `
-    <tr>
-      <td>${inv.date || inv.invoiceDate || '—'}</td>
-      <td><strong>${escapeHtml(inv.invoiceNumber || inv.id)}</strong></td>
-      <td>${escapeHtml(inv.supplierName || inv.supplier || '—')}</td>
-      <td>${(inv.items || []).length} item</td>
-      <td><strong>${rupiah(inv.total)}</strong></td>
-      <td>${escapeHtml(inv.status || 'Terkonfirmasi')}</td>
-    </tr>
-  `).join("");
+  if (cardList) {
+    if (!invoices.length) {
+      cardList.innerHTML = `<div style="text-align:center;padding:28px 16px;color:#94a3b8;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;"><i class="fa-solid fa-file-invoice-dollar" style="font-size:24px;margin-bottom:8px;display:block;"></i>Belum ada faktur pembelian pada periode terpilih.</div>`;
+    } else {
+      cardList.innerHTML = invoices.map(inv => `
+        <div class="responsive-data-card card-purple">
+          <div class="card-accordion-header" role="button" tabindex="0">
+            <div class="card-header-main">
+              <div class="card-title-row">
+                <span class="card-title">${escapeHtml(inv.invoiceNumber || inv.id)}</span>
+                <span class="badge badge-success" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;">
+                  ${escapeHtml(inv.status || 'Terkonfirmasi')}
+                </span>
+              </div>
+              <div class="card-subtitle-row">
+                <span><i class="fa-solid fa-building"></i> ${escapeHtml(inv.supplierName || inv.supplier || '—')}</span>
+                <span><i class="fa-solid fa-calendar"></i> ${inv.date || inv.invoiceDate || '—'}</span>
+                <span><i class="fa-solid fa-box"></i> ${(inv.items || []).length} item</span>
+                <strong style="color:#0284c7;font-size:0.95rem;">${rupiah(inv.total)}</strong>
+              </div>
+            </div>
+            <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
+          </div>
+          <div class="card-accordion-body">
+            <div class="card-detail-grid">
+              <div class="card-detail-item">
+                <span class="card-detail-label">Nomor Faktur</span>
+                <span class="card-detail-value"><strong>${escapeHtml(inv.invoiceNumber || inv.id)}</strong></span>
+              </div>
+              <div class="card-detail-item">
+                <span class="card-detail-label">Tanggal Faktur</span>
+                <span class="card-detail-value">${inv.date || inv.invoiceDate || '—'}</span>
+              </div>
+              <div class="card-detail-item">
+                <span class="card-detail-label">Supplier</span>
+                <span class="card-detail-value"><strong>${escapeHtml(inv.supplierName || inv.supplier || '—')}</strong></span>
+              </div>
+              <div class="card-detail-item">
+                <span class="card-detail-label">Jumlah Produk</span>
+                <span class="card-detail-value">${(inv.items || []).length} jenis produk</span>
+              </div>
+              <div class="card-detail-item">
+                <span class="card-detail-label">Total Nilai Faktur</span>
+                <span class="card-detail-value"><strong style="color:#0284c7;font-size:15px;">${rupiah(inv.total)}</strong></span>
+              </div>
+              <div class="card-detail-item">
+                <span class="card-detail-label">Status Faktur</span>
+                <span class="card-detail-value"><span class="badge badge-success" style="padding:2px 6px;border-radius:4px;font-size:11px;">${escapeHtml(inv.status || 'Terkonfirmasi')}</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join("");
+      bindCardAccordions(cardList);
+    }
+  }
 }
 
 function renderStockSubReport(products) {
   const tbody = $("report-stock-body");
-  if (!tbody) return;
+  const cardList = $("report-stock-cards");
 
-  tbody.innerHTML = products.slice(0, 100).map(p => {
-    const code = p["Kode Produk"] || p.id;
-    const stock = readCurrentStock(code);
-    const conv = num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1) || 1;
-    const buy = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
-    const unitBuy = buy / conv;
-    const buyUnit = p["Kemasan Beli"] || p["Satuan Pembelian"] || "";
+  if (tbody) {
+    if (!products.length) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#94a3b8;">Tidak ada data stok produk.</td></tr>`;
+    } else {
+      tbody.innerHTML = products.slice(0, 100).map(p => {
+        const code = p["Kode Produk"] || p.id;
+        const stock = readCurrentStock(code);
+        const conv = num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1) || 1;
+        const buy = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
+        const unitBuy = buy / conv;
+        const buyUnit = p["Kemasan Beli"] || p["Satuan Pembelian"] || "";
 
-    return `
-      <tr>
-        <td>${escapeHtml(code)}</td>
-        <td><strong>${escapeHtml(p["Nama Produk"] || '—')}</strong></td>
-        <td>${escapeHtml(p["Kategori"] || '—')}</td>
-        <td><strong>${formatNumber(stock)}</strong> ${escapeHtml(p["Satuan Dasar"] || 'Pcs')}</td>
-        <td>${formatNumber(p["Stok Minimum"] || 0)}</td>
-        <td>${rupiah(unitBuy)}${conv > 1 ? `<small style="display:block;font-size:10px;color:#64748b;">(${rupiah(buy)}/${escapeHtml(buyUnit || 'Box')})</small>` : ''}</td>
-        <td>${rupiah(Math.max(0, stock) * unitBuy)}</td>
-        <td>${stock < 0 ? '<span class="text-danger font-bold">Minus</span>' : (stock <= num(p["Stok Minimum"]) ? '<span class="text-danger font-bold">Menipis</span>' : 'Aman')}</td>
-      </tr>
-    `;
-  }).join("");
+        return `
+          <tr>
+            <td>${escapeHtml(code)}</td>
+            <td><strong>${escapeHtml(p["Nama Produk"] || '—')}</strong></td>
+            <td>${escapeHtml(p["Kategori"] || '—')}</td>
+            <td><strong>${formatNumber(stock)}</strong> ${escapeHtml(p["Satuan Dasar"] || 'Pcs')}</td>
+            <td>${formatNumber(p["Stok Minimum"] || 0)}</td>
+            <td>${rupiah(unitBuy)}${conv > 1 ? `<small style="display:block;font-size:10px;color:#64748b;">(${rupiah(buy)}/${escapeHtml(buyUnit || 'Box')})</small>` : ''}</td>
+            <td>${rupiah(Math.max(0, stock) * unitBuy)}</td>
+            <td>${stock < 0 ? '<span class="text-danger font-bold">Minus</span>' : (stock <= num(p["Stok Minimum"]) ? '<span class="text-danger font-bold">Menipis</span>' : 'Aman')}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+
+  if (cardList) {
+    if (!products.length) {
+      cardList.innerHTML = `<div style="text-align:center;padding:28px 16px;color:#94a3b8;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;"><i class="fa-solid fa-boxes-stacked" style="font-size:24px;margin-bottom:8px;display:block;"></i>Tidak ada data stok produk.</div>`;
+    } else {
+      cardList.innerHTML = products.slice(0, 100).map(p => {
+        const code = p["Kode Produk"] || p.id;
+        const stock = readCurrentStock(code);
+        const conv = num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1) || 1;
+        const buy = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
+        const unitBuy = buy / conv;
+        const buyUnit = p["Kemasan Beli"] || p["Satuan Pembelian"] || "";
+        const minStock = num(p["Stok Minimum"] || 0);
+        const val = Math.max(0, stock) * unitBuy;
+
+        let accentClass = "card-success";
+        let statusBadge = `<span class="badge badge-success" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;">Aman</span>`;
+        if (stock < 0) {
+          accentClass = "card-danger";
+          statusBadge = `<span class="badge badge-danger" style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;border:1px solid #f87171;">⚠️ Minus</span>`;
+        } else if (stock === 0) {
+          accentClass = "card-danger";
+          statusBadge = `<span class="badge badge-danger" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;">Habis</span>`;
+        } else if (stock <= minStock) {
+          accentClass = "card-warning";
+          statusBadge = `<span class="badge badge-warning" style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;">Menipis</span>`;
+        }
+
+        return `
+          <div class="responsive-data-card ${accentClass}">
+            <div class="card-accordion-header" role="button" tabindex="0">
+              <div class="card-header-main">
+                <div class="card-title-row">
+                  <span class="card-title">${escapeHtml(p["Nama Produk"] || '—')}</span>
+                  ${statusBadge}
+                </div>
+                <div class="card-subtitle-row">
+                  <span><i class="fa-solid fa-barcode"></i> ${escapeHtml(code)}</span>
+                  <span><i class="fa-solid fa-tags"></i> ${escapeHtml(p["Kategori"] || '—')}</span>
+                  <span><i class="fa-solid fa-boxes-stacked"></i> <strong>${formatNumber(stock)}</strong> ${escapeHtml(p["Satuan Dasar"] || 'Pcs')}</span>
+                  <strong style="color:#0284c7;font-size:0.95rem;">${rupiah(val)}</strong>
+                </div>
+              </div>
+              <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </div>
+            <div class="card-accordion-body">
+              <div class="card-detail-grid">
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Kode Produk</span>
+                  <span class="card-detail-value"><code>${escapeHtml(code)}</code></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Kategori</span>
+                  <span class="card-detail-value">${escapeHtml(p["Kategori"] || '—')}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Stok Fisik</span>
+                  <span class="card-detail-value"><strong style="font-size:15px;color:#0f172a;">${formatNumber(stock)}</strong> ${escapeHtml(p["Satuan Dasar"] || 'Pcs')}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Stok Minimum</span>
+                  <span class="card-detail-value">${formatNumber(minStock)} ${escapeHtml(p["Satuan Dasar"] || 'Pcs')}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Harga Beli Satuan</span>
+                  <span class="card-detail-value">${rupiah(unitBuy)}${conv > 1 ? ` <small class="text-muted">(${rupiah(buy)}/${escapeHtml(buyUnit || 'Box')})</small>` : ''}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Total Nilai Stok</span>
+                  <span class="card-detail-value"><strong style="color:#0284c7;font-size:15px;">${rupiah(val)}</strong></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+      bindCardAccordions(cardList);
+    }
+  }
+}
+
+function renderGoodsInSubReport(movements, invoices, start, end, q) {
+  const tbody = $("report-goods-body");
+  const cardList = $("report-goods-cards");
+
+  const goodsMovements = (movements || []).filter(m => {
+    const isGoodsIn = norm(m.type).includes("faktur") || norm(m.type).includes("masuk") || norm(m.type) === "purchase";
+    if (!isGoodsIn) return false;
+    const d = parseEntryDate(m.createdAt || m.date || m.at);
+    if (d && (d < start || d > end)) return false;
+    if (q) {
+      const target = norm(`${m.reference || ''} ${m.productCode || ''} ${m.productName || ''}`);
+      if (!target.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const countEl = $("report-goods-count");
+  if (countEl) countEl.textContent = `${goodsMovements.length} mutasi`;
+
+  if (tbody) {
+    if (!goodsMovements.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#94a3b8;">Belum ada riwayat barang masuk pada periode terpilih.</td></tr>`;
+    } else {
+      tbody.innerHTML = goodsMovements.slice(0, 100).map(m => {
+        const qty = num(m.delta ?? m.quantity);
+        return `
+          <tr>
+            <td>${formatDateTime(m.createdAt || m.date)}</td>
+            <td><strong>${escapeHtml(m.reference || '—')}</strong></td>
+            <td>${escapeHtml(m.productCode || '—')}</td>
+            <td><strong>${escapeHtml(m.productName || '—')}</strong></td>
+            <td style="color:#059669;font-weight:700;">+${formatNumber(qty)}</td>
+            <td>${m.stockAfter !== undefined ? formatNumber(m.stockAfter) : '—'}</td>
+            <td>${rupiah(num(m.unitPrice || 0) * qty)}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+
+  if (cardList) {
+    if (!goodsMovements.length) {
+      cardList.innerHTML = `<div style="text-align:center;padding:28px 16px;color:#94a3b8;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;"><i class="fa-solid fa-boxes-packing" style="font-size:24px;margin-bottom:8px;display:block;"></i>Belum ada riwayat barang masuk pada periode terpilih.</div>`;
+    } else {
+      cardList.innerHTML = goodsMovements.slice(0, 100).map(m => {
+        const qty = num(m.delta ?? m.quantity);
+        return `
+          <div class="responsive-data-card card-success">
+            <div class="card-accordion-header" role="button" tabindex="0">
+              <div class="card-header-main">
+                <div class="card-title-row">
+                  <span class="card-title">${escapeHtml(m.productName || 'Barang Masuk')}</span>
+                  <strong style="color:#059669;font-size:0.95rem;">+${formatNumber(qty)} unit</strong>
+                </div>
+                <div class="card-subtitle-row">
+                  <span><i class="fa-solid fa-file-invoice"></i> Ref: ${escapeHtml(m.reference || '—')}</span>
+                  <span><i class="fa-solid fa-barcode"></i> ${escapeHtml(m.productCode || '—')}</span>
+                  <span><i class="fa-solid fa-clock"></i> ${formatDateTime(m.createdAt || m.date)}</span>
+                </div>
+              </div>
+              <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </div>
+            <div class="card-accordion-body">
+              <div class="card-detail-grid">
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Referensi / Faktur</span>
+                  <span class="card-detail-value"><strong>${escapeHtml(m.reference || '—')}</strong></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Waktu Masuk</span>
+                  <span class="card-detail-value">${formatDateTime(m.createdAt || m.date)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Kode & Nama Produk</span>
+                  <span class="card-detail-value"><code>${escapeHtml(m.productCode || '—')}</code> - ${escapeHtml(m.productName || '—')}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Kuantitas Masuk</span>
+                  <span class="card-detail-value"><strong style="color:#059669;font-size:15px;">+${formatNumber(qty)}</strong></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Stok Setelah Masuk</span>
+                  <span class="card-detail-value">${m.stockAfter !== undefined ? formatNumber(m.stockAfter) : '—'}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Operator / Catatan</span>
+                  <span class="card-detail-value">${escapeHtml(m.user || '—')}${m.batch ? ` (Batch: ${escapeHtml(m.batch)})` : ''}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+      bindCardAccordions(cardList);
+    }
+  }
+}
+
+function renderCashiersSubReport(completedSales, filteredSales, productsMap) {
+  const tbody = $("report-cashiers-body");
+  const cardList = $("report-cashiers-cards");
+
+  const cashierMap = new Map();
+
+  filteredSales.forEach(s => {
+    const cName = s.cashierName || s.cashier || "Kasir Utama";
+    const existing = cashierMap.get(cName) || {
+      name: cName,
+      completedCount: 0,
+      voidCount: 0,
+      unitCount: 0,
+      omzet: 0,
+      profit: 0
+    };
+
+    if (norm(s.status) === "void") {
+      existing.voidCount += 1;
+    } else {
+      existing.completedCount += 1;
+      const sTotal = num(s.total);
+      existing.omzet += sTotal;
+
+      (s.items || []).forEach(it => {
+        const q = num(it.qty);
+        existing.unitCount += q;
+        const sub = num(it.subtotal || (q * num(it.price)));
+        const pData = productsMap?.get(norm(it.code || it.productCode));
+        const conv = num(pData?.["Konversi"] ?? pData?.["Isi Kemasan"] ?? 1) || 1;
+        const buyPrice = num(it.buyPrice ?? it.costPrice ?? pData?.["Harga Beli Terakhir"] ?? pData?.["Harga Beli"] ?? 0) / conv;
+        existing.profit += (sub - (q * buyPrice));
+      });
+    }
+
+    cashierMap.set(cName, existing);
+  });
+
+  const list = [...cashierMap.values()].sort((a, b) => b.omzet - a.omzet);
+
+  const countEl = $("report-cashiers-count");
+  if (countEl) countEl.textContent = `${list.length} kasir`;
+
+  if (tbody) {
+    if (!list.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#94a3b8;">Belum ada data transaksi per kasir.</td></tr>`;
+    } else {
+      tbody.innerHTML = list.map(c => {
+        const avg = c.completedCount > 0 ? c.omzet / c.completedCount : 0;
+        return `
+          <tr>
+            <td><strong>${escapeHtml(c.name)}</strong></td>
+            <td>${formatNumber(c.completedCount)}</td>
+            <td>${formatNumber(c.voidCount)}</td>
+            <td>${formatNumber(c.unitCount)}</td>
+            <td><strong>${rupiah(c.omzet)}</strong></td>
+            <td>${rupiah(avg)}</td>
+            <td style="color:#059669;font-weight:700;">${rupiah(c.profit)}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+
+  if (cardList) {
+    if (!list.length) {
+      cardList.innerHTML = `<div style="text-align:center;padding:28px 16px;color:#94a3b8;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;"><i class="fa-solid fa-user-tie" style="font-size:24px;margin-bottom:8px;display:block;"></i>Belum ada data transaksi per kasir.</div>`;
+    } else {
+      cardList.innerHTML = list.map(c => {
+        const avg = c.completedCount > 0 ? c.omzet / c.completedCount : 0;
+        return `
+          <div class="responsive-data-card card-success">
+            <div class="card-accordion-header" role="button" tabindex="0">
+              <div class="card-header-main">
+                <div class="card-title-row">
+                  <span class="card-title">${escapeHtml(c.name)}</span>
+                  <strong style="color:#059669;font-size:0.95rem;">${rupiah(c.omzet)}</strong>
+                </div>
+                <div class="card-subtitle-row">
+                  <span><i class="fa-solid fa-receipt"></i> <strong>${formatNumber(c.completedCount)}</strong> transaksi</span>
+                  <span><i class="fa-solid fa-box"></i> <strong>${formatNumber(c.unitCount)}</strong> unit</span>
+                  ${c.voidCount > 0 ? `<span><i class="fa-solid fa-ban" style="color:#ef4444;"></i> ${c.voidCount} VOID</span>` : ''}
+                </div>
+              </div>
+              <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </div>
+            <div class="card-accordion-body">
+              <div class="card-detail-grid">
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Nama Kasir</span>
+                  <span class="card-detail-value"><strong>${escapeHtml(c.name)}</strong></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Transaksi Selesai</span>
+                  <span class="card-detail-value">${formatNumber(c.completedCount)} transaksi</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Transaksi VOID</span>
+                  <span class="card-detail-value">${formatNumber(c.voidCount)} transaksi</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Produk Terjual</span>
+                  <span class="card-detail-value">${formatNumber(c.unitCount)} unit</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Total Omzet Kasir</span>
+                  <span class="card-detail-value"><strong style="color:#0284c7;font-size:15px;">${rupiah(c.omzet)}</strong></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Rata-rata Transaksi</span>
+                  <span class="card-detail-value">${rupiah(avg)}</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Estimasi Laba Kotor</span>
+                  <span class="card-detail-value"><strong style="color:#059669;font-size:15px;">${rupiah(c.profit)}</strong></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+      bindCardAccordions(cardList);
+    }
+  }
 }
 
 function handlePrintActiveReport() {

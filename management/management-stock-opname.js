@@ -127,6 +127,95 @@ export function renderOpnameHistory() {
       }
     });
   });
+
+  // Render juga ke card list adaptif
+  const cardList = $("opname-card-list");
+  if (cardList) {
+    if (!list.length) {
+      cardList.innerHTML = `<div style="text-align:center;padding:28px 16px;color:#94a3b8;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;"><i class="fa-solid fa-clipboard-check" style="font-size:24px;margin-bottom:8px;display:block;"></i>Belum ada riwayat stock opname.</div>`;
+    } else {
+      cardList.innerHTML = list.map(sess => {
+        const totalDiffQty = (sess.items || []).reduce((sum, it) => sum + Math.abs(num(it.difference)), 0);
+        const totalDiffVal = (sess.items || []).reduce((sum, it) => sum + Math.abs(num(it.difference) * num(it.buyPrice || 0)), 0);
+        const hasDiff = totalDiffQty > 0;
+
+        return `
+          <div class="responsive-data-card ${hasDiff ? 'card-warning' : 'card-success'}">
+            <div class="card-accordion-header" role="button" tabindex="0">
+              <div class="card-header-main">
+                <div class="card-title-row">
+                  <span class="card-title">#${escapeHtml(sess.sessionNumber || sess.id)}</span>
+                  <span class="badge ${hasDiff ? 'badge-warning' : 'badge-success'}" style="font-weight:700;font-size:11px;padding:3px 8px;border-radius:6px;">
+                    ${hasDiff ? `Selisih ${formatNumber(totalDiffQty)} unit` : 'Sesuai (0 Selisih)'}
+                  </span>
+                </div>
+                <div class="card-subtitle-row">
+                  <span><i class="fa-solid fa-clock"></i> ${formatDateTime(sess.createdAt || sess.date)}</span>
+                  <span><i class="fa-solid fa-boxes-stacked"></i> ${(sess.items || []).length} produk</span>
+                  <span><i class="fa-solid fa-money-bill"></i> <strong>${rupiah(totalDiffVal)}</strong></span>
+                </div>
+              </div>
+              <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </div>
+            <div class="card-accordion-body">
+              <div class="card-detail-grid">
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Total Item Disesuaikan</span>
+                  <span class="card-detail-value">${(sess.items || []).length} produk</span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Total Selisih Unit</span>
+                  <span class="card-detail-value"><strong>${formatNumber(totalDiffQty)} unit</strong></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Estimasi Nilai Selisih</span>
+                  <span class="card-detail-value"><strong style="color:#d97706;">${rupiah(totalDiffVal)}</strong></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Catatan Sesi</span>
+                  <span class="card-detail-value">${escapeHtml(sess.notes || '—')}</span>
+                </div>
+              </div>
+              <div class="card-action-bar">
+                <button type="button" class="btn-view-opname button button-small button-secondary" data-id="${escapeHtml(sess.id)}">
+                  <i class="fa-solid fa-eye"></i> Detail Opname
+                </button>
+                <button type="button" class="btn-pdf-opname button button-small button-secondary" data-id="${escapeHtml(sess.id)}" title="Cetak PDF">
+                  <i class="fa-solid fa-file-pdf"></i> Cetak PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      cardList.querySelectorAll(".card-accordion-header").forEach(h => {
+        h.addEventListener("click", () => {
+          const card = h.closest(".responsive-data-card");
+          if (card) card.classList.toggle("is-expanded");
+        });
+      });
+
+      cardList.querySelectorAll(".btn-view-opname").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const sessId = btn.dataset.id;
+          const found = list.find(s => s.id === sessId);
+          if (found) openOpnameDetailModal(found);
+        });
+      });
+
+      cardList.querySelectorAll(".btn-pdf-opname").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const sessId = btn.dataset.id;
+          const found = list.find(s => s.id === sessId);
+          if (found) {
+            const master = readStore(STORE_KEYS.master, {});
+            generateStockOpnamePdf(found, master.pengaturan_toko?.[0] || {}, "Administrator");
+          }
+        });
+      });
+    }
+  }
 }
 
 /**

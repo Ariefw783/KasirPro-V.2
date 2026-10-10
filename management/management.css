@@ -1079,6 +1079,35 @@
 /* Sembunyikan tabel lama dengan scroll horizontal di semua resolusi */
 .desktop-only-table {
     display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+}
+
+.table-wrapper.desktop-only-table,
+div.desktop-only-table,
+table.desktop-only-table,
+.table-wrapper[hidden],
+[hidden],
+.desktop-only-table * {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
 }
 
 /* Tampilkan kartu vertikal adaptif secara universal di desktop & mobile */
@@ -1091,7 +1120,17 @@
 #invoice-card-list,
 #sales-card-list,
 #stock-card-list,
-#users-card-list {
+#users-card-list,
+#movement-card-list,
+#goods-in-card-list,
+#opname-card-list,
+#report-daily-cards,
+#report-sales-cards,
+#report-products-cards,
+#report-stock-cards,
+#report-goods-cards,
+#report-invoices-cards,
+#report-cashiers-cards {
     display: flex !important;
     flex-direction: column;
     gap: 12px;

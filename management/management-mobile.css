@@ -295,8 +295,29 @@
      TABEL DI MOBILE / PWA: MANDATORY HORIZONTAL TOUCH SCROLL
      Table wrapper mengunci lebar 100% container dan menampung scroll
      horizontal mandiri tanpa mendorong layout luar.
-  ========================================================= */
-  .table-wrapper {
+     ========================================================= */
+  /* Tabel yang ditandai desktop-only-table atau hidden wajib tersembunyi sepenuhnya */
+  .desktop-only-table,
+  .table-wrapper.desktop-only-table,
+  div.desktop-only-table,
+  table.desktop-only-table,
+  .table-wrapper[hidden],
+  [hidden],
+  .desktop-only-table * {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .table-wrapper:not(.desktop-only-table):not([hidden]) {
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;

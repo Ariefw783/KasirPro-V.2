@@ -441,6 +441,67 @@ function renderMovementTable() {
       </tr>
     `;
   }).join("");
+
+  // Render juga ke card list adaptif
+  const cardLists = [ $("movement-card-list"), $("goods-in-card-list") ].filter(Boolean);
+  cardLists.forEach(cardList => {
+    if (!filteredMovementList.length) {
+      cardList.innerHTML = `<div style="text-align:center;padding:28px 16px;color:#94a3b8;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;"><i class="fa-solid fa-clock-rotate-left" style="font-size:24px;margin-bottom:8px;display:block;"></i>Tidak ada riwayat mutasi stok.</div>`;
+    } else {
+      cardList.innerHTML = filteredMovementList.slice(0, 100).map(m => {
+        const isPositive = num(m.delta ?? m.quantity) > 0;
+        const deltaStr = isPositive ? `+${formatNumber(m.delta ?? m.quantity)}` : `${formatNumber(m.delta ?? m.quantity)}`;
+        const accentClass = isPositive ? "card-success" : "card-danger";
+
+        return `
+          <div class="responsive-data-card ${accentClass}">
+            <div class="card-accordion-header" role="button" tabindex="0">
+              <div class="card-header-main">
+                <div class="card-title-row">
+                  <span class="card-title">${escapeHtml(m.productName || m.productCode || 'Mutasi Stok')}</span>
+                  <span class="badge ${isPositive ? 'badge-success' : 'badge-danger'}" style="font-weight:700;font-size:12px;padding:3px 8px;border-radius:6px;">${deltaStr}</span>
+                </div>
+                <div class="card-subtitle-row">
+                  <span><i class="fa-solid fa-tag"></i> <strong>${escapeHtml(m.type || 'Mutasi')}</strong></span>
+                  <span><i class="fa-solid fa-file-lines"></i> ${escapeHtml(m.reference || '—')}</span>
+                  <span><i class="fa-solid fa-clock"></i> ${formatDateTime(m.createdAt || m.date)}</span>
+                </div>
+              </div>
+              <div class="card-toggle-icon"><i class="fa-solid fa-chevron-down"></i></div>
+            </div>
+            <div class="card-accordion-body">
+              <div class="card-detail-grid">
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Kode Produk</span>
+                  <span class="card-detail-value"><code>${escapeHtml(m.productCode || '—')}</code></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Stok Setelah Mutasi</span>
+                  <span class="card-detail-value"><strong>${m.stockAfter !== undefined ? formatNumber(m.stockAfter) : '—'}</strong></span>
+                </div>
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Petugas / User</span>
+                  <span class="card-detail-value">${escapeHtml(m.user || '—')}</span>
+                </div>
+                ${m.batch ? `
+                <div class="card-detail-item">
+                  <span class="card-detail-label">No. Batch / Exp</span>
+                  <span class="card-detail-value">${escapeHtml(m.batch)}${m.exp ? ` (EXP: ${escapeHtml(m.exp)})` : ''}</span>
+                </div>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      cardList.querySelectorAll(".card-accordion-header").forEach(h => {
+        h.addEventListener("click", () => {
+          const card = h.closest(".responsive-data-card");
+          if (card) card.classList.toggle("is-expanded");
+        });
+      });
+    }
+  });
 }
 
 /**
