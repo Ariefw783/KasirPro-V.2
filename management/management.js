@@ -219,7 +219,7 @@ export function switchView(targetView) {
   // Update judul halaman di topbar
   const titles = {
     "dashboard": ["Dashboard", "Ringkasan operasional toko"],
-    "products": ["DAFTAR PRODUK SUPPLIER", "Kelola master produk yang digunakan oleh Faktur, Stok, POS, dan Laporan"],
+    "products": ["Produk", "Kelola master data produk toko"],
     "suppliers": ["Supplier", "Kelola master perusahaan supplier"],
     "categories": ["Kategori", "Kelola kategori pengelompokan produk"],
     "stock": ["Stok", "Posisi stok aktif dan riwayat pergerakan stok"],
