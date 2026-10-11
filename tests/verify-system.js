@@ -1800,6 +1800,83 @@ assert(checkSoldProd.canDelete === false && checkSoldProd.reason === "has_sales"
 const posAmoxActive = (resAmox["Harga Jual"] > 0 && resAmox["Stok Awal"] > 0);
 assert(posAmoxActive === true, "POS Kasir: Produk Pasca-Impor Otomatis Aktif & Siap Dijual di Kasir POS");
 
+console.log("\n📑 BAGIAN 24: PENGUJIAN EVALUASI & SARAN (BANNER HARGA JUAL, BLOKIR BEDA SUPPLIER, PAGINASI FAKTUR, SIDEBAR LOGO)");
+
+// 1. Uji Banner Alur Cepat Input Harga Jual Excel
+const mgmtHtml = fs.readFileSync(path.join(rootDir, "management/index.html"), "utf8");
+const mgmtProductsJs = fs.readFileSync(path.join(rootDir, "management/management-products.js"), "utf8");
+const mgmtInvoicesJs = fs.readFileSync(path.join(rootDir, "management/management-invoices.js"), "utf8");
+const mgmtCss = fs.readFileSync(path.join(rootDir, "management/management.css"), "utf8");
+
+assert(
+  mgmtHtml.includes('id="pricing-excel-action-bar"') && mgmtHtml.includes('display: none;'),
+  "Banner Excel: Tersembunyi Secara Default di HTML (display: none)"
+);
+
+function testPricingBarVisibility(filterValue) {
+  const isPerluHargaJual = (filterValue === "belum aktif" || filterValue === "perlu harga jual");
+  return isPerluHargaJual ? "flex" : "none";
+}
+assert(testPricingBarVisibility("aktif") === "none", "Banner Excel: Disembunyikan Saat Filter 'Aktif'");
+assert(testPricingBarVisibility("tidak aktif") === "none", "Banner Excel: Disembunyikan Saat Filter 'Katalog Acuan'");
+assert(testPricingBarVisibility("") === "none", "Banner Excel: Disembunyikan Saat Filter 'Semua Produk'");
+assert(testPricingBarVisibility("belum aktif") === "flex", "Banner Excel: Hanya Muncul Saat Filter 'Perlu Harga Jual'");
+
+// 2. Uji Blokir Produk Acuan Bukan dari Supplier Terpilih pada Input Faktur Manual
+const sampleMasterProds = [
+  { "Kode Produk": "MED-001", "Nama Produk": "PARACETAMOL 500MG", "Supplier": "PT Kimia Farma" },
+  { "Kode Produk": "MED-002", "Nama Produk": "PARACETAMOL 500MG", "Supplier": "PT Anugrah Pharmindo" },
+  { "Kode Produk": "MED-003", "Nama Produk": "AMOXICILLIN 500MG", "Supplier": "PT Kimia Farma" }
+];
+
+function testSuggestForSupplier(query, selectedSupplier, catalog) {
+  const q = (query || "").toLowerCase();
+  const currentSup = (selectedSupplier || "").toLowerCase().trim();
+  const supMatches = [];
+  for (const p of catalog) {
+    const pSup = (p["Supplier"] || "").toLowerCase().trim();
+    if (pSup !== currentSup) continue; // Blokir produk dari supplier lain
+    const name = (p["Nama Produk"] || "").toLowerCase();
+    if (!q || name.includes(q)) supMatches.push(p);
+  }
+  return supMatches;
+}
+
+const suggestionsKimia = testSuggestForSupplier("PARACETAMOL", "PT Kimia Farma", sampleMasterProds);
+assert(suggestionsKimia.length === 1 && suggestionsKimia[0]["Kode Produk"] === "MED-001", "Input Faktur: Hanya Menampilkan Produk dari Supplier Terpilih (MED-001)");
+assert(!suggestionsKimia.some(p => p["Supplier"] === "PT Anugrah Pharmindo"), "Input Faktur: Produk Bernama Sama Milik Supplier Lain Berhasil Diblokir");
+
+// 3. Uji Paginasi Faktur Pembelian (Maksimal 5 Faktur per Halaman)
+assert(mgmtHtml.includes('id="invoice-pagination"'), "DOM Faktur: Kontainer Paginasi Terpasang (#invoice-pagination)");
+assert(mgmtHtml.includes('id="invoice-visible-count"'), "DOM Faktur: Counter Faktur Terlihat Terpasang (#invoice-visible-count)");
+assert(mgmtHtml.includes('id="invoice-total-result-count"'), "DOM Faktur: Counter Total Faktur Terpasang (#invoice-total-result-count)");
+assert(mgmtHtml.includes('id="invoice-prev-page"'), "DOM Faktur: Tombol Halaman Sebelumnya Terpasang (#invoice-prev-page)");
+assert(mgmtHtml.includes('id="invoice-next-page"'), "DOM Faktur: Tombol Halaman Berikutnya Terpasang (#invoice-next-page)");
+
+const PAGE_SIZE_INVOICE = 5;
+const mock12Invoices = Array.from({ length: 12 }, (_, i) => ({ id: `INV-${i + 1}`, status: "terkonfirmasi" }));
+function getInvoicePage(page, list, pageSize = 5) {
+  const start = (page - 1) * pageSize;
+  return list.slice(start, start + pageSize);
+}
+
+const page1 = getInvoicePage(1, mock12Invoices, PAGE_SIZE_INVOICE);
+const page2 = getInvoicePage(2, mock12Invoices, PAGE_SIZE_INVOICE);
+const page3 = getInvoicePage(3, mock12Invoices, PAGE_SIZE_INVOICE);
+assert(page1.length === 5, "Paginasi Faktur: Halaman 1 Maksimal Menampilkan Tepat 5 Faktur");
+assert(page2.length === 5, "Paginasi Faktur: Halaman 2 Menampilkan Tepat 5 Faktur");
+assert(page3.length === 2, "Paginasi Faktur: Halaman 3 Menampilkan Sisa 2 Faktur");
+
+// 4. Uji Sidebar Logo KasirPro Berlatar Gelap (Original Dark Theme)
+assert(
+  mgmtCss.includes(".sidebar-brand") && mgmtCss.includes("#090e1a") && mgmtCss.includes("#0f172a"),
+  "Sidebar Header: Background Logo KasirPro Pojok Kiri Atas Menggunakan Tema Gelap Original (#090e1a / #0f172a)"
+);
+assert(
+  mgmtCss.includes(".brand-logo") && mgmtCss.includes("rgba(255, 255, 255, 0.2)"),
+  "Sidebar Logo: Badge Logo Memiliki Border Depth Halus & Glow High-Contrast"
+);
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

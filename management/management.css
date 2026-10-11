@@ -1113,20 +1113,20 @@
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-/* 2. HEADER BRAND LOGO (APOTEK DOA IBU) */
+/* 2. HEADER BRAND LOGO (APOTEK DOA IBU) - ORIGINAL DARK BACKGROUND */
 .sidebar-brand {
     padding: 14px 18px !important;
-    border-bottom: 1px solid #e2e8f0 !important;
-    background: #ffffff !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: linear-gradient(135deg, #090e1a 0%, #0f172a 100%) !important;
 }
 
 .brand-logo {
     width: 40px !important;
     height: 40px !important;
     border-radius: 12px !important;
-    background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%) !important;
-    border: 1px solid rgba(13, 148, 136, 0.25) !important;
-    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25) !important;
+    background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4) !important;
     transition: transform 0.2s ease !important;
 }
 
@@ -1138,15 +1138,16 @@
     font-size: 0.98rem !important;
     font-weight: 850 !important;
     letter-spacing: -0.01em !important;
-    color: #0f172a !important;
-    background: none !important;
-    -webkit-text-fill-color: initial !important;
+    background: linear-gradient(135deg, #ffffff 0%, #7dd3fc 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    color: #ffffff !important;
 }
 
 .brand-text span {
     font-size: 0.68rem !important;
-    font-weight: 750 !important;
-    color: #0d9488 !important;
+    font-weight: 650 !important;
+    color: #94a3b8 !important;
     letter-spacing: 0.02em !important;
 }
 

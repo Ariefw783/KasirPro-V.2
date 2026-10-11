@@ -821,7 +821,9 @@ export function updatePricingActionBar() {
   }
 
   const statusVal = norm($("product-status-filter")?.value || "");
-  if (statusVal === "belum aktif" || statusVal === "perlu harga jual") {
+  const isPerluHargaJual = (statusVal === "belum aktif" || statusVal === "perlu harga jual");
+  bar.style.display = isPerluHargaJual ? "flex" : "none";
+  if (isPerluHargaJual) {
     bar.style.border = "2px solid #f59e0b";
     bar.style.background = "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)";
   } else {

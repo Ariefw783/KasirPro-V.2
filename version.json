@@ -1,13 +1,13 @@
 {
-  "version": "2.2.64",
-  "build": "20261011.06",
+  "version": "2.2.65",
+  "build": "20261011.07",
   "releaseDate": "11 Oktober 2026",
-  "title": "Unblock Delete For Unsold Products",
-  "description": "Menghapus pemblokiran hapus produk yang belum pernah terjual di kasir, mengizinkan hapus bersih permanen produk dan sisa stoknya.",
+  "title": "Evaluasi UX Produk, Filter Supplier Faktur, Paginasi Faktur, dan Logo Sidebar",
+  "description": "Menyempurnakan alur produk (banner Excel hanya saat filter Perlu Harga Jual), memblokir produk beda supplier pada grid faktur, paginasi 5 faktur per halaman, dan mengembalikan background gelap original logo sidebar KasirPro.",
   "changelog": [
-    "Unblock delete for unsold products",
-    "Remove invoice linkage block condition",
-    "Allow direct permanent product purge",
-    "Clean stock and catalog records"
+    "Show pricing excel action bar only on Perlu Harga Jual filter",
+    "Strictly block reference products from different suppliers in manual invoice grid",
+    "Implement 5-item pagination for purchase invoices list",
+    "Restore original dark background for top-left sidebar KasirPro logo"
   ]
 }

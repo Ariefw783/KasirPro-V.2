@@ -25,6 +25,10 @@ let currentInvoices = [];
 let activeDetailInvoice = null;
 let editingInvoice = null;
 
+const INVOICE_PAGE_SIZE = 5;
+let invoiceCurrentPage = 1;
+let lastFilteredInvoicesCount = 0;
+
 export function initInvoicesModule() {
   bindEvents();
   renderInvoices();
@@ -154,11 +158,33 @@ function bindEvents() {
   document.querySelector(".manual-invoice-body")?.addEventListener("scroll", hideGlobalAc);
 
   // Search & Filter di daftar faktur
-  $("invoice-search")?.addEventListener("input", renderInvoicesTable);
-  $("invoice-status-filter")?.addEventListener("change", renderInvoicesTable);
+  $("invoice-search")?.addEventListener("input", () => {
+    invoiceCurrentPage = 1;
+    renderInvoicesTable();
+  });
+  $("invoice-status-filter")?.addEventListener("change", () => {
+    invoiceCurrentPage = 1;
+    renderInvoicesTable();
+  });
   $("invoice-payment-filter")?.addEventListener("change", (e) => {
     activeInvoicePaymentFilter = e.target.value;
+    invoiceCurrentPage = 1;
     renderInvoicesTable();
+  });
+
+  $("invoice-prev-page")?.addEventListener("click", () => {
+    if (invoiceCurrentPage > 1) {
+      invoiceCurrentPage--;
+      renderInvoicesTable();
+    }
+  });
+
+  $("invoice-next-page")?.addEventListener("click", () => {
+    const totalPages = Math.ceil(lastFilteredInvoicesCount / INVOICE_PAGE_SIZE) || 1;
+    if (invoiceCurrentPage < totalPages) {
+      invoiceCurrentPage++;
+      renderInvoicesTable();
+    }
   });
 
   // Detail Modal Actions
@@ -490,6 +516,7 @@ function renderInvoicesTable() {
       `;
       $("btn-filter-urgent-invoices")?.addEventListener("click", () => {
         activeInvoicePaymentFilter = "due_soon";
+        invoiceCurrentPage = 1;
         const sel = $("invoice-payment-filter");
         if (sel) sel.value = "due_soon";
         renderInvoicesTable();
@@ -531,6 +558,7 @@ function renderInvoicesTable() {
     pillsContainer.querySelectorAll(".invoice-pill-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         activeInvoicePaymentFilter = btn.dataset.filter;
+        invoiceCurrentPage = 1;
         const sel = $("invoice-payment-filter");
         if (sel) sel.value = activeInvoicePaymentFilter;
         renderInvoicesTable();
@@ -561,15 +589,37 @@ function renderInvoicesTable() {
     return true;
   });
 
+  lastFilteredInvoicesCount = filtered.length;
+  const totalPages = Math.ceil(filtered.length / INVOICE_PAGE_SIZE) || 1;
+  if (invoiceCurrentPage > totalPages) invoiceCurrentPage = totalPages;
+  if (invoiceCurrentPage < 1) invoiceCurrentPage = 1;
+
+  const visEl = $("invoice-visible-count");
+  const totEl = $("invoice-total-result-count");
+  const prevBtn = $("invoice-prev-page");
+  const nextBtn = $("invoice-next-page");
+
   if (!filtered.length) {
+    if (visEl) visEl.textContent = "0";
+    if (totEl) totEl.textContent = "0";
+    if (prevBtn) prevBtn.disabled = true;
+    if (nextBtn) nextBtn.disabled = true;
     if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="empty-table-state" style="text-align:center;padding:24px;">Tidak ada faktur pembelian yang sesuai dengan filter.</td></tr>`;
     if (cardList) cardList.innerHTML = `<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;color:#64748b;"><i class="fa-solid fa-file-invoice" style="font-size:28px;margin-bottom:8px;color:#94a3b8;display:block;"></i>Tidak ada faktur pembelian yang sesuai dengan filter.</div>`;
     return;
   }
 
+  const start = (invoiceCurrentPage - 1) * INVOICE_PAGE_SIZE;
+  const pageItems = filtered.slice(start, start + INVOICE_PAGE_SIZE);
+
+  if (visEl) visEl.textContent = pageItems.length;
+  if (totEl) totEl.textContent = filtered.length;
+  if (prevBtn) prevBtn.disabled = invoiceCurrentPage <= 1;
+  if (nextBtn) nextBtn.disabled = invoiceCurrentPage >= totalPages;
+
   // 5. Render Desktop Table Rows
   if (tbody) {
-    tbody.innerHTML = filtered.map(inv => {
+    tbody.innerHTML = pageItems.map(inv => {
       const id = inv.id || inv.invoiceNumber;
       const no = inv.invoiceNumber || inv.id || "—";
       const date = inv.date || inv.invoiceDate || "—";
@@ -621,7 +671,7 @@ function renderInvoicesTable() {
 
   // 6. Render Mobile Collapsible Cards (Default Diciutkan)
   if (cardList) {
-    cardList.innerHTML = filtered.map(inv => {
+    cardList.innerHTML = pageItems.map(inv => {
       const id = inv.id || inv.invoiceNumber;
       const no = inv.invoiceNumber || inv.id || "—";
       const date = inv.date || inv.invoiceDate || "—";
@@ -1661,44 +1711,9 @@ function processTsvData(rawText) {
           }
         }
       } else {
-        // Supplier dipilih, tetapi obat ini milik supplier lain di master.
-        // Dilarang menganggap 100% cocok (exact)! Diturunkan menjadi fuzzy (maks 85%) dengan flag differentSupplier.
-        let otherProd = null;
-        let otherScore = 0;
-
-        if (barcodeMap_Other.has(normRaw)) {
-          otherProd = barcodeMap_Other.get(normRaw);
-          otherScore = 0.85;
-        } else if (codeMap_Other.has(normRaw)) {
-          otherProd = codeMap_Other.get(normRaw);
-          otherScore = 0.85;
-        } else if (exactNormMap_Other.has(normQuery)) {
-          otherProd = exactNormMap_Other.get(normQuery);
-          otherScore = 0.85;
-        } else {
-          const qTokens = new Set(normQuery.split(/\s+/).filter(Boolean));
-          const lenQ = normQuery.length;
-
-          for (const cand of candidateList_Other) {
-            if (Math.min(lenQ, cand.len) / Math.max(lenQ, cand.len) < 0.55) continue;
-            let commonTokens = 0;
-            for (const qt of qTokens) {
-              if (cand.tokens.has(qt)) commonTokens++;
-            }
-            if (qTokens.size >= 2 && commonTokens === 0) continue;
-            const score = stringSimilarity(normQuery, cand.normName);
-            if (score > otherScore) {
-              otherScore = score;
-              otherProd = cand.product;
-            }
-          }
-        }
-
-        if (otherProd && otherScore >= 0.8) {
-          match = { matchType: "fuzzy", score: Math.min(otherScore, 0.85), product: otherProd, differentSupplier: true };
-        } else {
-          match = { matchType: "none", score: otherScore, product: null };
-        }
+        // Supplier dipilih, dan obat bukan milik supplier terpilih di master.
+        // Blokir produk acuan yang bukan berasal dari supplier terpilih demi keakuratan data.
+        match = { matchType: "none", score: 0, product: null };
       }
     }
 
@@ -2313,13 +2328,14 @@ function showProductSuggestions(inputEl, idx, query) {
   const prods = cachedMasterProducts || (readStore(STORE_KEYS.master, {})?.produk || []);
 
   const supMatches = [];
-  const otherMatches = [];
 
   for (const p of prods) {
     if (p._isDeleted || norm(p["Status"] || p["Status Produk"]) === "nonaktif") continue;
 
     const pSup = norm(p["Supplier"] || p["Produsen"]);
-    const isThisSup = pSup === norm(currentSup);
+    // Blokir produk acuan yang bukan berasal dari supplier terpilih pada poin 1
+    if (pSup !== norm(currentSup)) continue;
+
     const name = (p["Nama Produk"] || p.name || "").toLowerCase();
     const code = (p["Kode Produk"] || p["Kode Produk Internal"] || "").toLowerCase();
     const barcode = (p["Barcode"] || "").toLowerCase();
@@ -2327,12 +2343,11 @@ function showProductSuggestions(inputEl, idx, query) {
     const matchesQuery = !q || name.includes(q) || code.includes(q) || barcode.includes(q);
 
     if (matchesQuery) {
-      if (isThisSup) supMatches.push(p);
-      else if (q) otherMatches.push(p);
+      supMatches.push(p);
     }
   }
 
-  const combined = [...supMatches.slice(0, 10), ...otherMatches.slice(0, 5)];
+  const combined = supMatches.slice(0, 15);
 
   let html = "";
   if (combined.length > 0) {
