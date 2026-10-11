@@ -2031,7 +2031,9 @@ export function openProductModal(prefill = {}, callback = null) {
   const midInput = $("input-prod-mid-unit");
   if (midInput) midInput.value = prefill.midUnit || "";
   const midQtyInput = $("input-prod-mid-qty");
-  if (midQtyInput) midQtyInput.value = prefill.midQty || 1;
+  if (midQtyInput) midQtyInput.value = (prefill.midQty !== undefined && prefill.midQty !== null && prefill.midQty !== "") ? prefill.midQty : 1;
+  const baseInput = $("input-prod-base-unit");
+  if (baseInput) baseInput.value = prefill.baseUnit || "Pcs";
   $("input-prod-conversion").value = prefill.conversion || 1;
   const bPriceVal = num(prefill.buyPrice);
   $("input-prod-buy-price").value = bPriceVal > 0 ? formatNumber(bPriceVal) : "";

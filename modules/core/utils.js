@@ -223,6 +223,15 @@ export function stringSimilarity(s1, s2) {
   return Math.max(charScore, tokenF1, (tokenPrecision * 0.7) + (tokenRecall * 0.3), containmentScore);
 }
 
+export function normalizeSupplierName(name) {
+  if (!name) return "";
+  return String(name)
+    .trim()
+    .toLowerCase()
+    .replace(/^(pt\.?|cv\.?|ud\.?|pd\.?|nv\.?|fa\.?|toko|apotek)\s+/i, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
 /**
  * Mencari produk master terdekat berdasarkan nama obat faktur
  * Mengutamakan kecocokan supplier terlebih dahulu, lalu nama produk.
@@ -240,17 +249,17 @@ export function findBestProductMatch(searchName, masterProducts = [], threshold 
     return { matchType: "none", score: 0, product: null };
   }
 
-  const normPrefSup = norm(preferredSupplier);
+  const cleanPrefSup = normalizeSupplierName(preferredSupplier);
 
-  // Jika preferredSupplier diisi, utamakan pencarian ke produk supplier yang cocok terlebih dahulu
-  if (normPrefSup) {
-    const sameSupProds = masterProducts.filter(p => !p._isDeleted && norm(p["Supplier"] || p["Produsen"] || p.supplier) === normPrefSup);
+  // Jika preferredSupplier diisi, ketat hanya mencari ke produk milik supplier tersebut demi keakuratan data faktur
+  if (cleanPrefSup) {
+    const sameSupProds = masterProducts.filter(p => !p._isDeleted && normalizeSupplierName(p["Supplier"] || p["Produsen"] || p.supplier) === cleanPrefSup);
     if (sameSupProds.length > 0) {
-      const supMatch = findBestProductMatch(searchName, sameSupProds, threshold);
-      if (supMatch.matchType !== "none") {
-        return supMatch;
-      }
+      return findBestProductMatch(searchName, sameSupProds, threshold);
     }
+    // Jika preferredSupplier diisi namun tidak ada satupun produk yang cocok dari supplier tersebut,
+    // blokir pencocokan ke supplier lain demi keakuratan data faktur!
+    return { matchType: "none", score: 0, product: null };
   }
 
   const queryTokens = new Set(normQuery.split(/\s+/).filter(Boolean));
@@ -265,7 +274,7 @@ export function findBestProductMatch(searchName, masterProducts = [], threshold 
     const pBarcode = norm(p["Barcode"] || p.barcode || "");
     const pSup = norm(p["Supplier"] || p["Produsen"] || p.supplier || "");
 
-    const isDifferentSup = !!(normPrefSup && pSup && (pSup !== normPrefSup));
+    const isDifferentSup = !!(cleanPrefSup && pSup && (normalizeSupplierName(pSup) !== cleanPrefSup));
 
     // 1. Exact match pada Barcode atau Kode Produk
     if (pBarcode && pBarcode === norm(rawQuery)) {

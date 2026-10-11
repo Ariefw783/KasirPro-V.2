@@ -16,7 +16,7 @@
  * 10. Cetak PDF Faktur resmi A4 Portrait.
  */
 
-import { $, num, parseMoney, text, norm, rupiah, formatNumber, escapeHtml, nowIso, uid, INVOICE_TOLERANCE_RP, normalizeProductName, findBestProductMatch, stringSimilarity } from "../modules/core/utils.js";
+import { $, num, parseMoney, text, norm, rupiah, formatNumber, escapeHtml, nowIso, uid, INVOICE_TOLERANCE_RP, normalizeProductName, normalizeSupplierName, findBestProductMatch, stringSimilarity } from "../modules/core/utils.js";
 import { STORE_KEYS, readStore, writeStore, writeMasterDelta, readCurrentStock, setActiveStock, writeStockTransaction, databaseStore, deletePurchaseInvoice } from "../modules/database/database-store.js";
 import { generatePurchaseInvoicePdf } from "../modules/core/pdf.js";
 import { generateAutoProductCode } from "./management-products.js";
@@ -914,10 +914,14 @@ export async function executeConfirmInvoice(inv) {
       const baseQtyAdded = num(item.qty) * convRatio;
 
       let prodIdx = products.findIndex(p => {
+        const pSup = p["Supplier"] || p["Produsen"] || "";
+        const cleanInvSup = normalizeSupplierName(inv.supplierName);
+        const cleanPSup = normalizeSupplierName(pSup);
+        const isSameSupplier = !cleanInvSup || !cleanPSup || (cleanPSup === cleanInvSup);
         if (item.matchedProductCode) return norm(p["Kode Produk"]) === norm(item.matchedProductCode);
         if (item.productCode) return norm(p["Kode Produk"]) === norm(item.productCode);
-        if (item.barcode && p["Barcode"]) return norm(p["Barcode"]) === norm(item.barcode);
-        return norm(p["Nama Produk"]) === norm(item.name);
+        if (item.barcode && p["Barcode"]) return norm(p["Barcode"]) === norm(item.barcode) && isSameSupplier;
+        return norm(p["Nama Produk"]) === norm(item.name) && isSameSupplier;
       });
 
       let targetProd = null;
@@ -1473,7 +1477,7 @@ function processTsvData(rawText) {
 
   const prods = cachedMasterProducts || (readStore(STORE_KEYS.master, {})?.produk || []);
   const selectedSupplier = text($("manual-inv-supplier")?.value);
-  const normSelectedSup = norm(selectedSupplier);
+  const cleanSelectedSup = normalizeSupplierName(selectedSupplier);
 
   // Pre-indexing Master Produk untuk pencocokan instan (< 10ms)
   // Dipisahkan Tier 1 (Supplier Sama) dan Tier 2 (Supplier Lain/Umum)
@@ -1493,9 +1497,9 @@ function processTsvData(rawText) {
     const pBarcode = norm(p["Barcode"] || p.barcode);
     const pName = p["Nama Produk"] || p.name || "";
     const normPName = normalizeProductName(pName);
-    const pSup = norm(p["Supplier"] || p["Produsen"] || p.supplier || "");
+    const cleanPSup = normalizeSupplierName(p["Supplier"] || p["Produsen"] || p.supplier || "");
 
-    const isSameSup = !!(normSelectedSup && pSup && (pSup === normSelectedSup));
+    const isSameSup = !!(cleanSelectedSup && cleanPSup && (cleanPSup === cleanSelectedSup));
 
     if (isSameSup) {
       if (pBarcode && !barcodeMap_Sup.has(pBarcode)) barcodeMap_Sup.set(pBarcode, p);
@@ -1637,7 +1641,7 @@ function processTsvData(rawText) {
     let match = null;
 
     // 1. TAHAP 1: Utamakan kecocokan produk pada supplier yang dipilih terlebih dahulu
-    if (normSelectedSup) {
+    if (cleanSelectedSup) {
       if (barcodeMap_Sup.has(normRaw)) {
         match = { matchType: "exact", score: 1, product: barcodeMap_Sup.get(normRaw) };
       } else if (codeMap_Sup.has(normRaw)) {
@@ -1674,7 +1678,7 @@ function processTsvData(rawText) {
 
     // 2. TAHAP 2: Jika tidak cocok di supplier pilihan atau supplier belum dipilih
     if (!match) {
-      if (!normSelectedSup) {
+      if (!cleanSelectedSup) {
         // Jika belum ada supplier dipilih, cari di master secara netral
         if (barcodeMap_Other.has(normRaw)) {
           match = { matchType: "exact", score: 1, product: barcodeMap_Other.get(normRaw) };
@@ -1926,9 +1930,9 @@ function renderManualInvoiceItems() {
       headerBadgeHtml = `<span class="header-status-pill" style="font-size:10px;font-weight:700;background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;padding:1px 6px;border-radius:4px;">+ Produk Baru</span>`;
       matchBadgeHtml = `
         <div style="margin-top:2px;">
-          <span style="font-size:10px;font-weight:700;background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;padding:1px 6px;border-radius:4px;" title="Produk belum terdaftar di master data (akan didaftarkan otomatis)">
-            + Produk Baru
-          </span>
+          <button type="button" class="btn-register-new-prod-row button button-small" data-index="${idx}" style="font-size:10px;font-weight:700;background:#e0f2fe;color:#0284c7;border:1px solid #bae6fd;padding:2px 7px;border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="Klik untuk mendaftarkan obat ini ke Master Produk dengan 3 tingkat satuan faktur">
+            <i class="fa-solid fa-plus-circle"></i> + Daftarkan Produk Baru
+          </button>
         </div>
       `;
     } else if (item.productCode) {
@@ -2310,6 +2314,34 @@ function bindManualItemRowEvents() {
       removeManualInvoiceRow(idx);
     });
   });
+
+  // Tombol Daftarkan Produk Baru Langsung dari Baris Tabel
+  tbody.querySelectorAll(".btn-register-new-prod-row").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.index, 10);
+      const curItem = manualInvoiceItems[idx] || {};
+      const currentSup = text($("manual-inv-supplier")?.value);
+      if (typeof window.openProductModal === "function") {
+        window.openProductModal(
+          {
+            name: curItem.name || "",
+            supplier: currentSup,
+            buyUnit: curItem.purchaseUnit || "Box",
+            midUnit: curItem.intermediateUnit || "",
+            midQty: num(curItem.intermediateQty) || 1,
+            baseUnit: curItem.baseUnit || "Pcs",
+            conversion: num(curItem.conversionRatio) || 1,
+            buyPrice: num(curItem.buyPrice) || 0
+          },
+          (newProd) => {
+            selectProductForRow(idx, newProd);
+          }
+        );
+      }
+    });
+  });
 }
 
 function showProductSuggestions(inputEl, idx, query) {
@@ -2329,12 +2361,14 @@ function showProductSuggestions(inputEl, idx, query) {
 
   const supMatches = [];
 
+  const cleanCurrentSup = normalizeSupplierName(currentSup);
+
   for (const p of prods) {
     if (p._isDeleted || norm(p["Status"] || p["Status Produk"]) === "nonaktif") continue;
 
-    const pSup = norm(p["Supplier"] || p["Produsen"]);
+    const cleanPSup = normalizeSupplierName(p["Supplier"] || p["Produsen"] || p.supplier);
     // Blokir produk acuan yang bukan berasal dari supplier terpilih pada poin 1
-    if (pSup !== norm(currentSup)) continue;
+    if (cleanCurrentSup && cleanPSup !== cleanCurrentSup) continue;
 
     const name = (p["Nama Produk"] || p.name || "").toLowerCase();
     const code = (p["Kode Produk"] || p["Kode Produk Internal"] || "").toLowerCase();
@@ -2436,8 +2470,10 @@ function showProductSuggestions(inputEl, idx, query) {
           name: prodName,
           supplier: currentSup,
           buyUnit: curItem.purchaseUnit || "Box",
-          conversion: num(curItem.conversionRatio) || 1,
+          midUnit: curItem.intermediateUnit || "",
+          midQty: curItem.intermediateQty || 1,
           baseUnit: curItem.baseUnit || "Pcs",
+          conversion: num(curItem.conversionRatio) || 1,
           buyPrice: num(curItem.buyPrice) || 0
         },
         (newProd) => {
@@ -2460,29 +2496,18 @@ function selectProductForRow(idx, prod) {
     item.barcode = prod["Barcode"];
   }
 
-  // 2. PROTEKSI NILAI TRANSAKSI FAKTUR FISIK
-  // Hanya isi kolom jika pada baris faktur fisik masih kosong/belum diisi pengguna
-  if (!item.purchaseUnit) {
-    item.purchaseUnit = prod["Kemasan Beli"] || prod["Satuan Pembelian"] || "BOX";
-  }
+  // 2. Sinkronisasi 3 Tingkat Satuan & Konversi
+  const buyU = prod["Kemasan Beli"] || prod["Satuan Pembelian"] || item.purchaseUnit || "BOX";
+  const baseU = prod["Satuan Dasar"] || prod["Satuan"] || item.baseUnit || "TABLET";
+  const interU = prod["Satuan Antara"] || item.intermediateUnit || "";
+  const conv = num(prod["Konversi"] ?? prod["Isi Kemasan"] ?? item.conversionRatio) || 1;
+  const interQty = num(prod["Isi Satuan Antara"] ?? item.intermediateQty) || 1;
 
-  const baseU = prod["Satuan Dasar"] || prod["Satuan"] || "TABLET";
-  const interU = prod["Satuan Antara"] || "";
-  const conv = num(prod["Konversi"] ?? prod["Isi Kemasan"] ?? 1) || 1;
-  const interQty = num(prod["Isi Satuan Antara"]) || 1;
-
-  if (!item.baseUnit) {
-    item.baseUnit = baseU;
-  }
-  if (!num(item.conversionRatio) || num(item.conversionRatio) <= 1) {
-    if (conv > 1) item.conversionRatio = conv;
-  }
-
-  // Isi satuan antara hanya jika di faktur fisik belum diisi
-  if (!item.intermediateUnit && interU) {
-    item.intermediateUnit = interU;
-    item.intermediateQty = interQty;
-  }
+  item.purchaseUnit = buyU;
+  item.baseUnit = baseU;
+  item.intermediateUnit = (interU && norm(interU) !== norm(baseU)) ? interU : "";
+  item.intermediateQty = item.intermediateUnit ? interQty : "";
+  item.conversionRatio = conv;
 
   // HARGA BELI FAKTUR: HANYA ISI JIKA DI BARIS FAKTUR FISIK MASIH KOSONG / 0
   const masterBuyPrice = num(prod["Harga Beli Terakhir"] ?? prod["Harga Beli"] ?? 0);
@@ -2490,6 +2515,7 @@ function selectProductForRow(idx, prod) {
     item.buyPrice = masterBuyPrice;
   }
 
+  item.supplier = prod["Supplier"] || text($("manual-inv-supplier")?.value) || "";
   item.matchStatus = "exact";
   item.matchScore = 100;
   item.matchedProduct = prod;

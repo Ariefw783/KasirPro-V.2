@@ -1,13 +1,13 @@
 {
-  "version": "2.2.72",
-  "build": "20261011.19",
+  "version": "2.2.73",
+  "build": "20261011.20",
   "releaseDate": "11 Oktober 2026",
-  "title": "Complete Pagination for Stock Card Ledger & Movement Audit Trail",
-  "description": "Menambahkan sistem paginasi lengkap pada Modal Kartu Stok Produk dan Panel Riwayat Mutasi Stok & Barang Masuk untuk kenyamanan audit ribuan transaksi.",
+  "title": "Strict TSV Supplier Isolation & Precision 3-Tier Unit Registration",
+  "description": "Isolasi ketat pencocokan supplier pada tempel TSV faktur manual dan sinkronisasi 100% presisi 3 konversi satuan saat mendaftarkan produk baru dari baris grid faktur.",
   "changelog": [
-    "Paginasi interaktif pada Modal Kartu Stok Produk (10 entri per halaman)",
-    "Paginasi adaptif pada Panel Riwayat Mutasi Stok & Barang Masuk (25 entri per halaman)",
-    "Sinkronisasi tombol navigasi Sebelumnya/Berikutnya dan teks metadata halaman",
-    "Seluruh 256 uji verifikasi sistem lulus 100% tanpa kendala"
+    "Normalisasi supplier akurat lintas format 'PT.', 'PT ', 'CV.' dan pemblokiran mutlak pencocokan ke produk milik supplier lain",
+    "Preservasi utuh 3 tingkat satuan (satuan beli, sedang, dasar, dan rasio konversi) saat registrasi produk baru dari baris faktur",
+    "Penyediaan tombol interaktif langsung '+ Daftarkan Produk Baru' pada baris faktur berstatus produk baru",
+    "Seluruh 268 uji verifikasi sistem lulus 100% tanpa kendala"
   ]
 }

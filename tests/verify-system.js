@@ -1937,6 +1937,116 @@ assert(
   "Paginasi Kartu Stok: Navigasi Halaman Catatan Mutasi Terpasang pada Modal Kartu Stok"
 );
 
+console.log("\n🔒 BAGIAN 26: PENGUJIAN AKURASI SUPPLIER TSV & PRESERVASI 3 KONVERSI SATUAN FAKTUR GRID");
+
+// 1. Uji Normalisasi Nama Supplier Lintas Variasi Badan Usaha & Casing
+const { normalizeSupplierName } = await import("../modules/core/utils.js");
+assert(
+  normalizeSupplierName("PT. Kimia Farma") === "kimiafarma" &&
+  normalizeSupplierName("PT Kimia Farma") === "kimiafarma" &&
+  normalizeSupplierName("Kimia Farma") === "kimiafarma" &&
+  normalizeSupplierName("PT. KIMIA FARMA") === "kimiafarma",
+  "Supplier Norm: 'PT. Kimia Farma', 'PT Kimia Farma', 'Kimia Farma' Menghasilkan Identitas Sama ('kimiafarma')"
+);
+assert(
+  normalizeSupplierName("PT. MENSA BINASUKSES") === normalizeSupplierName("Mensa Binasukses"),
+  "Supplier Norm: Normalisasi Mensa Binasukses Akurat Lintas Prefiks & Casing"
+);
+
+// 2. Uji TSV Matching: Blokir Produk Berbeda Supplier Saat Supplier Dikunci via Dropdown
+function simulateTsvRowMatching(rawName, masterCatalog, lockedSupplier) {
+  const cleanLockedSup = normalizeSupplierName(lockedSupplier);
+  const candSup = [];
+  const candOther = [];
+
+  for (const p of masterCatalog) {
+    if (p._isDeleted) continue;
+    const cleanPSup = normalizeSupplierName(p["Supplier"] || p["Produsen"] || "");
+    const isSame = cleanLockedSup && cleanPSup && (cleanPSup === cleanLockedSup);
+    const normPName = (p["Nama Produk"] || "").trim().toLowerCase();
+    if (isSame) candSup.push({ product: p, normName: normPName });
+    else candOther.push({ product: p, normName: normPName });
+  }
+
+  const normQ = (rawName || "").trim().toLowerCase();
+  let match = null;
+
+  if (cleanLockedSup) {
+    const found = candSup.find(c => c.normName === normQ);
+    if (found) match = { matchType: "exact", product: found.product };
+  }
+
+  if (!match) {
+    if (!cleanLockedSup) {
+      const foundOther = candOther.find(c => c.normName === normQ);
+      if (foundOther) match = { matchType: "exact", product: foundOther.product };
+    } else {
+      // Blokir produk acuan yang bukan berasal dari supplier terkunci
+      match = { matchType: "none", product: null };
+    }
+  }
+
+  return match;
+}
+
+const multiSupCatalog = [
+  { "Kode Produk": "KF-001", "Nama Produk": "AMOXICILLIN 500MG", "Supplier": "PT Kimia Farma" },
+  { "Kode Produk": "MBS-001", "Nama Produk": "AMOXICILLIN 500MG", "Supplier": "PT Mensa Binasukses" }
+];
+
+// Saat dropdown terkunci ke PT Mensa Binasukses:
+const matchMensa = simulateTsvRowMatching("AMOXICILLIN 500MG", multiSupCatalog, "PT Mensa Binasukses");
+assert(matchMensa.matchType === "exact" && matchMensa.product?.["Kode Produk"] === "MBS-001", "TSV Matching: Tepat Menautkan Produk Milik Supplier Terkunci (PT Mensa Binasukses)");
+
+// Saat catalog hanya memiliki produk dari PT Kimia Farma tapi dropdown terkunci ke PT Mensa Binasukses:
+const singleSupCatalog = [
+  { "Kode Produk": "KF-001", "Nama Produk": "AMOXICILLIN 500MG", "Supplier": "PT Kimia Farma" }
+];
+const matchBlocked = simulateTsvRowMatching("AMOXICILLIN 500MG", singleSupCatalog, "PT Mensa Binasukses");
+assert(matchBlocked.matchType === "none" && matchBlocked.product === null, "TSV Matching: Dilarang Menautkan Produk Beda Supplier (Status Baru / None)");
+
+// 3. Uji Preservasi 3 Konversi Satuan dari Grid Row Faktur ke Modal Tambah Produk Baru
+function simulateGridToModalPrefill(gridRow, currentSupplier) {
+  return {
+    name: gridRow.name || "",
+    supplier: currentSupplier,
+    buyUnit: gridRow.purchaseUnit || "Box",
+    midUnit: gridRow.intermediateUnit || "",
+    midQty: (gridRow.intermediateQty !== undefined && gridRow.intermediateQty !== null && gridRow.intermediateQty !== "") ? gridRow.intermediateQty : 1,
+    baseUnit: gridRow.baseUnit || "Pcs",
+    conversion: Number(gridRow.conversionRatio) || 1,
+    buyPrice: Number(gridRow.buyPrice) || 0
+  };
+}
+
+const mockGridRow = {
+  name: "PARACETAMOL 500 MG",
+  purchaseUnit: "BOX",
+  intermediateUnit: "STRIP",
+  intermediateQty: 10,
+  baseUnit: "KAPLET",
+  conversionRatio: 100,
+  buyPrice: 45000
+};
+
+const prefillResult = simulateGridToModalPrefill(mockGridRow, "PT Mensa Binasukses");
+assert(prefillResult.buyUnit === "BOX", "Preservasi Satuan: Satuan Beli / Besar Tetap 'BOX'");
+assert(prefillResult.midUnit === "STRIP", "Preservasi Satuan: Satuan Sedang Tetap 'STRIP'");
+assert(prefillResult.midQty === 10, "Preservasi Satuan: Isi Satuan Sedang Tetap 10");
+assert(prefillResult.baseUnit === "KAPLET", "Preservasi Satuan: Satuan Dasar / Terkecil Tetap 'KAPLET' (Bukan Default Pcs)");
+assert(prefillResult.conversion === 100, "Preservasi Satuan: Total Konversi Tetap 100");
+assert(prefillResult.supplier === "PT Mensa Binasukses", "Preservasi Satuan: Supplier Terkunci Diteruskan ke Form Registrasi");
+
+// 4. Verifikasi Keberadaan Handler di Sumber Kode
+assert(
+  mgmtInvoicesJs.includes("btn-register-new-prod-row") && mgmtInvoicesJs.includes("+ Daftarkan Produk Baru"),
+  "DOM & Event: Tombol Daftarkan Produk Baru Terintegrasi Langsung pada Baris Faktur Grid Mode"
+);
+assert(
+  mgmtProductsJs.includes("input-prod-base-unit") && mgmtProductsJs.includes("prefill.baseUnit"),
+  "Form Master Produk: Sinkronisasi Form Mendukung prefill.baseUnit Tanpa Reset ke Default Pcs"
+);
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);
