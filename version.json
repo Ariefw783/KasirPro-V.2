@@ -1,13 +1,13 @@
 {
-  "version": "2.2.62",
-  "build": "20261011.04",
+  "version": "2.2.63",
+  "build": "20261011.05",
   "releaseDate": "11 Oktober 2026",
-  "title": "Ascending Unit Hierarchy Pricing Excel",
-  "description": "Format Excel urutan kemasan A terkecil ke C terbesar, modal beli berformat satuan faktur asli, dan kuning soft pada kemasan C.",
+  "title": "Resilient Color-Independent Pricing Import",
+  "description": "Import harga jual toleran terhadap huruf besar/kecil, spasi, alias, dan bebas styling warna.",
   "changelog": [
-    "Order units ascending A to C",
-    "Format invoice unit price string",
-    "Move soft yellow to C",
-    "Support flexible currency string parsing"
+    "Support case insensitive import headers",
+    "Ignore cell styling during import",
+    "Add tolerant alias header matching",
+    "Pass all pricing import tests"
   ]
 }
