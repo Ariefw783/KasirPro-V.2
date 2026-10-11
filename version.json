@@ -1,13 +1,13 @@
 {
   "version": "2.2.66",
-  "build": "20261011.12",
+  "build": "20261011.13",
   "releaseDate": "11 Oktober 2026",
-  "title": "Frosted Satin Glass Cards & POS Sync Loading Modal",
-  "description": "Menyempurnakan estetika visual kartu konten dengan gaya Frosted Satin Glass dan Soft Ambient Depth, serta menambahkan modal pop-up loading pada inisialisasi awal POS sampai database Firestore siap digunakan.",
+  "title": "Soft Sky Gradient Manual Invoice Modal Header",
+  "description": "Memperbarui header modal Input Faktur Manual dari background gelap menjadi gradien soft sky to white yang sejuk, bersih, dan harmonis dengan tema kartu modern KasirPro.",
   "changelog": [
-    "Apply frosted satin card styling",
-    "Add soft ambient elevation depth",
-    "Display startup loading modal POS",
-    "Synchronize Firestore database ready lifecycle"
+    "Apply soft sky modal gradient",
+    "Harmonize invoice dialog text colors",
+    "Upgrade close button frosted styling",
+    "Maintain complete system verification tests"
   ]
 }
