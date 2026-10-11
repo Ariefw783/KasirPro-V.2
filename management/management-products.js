@@ -843,22 +843,35 @@ export async function handleExportPricingExcel() {
     }
 
     const invoiceLookup = getInvoiceLookupMap();
-    // Prioritas 1: Produk yang membutuhkan harga jual (stok > 0 dan harga jual <= 0)
+    // Prioritas 1: Produk yang membutuhkan harga jual (stok > 0 dan harga jual <= 0, abaikan produk Nonaktif)
     let targets = prods.filter(p => {
       if (p._isDeleted) return false;
+      const status = norm(p["Status"] || p["Status Produk"] || "");
+      if (status === "nonaktif" || status === "inactive") return false;
       const code = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
       const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
       const sellPrice = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
       return stock > 0 && sellPrice <= 0;
     });
 
-    // Prioritas 2: Jika semua sudah berharga, ekspor produk yang sedang difilter atau semua produk berstok
+    // Prioritas 2: Jika semua sudah berharga, ekspor produk yang sedang difilter atau semua produk berstok aktif
     if (targets.length === 0) {
       if (filteredProducts.length > 0 && filteredProducts.length < prods.length) {
-        targets = filteredProducts;
+        targets = filteredProducts.filter(p => {
+          const status = norm(p["Status"] || p["Status Produk"] || "");
+          return !p._isDeleted && status !== "nonaktif" && status !== "inactive";
+        });
       } else {
-        targets = prods.filter(p => !p._isDeleted && Math.max(readCurrentStock(norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id)), num(p["Stok Awal"] ?? p.stock ?? 0)) > 0);
-        if (!targets.length) targets = prods.filter(p => !p._isDeleted);
+        targets = prods.filter(p => {
+          const status = norm(p["Status"] || p["Status Produk"] || "");
+          return !p._isDeleted && status !== "nonaktif" && status !== "inactive" && Math.max(readCurrentStock(norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id)), num(p["Stok Awal"] ?? p.stock ?? 0)) > 0;
+        });
+        if (!targets.length) {
+          targets = prods.filter(p => {
+            const status = norm(p["Status"] || p["Status Produk"] || "");
+            return !p._isDeleted && status !== "nonaktif" && status !== "inactive";
+          });
+        }
       }
     }
 
@@ -971,12 +984,13 @@ async function handleDeleteProduct(code) {
 
   const hasMovements = movements.some(m => norm(m.productCode) === norm(code));
   const hasSales = sales.some(s => (s.items || []).some(it => norm(it.code) === norm(code)));
-  const hasInvoices = invoices.some(inv => (inv.items || []).some(it => norm(it.matchedProductCode) === norm(code)));
+  const hasInvoices = invoices.some(inv => (inv.items || []).some(it => norm(it.matchedProductCode) === norm(code) || norm(it.productCode) === norm(code) || norm(it.code) === norm(code)));
 
-  if (stock > 0 || hasMovements || hasSales || hasInvoices) {
+  // KASUS 1: Produk sudah pernah terjual di Kasir POS -> Mutlak tidak boleh dihapus demi jejak audit akuntansi
+  if (hasSales) {
     const confirmDeactivate = await window.KasirProDialog?.confirm(
-      "Produk Memiliki Riwayat",
-      `Produk "${prodName}" memiliki stok (${stock}) atau riwayat transaksi di sistem.\n\nSesuai prinsip akuntansi, produk dengan riwayat tidak boleh dihapus permanen agar audit penjualan masa lalu tidak rusak.\n\nApakah Anda ingin MENONAKTIFKAN produk ini?`
+      "Produk Memiliki Riwayat Penjualan",
+      `Produk "${prodName}" sudah pernah ditransaksikan di kasir POS.\n\nSesuai prinsip akuntansi, produk yang pernah terjual tidak boleh dihapus permanen agar pembukuan audit masa lalu tidak rusak.\n\nApakah Anda ingin MENONAKTIFKAN produk ini?`
     );
     if (confirmDeactivate) {
       target["Status"] = "Nonaktif";
@@ -988,17 +1002,39 @@ async function handleDeleteProduct(code) {
     return;
   }
 
-  // Jika produk baru & belum pernah ada transaksi -> Hapus permanen
+  // KASUS 2: Produk masih terhubung ke Faktur Pembelian aktif
+  if (hasInvoices) {
+    const confirmDeactivate = await window.KasirProDialog?.confirm(
+      "Produk Terhubung ke Faktur Pembelian",
+      `Produk "${prodName}" masih tercatat dalam dokumen Faktur Pembelian aktif di sistem.\n\nJika ingin menghapus permanen produk ini, silakan batalkan/hapus fakturnya terlebih dahulu di menu Faktur.\n\nApakah Anda ingin MENONAKTIFKAN produk ini sekarang?`
+    );
+    if (confirmDeactivate) {
+      target["Status"] = "Nonaktif";
+      target["Status Produk"] = "Nonaktif";
+      renderProducts();
+      await writeMasterDelta({ produk: [target] });
+      window.KasirProDialog?.success("Status Diperbarui", `Produk "${prodName}" telah dinonaktifkan.`);
+    }
+    return;
+  }
+
+  // KASUS 3: Produk BELUM PERNAH TERJUAL & TIDAK TERHUBUNG KE FAKTUR AKTIF
+  // (Termasuk produk yang memiliki sisa stok phantom / mutasi dari faktur yang sudah dihapus/dibatalkan)
+  let confirmMsg = `Apakah Anda yakin ingin menghapus produk "${prodName}" secara permanen dari sistem dan cloud?`;
+  if (stock > 0 || hasMovements) {
+    confirmMsg = `Produk "${prodName}" belum pernah terjual di kasir POS, namun masih menyimpan sisa stok (${stock}) atau mutasi dari faktur yang sebelumnya sudah dihapus.\n\nApakah Anda ingin MENGHAPUS BERSIH produk ini dan MENOLKAN seluruh sisa stoknya secara permanen dari sistem dan cloud?`;
+  }
+
   const confirmDelete = await window.KasirProDialog?.confirm(
-    "Hapus Produk Permanen",
-    `Apakah Anda yakin ingin menghapus produk "${prodName}"? Produk ini belum memiliki riwayat transaksi sehingga akan dihapus secara permanen dari sistem dan cloud.`
+    "Hapus Bersih Produk Permanen",
+    confirmMsg
   );
   if (!confirmDelete) return;
 
   try {
     await deleteMasterProduct(code);
     renderProducts();
-    window.KasirProDialog?.success("Berhasil Dihapus", `Produk "${prodName}" berhasil dihapus secara permanen.`);
+    window.KasirProDialog?.success("Berhasil Dihapus", `Produk "${prodName}" beserta seluruh sisa stoknya berhasil dihapus secara permanen.`);
   } catch (err) {
     console.error("[Products] Gagal menghapus produk:", err);
     window.KasirProDialog?.error("Gagal Menghapus", err.message || "Terjadi kesalahan saat menghapus produk.");

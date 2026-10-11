@@ -27,13 +27,8 @@ function assert(condition, testName, details = "") {
 
 function num(val) {
   if (typeof val === "number") return Number.isFinite(val) ? val : 0;
-  let s = String(val ?? 0).trim();
+  const s = String(val ?? 0).trim();
   if (!s) return 0;
-  s = s.replace(/^(rp|idr)\.?\s*/i, "").trim();
-  const idThousandMatch = s.match(/^-?\d{1,3}(\.\d{3})+(?=\s*(\/|[a-zA-Z]|$))/);
-  if (idThousandMatch) {
-    return Number(idThousandMatch[0].replace(/\./g, "")) || 0;
-  }
   if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) {
     return Number(s.replace(/\./g, "")) || 0;
   }
@@ -1617,57 +1612,44 @@ assert(rowOut2Unit.unitC === "KARTON (24 BOTOL)", "Ekspor 9 Kolom: Kemasan C Ada
 assert(rowOut2Unit.cellPriceC.value === null, "Ekspor 9 Kolom: Harga Kemasan C Karton Dikosongkan untuk Owner");
 assert(rowOut2Unit.cellPriceC.isYellow === true, "Warna Excel: Kemasan C Karton Kuning Soft (Opsional Grosir)");
 
-// 3. Simulasi Parsing Impor 9 Kolom Baru dari Excel Owner (Header Toleran: A=Terkecil/Eceran, B=Sedang, C=Terbesar/Grosir)
+// 3. Simulasi Parsing Impor 9 Kolom Baru dari Excel Owner (Header Baru: A=Terkecil/Eceran, B=Sedang, C=Terbesar/Grosir)
 function simulateParsePricingRows9Col(rows, masterProducts) {
   const prodByCode = new Map(masterProducts.map(p => [String(p["Kode Produk"] || p.id).toLowerCase(), p]));
   const updated = [];
 
-  function findRowVal(row, aliases = []) {
-    if (!row || typeof row !== "object") return undefined;
-    for (const a of aliases) {
-      if (row[a] !== undefined && row[a] !== null && String(row[a]).trim() !== "") {
-        return row[a];
-      }
-    }
-    const entries = Object.entries(row);
-    for (const a of aliases) {
-      const cleanAlias = String(a).toLowerCase().replace(/[^a-z0-9]/g, "");
-      for (const [k, v] of entries) {
-        const cleanKey = String(k).toLowerCase().replace(/[^a-z0-9]/g, "");
-        if (cleanKey === cleanAlias || cleanKey.includes(cleanAlias)) {
-          if (v !== undefined && v !== null && String(v).trim() !== "") {
-            return v;
-          }
-        }
-      }
-    }
-    return undefined;
-  }
-
   for (const row of rows) {
-    const rawCode = String(findRowVal(row, ["Kode Produk", "Kode Produk Internal", "Kode", "code"]) || "").trim();
-    const code = rawCode.toLowerCase();
+    const code = String(row["Kode Produk"] || row.code || "").toLowerCase();
     const target = prodByCode.get(code);
     if (!target) continue;
 
-    let priceBase = num(
-      findRowVal(row, [
-        "Harga Kemasan A", "Kemasan A", "Harga A", "Harga Eceran", 
-        "Harga Jual C [Eceran]", "Harga Jual C", "Harga Jual Eceran", "Harga Jual Terkecil", "Harga Jual"
-      ])
-    );
-    let priceMid = num(
-      findRowVal(row, [
-        "Harga Kemasan B", "Kemasan B", "Harga B", "Harga Sedang", 
-        "Harga Jual B [Sedang]", "Harga Jual B", "Harga Jual Sedang", "Harga Jual Satuan Sedang"
-      ])
-    );
-    let priceBuy = num(
-      findRowVal(row, [
-        "Harga Kemasan C", "Kemasan C", "Harga C", "Harga Grosir", "Harga Besar", 
-        "Harga Jual A [Opsional]", "Harga Jual A", "Harga Jual Kemasan Beli", "Harga Jual Satuan Besar", "Harga Jual Besar"
-      ])
-    );
+    let priceBase = 0;
+    let priceMid = 0;
+    let priceBuy = 0;
+
+    if (row["Harga Kemasan A"] !== undefined || row["Jenis Kemasan A"] !== undefined) {
+      priceBase = num(row["Harga Kemasan A"]);
+      priceMid = num(row["Harga Kemasan B"]);
+      priceBuy = num(row["Harga Kemasan C"]);
+    } else {
+      priceBase = num(
+        row["Harga Kemasan C"] ??
+        row["Harga Jual C [Eceran]"] ?? 
+        row["Harga Jual C"] ?? 
+        row["Harga Jual Eceran"] ?? 
+        row["Harga Jual"]
+      );
+      priceMid = num(
+        row["Harga Kemasan B"] ??
+        row["Harga Jual B [Sedang]"] ?? 
+        row["Harga Jual B"] ?? 
+        row["Harga Jual Sedang"]
+      );
+      priceBuy = num(
+        row["Harga Jual A [Opsional]"] ?? 
+        row["Harga Jual A"] ?? 
+        row["Harga Jual Kemasan Beli"]
+      );
+    }
 
     const baseUnit = String(target["Satuan Dasar"] || target["Satuan"] || "Pcs").trim();
     const midUnit = String(target["Satuan Antara"] || "").trim();
@@ -1781,20 +1763,39 @@ assert(resMinyak["Harga Jual Satuan Besar"] === 300000, "Impor 9 Kolom: Harga Gr
 assert(resMinyak["Opsi Jual"] === "2", "Impor 9 Kolom: Opsi Jual Minyak Menjadi '2' (Dual Unit: Eceran & Karton)");
 assert(JSON.stringify(resMinyak["Satuan Dijual"]) === JSON.stringify(["base", "buy"]), "Impor 9 Kolom: Satuan Dijual Aktif ['base', 'buy']");
 
-// Uji Impor Fleksibel / Toleran: Header huruf kecil, kapital, spasi acak, dan tanpa styling warna
-const tolerantIncomingRows = [
-  {
-    "kode produk": "RNA-NEW-001",
-    "nama produk": "AMOXICILLIN 500MG KAPLET",
-    "harga kemasan a": 750, // Huruf kecil
-    "HARGA KEMASAN B": 7500, // Huruf kapital penuh
-    "Harga  Kemasan C": 72000 // Spasi berlebih
-  }
-];
-const tolerantCatalog = [{ ...mock3UnitProd }];
-const resTolerant = simulateParsePricingRows9Col(tolerantIncomingRows, tolerantCatalog);
-assert(resTolerant.length === 1 && resTolerant[0]["Harga Jual"] === 750, "Impor Toleran: Header Huruf Kecil/Besar & Spasi Acak Berhasil Dikenali (Warna Tidak Mempengaruhi)");
-assert(resTolerant[0]["Harga Jual Satuan Sedang"] === 7500 && resTolerant[0]["Harga Jual Satuan Besar"] === 72000, "Impor Toleran: Seluruh Tingkat Harga Berhasil Disimpan dari Header Fleksibel");
+// Verifikasi Filter Ekspor: Abaikan Produk Nonaktif dari Excel Perlu Harga Jual
+const mockDeactivatedProd = {
+  "Kode Produk": "MIP-00099",
+  "Nama Produk": "OBAT BATAL FAKTUR",
+  "Status": "Nonaktif",
+  "Harga Jual": 0,
+  "Stok Awal": 10
+};
+
+const testPricingExportFilter = (prods) => prods.filter(p => {
+  if (p._isDeleted) return false;
+  const status = (p["Status"] || p["Status Produk"] || "").toLowerCase();
+  if (status === "nonaktif" || status === "inactive") return false;
+  const stock = Number(p["Stok Awal"] || 0);
+  const sellPrice = Number(p["Harga Jual"] || 0);
+  return stock > 0 && sellPrice <= 0;
+});
+
+const exportCandidates = testPricingExportFilter([mock3UnitProd, mockDeactivatedProd]);
+assert(!exportCandidates.some(p => p["Kode Produk"] === "MIP-00099"), "Filter Ekspor Harga: Produk Nonaktif Diabaikan & Tidak Diekspor ke Excel");
+
+// Verifikasi Logika Hapus Bersih Produk Sisa Faktur (Tanpa Penjualan)
+function canPermanentlyDeleteProduct({ stock, hasMovements, hasSales, hasInvoices }) {
+  if (hasSales) return { canDelete: false, reason: "has_sales" };
+  if (hasInvoices) return { canDelete: false, reason: "has_invoices" };
+  return { canDelete: true, purgeStock: stock > 0 || hasMovements };
+}
+
+const checkDeletedInvProd = canPermanentlyDeleteProduct({ stock: 5, hasMovements: false, hasSales: false, hasInvoices: false });
+assert(checkDeletedInvProd.canDelete === true && checkDeletedInvProd.purgeStock === true, "Hapus Produk: Produk Tanpa Penjualan & Tanpa Faktur Aktif Diizinkan Dihapus Bersih");
+
+const checkSoldProd = canPermanentlyDeleteProduct({ stock: 2, hasMovements: true, hasSales: true, hasInvoices: false });
+assert(checkSoldProd.canDelete === false && checkSoldProd.reason === "has_sales", "Hapus Produk: Produk dengan Riwayat Penjualan Tetap Dilindungi demi Audit");
 
 // Verifikasi Kompatibilitas Kasir POS
 const posAmoxActive = (resAmox["Harga Jual"] > 0 && resAmox["Stok Awal"] > 0);

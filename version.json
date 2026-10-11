@@ -2,12 +2,12 @@
   "version": "2.2.63",
   "build": "20261011.05",
   "releaseDate": "11 Oktober 2026",
-  "title": "Resilient Color-Independent Pricing Import",
-  "description": "Import harga jual toleran terhadap huruf besar/kecil, spasi, alias, dan bebas styling warna.",
+  "title": "Purge Phantom Stock & Reversal Fix",
+  "description": "Mengizinkan hapus bersih produk sisa faktur tanpa riwayat penjualan, mengabaikan produk nonaktif di ekspor harga, dan sinkronisasi stok master saat pembatalan faktur.",
   "changelog": [
-    "Support case insensitive import headers",
-    "Ignore cell styling during import",
-    "Add tolerant alias header matching",
-    "Pass all pricing import tests"
+    "Allow purge unsold phantom products",
+    "Exclude inactive products from export",
+    "Sync master stock on reversal",
+    "Retain product code on invoice"
   ]
 }

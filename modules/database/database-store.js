@@ -1281,10 +1281,10 @@ export async function deletePurchaseInvoice(invoiceIdOrNumber) {
   const isConfirmed = norm(targetInv.status) === "terkonfirmasi" || norm(targetInv.status) === "confirmed";
   if (isConfirmed && Array.isArray(targetInv.items)) {
     for (const item of targetInv.items) {
-      const code = item.matchedProductCode || item.code || item.productCode;
+      const code = item.matchedProductCode || item.productCode || item.code;
       const conv = num(item.conversionRatio) || num(item.conversion) || num(item.isiKonversi) || 1;
       const baseQty = (num(item.qty) || 1) * conv;
-      const prod = products.find(p => norm(p["Kode Produk"]) === norm(code) || norm(p["Nama Produk"]) === norm(item.name));
+      const prod = products.find(p => (code && norm(p["Kode Produk"]) === norm(code)) || norm(p["Nama Produk"]) === norm(item.name));
       if (prod) {
         const curStock = readCurrentStock(prod["Kode Produk"]);
         // Rollback aman: kembali ke posisi sebelum faktur (floor 0)

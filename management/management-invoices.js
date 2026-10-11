@@ -890,6 +890,8 @@ export async function executeConfirmInvoice(inv) {
       } else {
         // Produk Baru dari Faktur
         const newCode = item.productCode || (inv.supplierName ? generateAutoProductCode(inv.supplierName) : `PRD-${Date.now().toString().slice(-5)}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`);
+        item.productCode = newCode;
+        item.matchedProductCode = newCode;
         targetProd = {
           id: newCode,
           "Kode Produk": newCode,
@@ -2996,15 +2998,23 @@ async function handleReversalCancelInvoice() {
     const now = nowIso();
     const user = "Admin";
 
+    const master = readStore(STORE_KEYS.master, {});
+    const products = Array.isArray(master.produk) ? master.produk : [];
+    const touchedProducts = [];
+
     // Balik stok tiap item
     for (const item of (inv.items || [])) {
-      const code = item.matchedProductCode || item.code;
-      const baseQty = (num(item.qty) || 1) * (num(item.conversionRatio) || 1);
+      const code = item.matchedProductCode || item.productCode || item.code;
+      const conv = num(item.conversionRatio) || num(item.conversion) || 1;
+      const baseQty = (num(item.qty) || 1) * conv;
+
+      const prod = products.find(p => (code && norm(p["Kode Produk"]) === norm(code)) || norm(p["Nama Produk"]) === norm(item.name));
+      const effectiveCode = prod ? prod["Kode Produk"] : (code || item.name);
 
       movements.push({
         id: uid("mov-rev"),
-        productCode: code || item.name,
-        productName: item.name,
+        productCode: effectiveCode,
+        productName: prod ? prod["Nama Produk"] : item.name,
         type: "Pembatalan Faktur",
         delta: -baseQty,
         quantity: -baseQty,
@@ -3013,6 +3023,14 @@ async function handleReversalCancelInvoice() {
         user,
         createdAt: now
       });
+
+      if (prod) {
+        const curStock = readCurrentStock(prod["Kode Produk"]);
+        const nextStock = Math.max(0, curStock - baseQty);
+        setActiveStock(prod["Kode Produk"], nextStock);
+        prod["Stok Awal"] = nextStock;
+        touchedProducts.push(prod);
+      }
     }
 
     inv.status = "Dibatalkan";
@@ -3023,6 +3041,10 @@ async function handleReversalCancelInvoice() {
       { key: STORE_KEYS.invoices, records: [inv] },
       { key: STORE_KEYS.movements, records: movements }
     ]);
+
+    if (touchedProducts.length) {
+      await writeMasterDelta({ produk: touchedProducts });
+    }
 
     closeInvoiceDetailModal();
     renderInvoices();

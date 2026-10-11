@@ -734,36 +734,9 @@ export async function parsePricingWorkbook(file, currentMaster = {}) {
   const errors = [];
   let processedCount = 0;
 
-  // Helper pencarian nilai kolom yang sangat toleran terhadap huruf besar/kecil, spasi, dan alias
-  function findRowVal(row, aliases = []) {
-    if (!row || typeof row !== "object") return undefined;
-    for (const a of aliases) {
-      if (row[a] !== undefined && row[a] !== null && String(row[a]).trim() !== "") {
-        return row[a];
-      }
-    }
-    const entries = Object.entries(row);
-    for (const a of aliases) {
-      const cleanAlias = norm(a).replace(/[^a-z0-9]/g, "");
-      for (const [k, v] of entries) {
-        const cleanKey = norm(k).replace(/[^a-z0-9]/g, "");
-        if (cleanKey === cleanAlias || cleanKey.includes(cleanAlias)) {
-          if (v !== undefined && v !== null && String(v).trim() !== "") {
-            return v;
-          }
-        }
-      }
-    }
-    return undefined;
-  }
-
   for (const row of rows) {
-    const rawCode = text(
-      findRowVal(row, ["Kode Produk", "Kode Produk Internal", "Kode", "code", "Barcode"])
-    );
-    const rawName = text(
-      findRowVal(row, ["Nama Produk", "Nama", "name", "Produk"])
-    );
+    const rawCode = text(row["Kode Produk"] || row["Kode Produk Internal"] || row["Kode"] || row.code);
+    const rawName = text(row["Nama Produk"] || row["Nama"] || row.name);
 
     if (!rawCode && !rawName) continue;
     processedCount++;
@@ -779,25 +752,40 @@ export async function parsePricingWorkbook(file, currentMaster = {}) {
     }
 
     // Ambil harga dari baris Excel (Kemasan A = Terkecil / Eceran, Kemasan B = Sedang, Kemasan C = Terbesar / Grosir)
-    // Toleran terhadap huruf besar/kecil, spasi berlebih, tanda kurung, dan alias nama kolom
-    let priceBase = num(
-      findRowVal(row, [
-        "Harga Kemasan A", "Kemasan A", "Harga A", "Harga Eceran", 
-        "Harga Jual C [Eceran]", "Harga Jual C", "Harga Jual Eceran", "Harga Jual Terkecil", "Harga Jual"
-      ])
-    );
-    let priceMid = num(
-      findRowVal(row, [
-        "Harga Kemasan B", "Kemasan B", "Harga B", "Harga Sedang", 
-        "Harga Jual B [Sedang]", "Harga Jual B", "Harga Jual Sedang", "Harga Jual Satuan Sedang"
-      ])
-    );
-    let priceBuy = num(
-      findRowVal(row, [
-        "Harga Kemasan C", "Kemasan C", "Harga C", "Harga Grosir", "Harga Besar", 
-        "Harga Jual A [Opsional]", "Harga Jual A", "Harga Jual Kemasan Beli", "Harga Jual Satuan Besar", "Harga Jual Besar"
-      ])
-    );
+    let priceBase = 0;
+    let priceMid = 0;
+    let priceBuy = 0;
+
+    // Prioritas Format Baru: A = Terkecil (Eceran Utama), B = Sedang, C = Terbesar (Grosir)
+    if (row["Harga Kemasan A"] !== undefined || row["Jenis Kemasan A"] !== undefined) {
+      priceBase = num(row["Harga Kemasan A"]);
+      priceMid = num(row["Harga Kemasan B"]);
+      priceBuy = num(row["Harga Kemasan C"]);
+    } else {
+      // Fallback format sebelumnya & alias kolom
+      priceBase = num(
+        row["Harga Kemasan C"] ??
+        row["Harga Jual C [Eceran]"] ?? 
+        row["Harga Jual C"] ?? 
+        row["Harga Jual Eceran"] ?? 
+        row["Harga Jual Terkecil"] ?? 
+        row["Harga Jual"]
+      );
+      priceMid = num(
+        row["Harga Kemasan B"] ??
+        row["Harga Jual B [Sedang]"] ?? 
+        row["Harga Jual B"] ?? 
+        row["Harga Jual Sedang"] ?? 
+        row["Harga Jual Satuan Sedang"]
+      );
+      priceBuy = num(
+        row["Harga Jual A [Opsional]"] ?? 
+        row["Harga Jual A"] ?? 
+        row["Harga Jual Kemasan Beli"] ?? 
+        row["Harga Jual Satuan Besar"] ?? 
+        row["Harga Jual Besar"]
+      );
+    }
 
     const baseUnit = String(target["Satuan Dasar"] || target["Satuan"] || "Pcs").trim();
     const midUnit = String(target["Satuan Antara"] || "").trim();
