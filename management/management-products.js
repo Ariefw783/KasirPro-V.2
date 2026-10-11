@@ -983,8 +983,7 @@ async function handleDeleteProduct(code) {
   const invoices = readStore(STORE_KEYS.invoices, []);
 
   const hasMovements = movements.some(m => norm(m.productCode) === norm(code));
-  const hasSales = sales.some(s => (s.items || []).some(it => norm(it.code) === norm(code)));
-  const hasInvoices = invoices.some(inv => (inv.items || []).some(it => norm(it.matchedProductCode) === norm(code) || norm(it.productCode) === norm(code) || norm(it.code) === norm(code)));
+  const hasSales = sales.some(s => (s.items || []).some(it => norm(it.code) === norm(code) || norm(it.productCode) === norm(code)));
 
   // KASUS 1: Produk sudah pernah terjual di Kasir POS -> Mutlak tidak boleh dihapus demi jejak audit akuntansi
   if (hasSales) {
@@ -1002,31 +1001,15 @@ async function handleDeleteProduct(code) {
     return;
   }
 
-  // KASUS 2: Produk masih terhubung ke Faktur Pembelian aktif
-  if (hasInvoices) {
-    const confirmDeactivate = await window.KasirProDialog?.confirm(
-      "Produk Terhubung ke Faktur Pembelian",
-      `Produk "${prodName}" masih tercatat dalam dokumen Faktur Pembelian aktif di sistem.\n\nJika ingin menghapus permanen produk ini, silakan batalkan/hapus fakturnya terlebih dahulu di menu Faktur.\n\nApakah Anda ingin MENONAKTIFKAN produk ini sekarang?`
-    );
-    if (confirmDeactivate) {
-      target["Status"] = "Nonaktif";
-      target["Status Produk"] = "Nonaktif";
-      renderProducts();
-      await writeMasterDelta({ produk: [target] });
-      window.KasirProDialog?.success("Status Diperbarui", `Produk "${prodName}" telah dinonaktifkan.`);
-    }
-    return;
-  }
-
-  // KASUS 3: Produk BELUM PERNAH TERJUAL & TIDAK TERHUBUNG KE FAKTUR AKTIF
-  // (Termasuk produk yang memiliki sisa stok phantom / mutasi dari faktur yang sudah dihapus/dibatalkan)
-  let confirmMsg = `Apakah Anda yakin ingin menghapus produk "${prodName}" secara permanen dari sistem dan cloud?`;
+  // KASUS 2: Produk BELUM PERNAH TERJUAL di Kasir POS -> Berikan keleluasaan penuh kepada Owner untuk HAPUS PERMANEN!
+  // (Termasuk produk yang memiliki sisa stok / mutasi dari faktur yang sudah dibatalkan atau dihapus)
+  let confirmMsg = `Hapus produk "${prodName}" secara permanen dari sistem dan cloud?`;
   if (stock > 0 || hasMovements) {
-    confirmMsg = `Produk "${prodName}" belum pernah terjual di kasir POS, namun masih menyimpan sisa stok (${stock}) atau mutasi dari faktur yang sebelumnya sudah dihapus.\n\nApakah Anda ingin MENGHAPUS BERSIH produk ini dan MENOLKAN seluruh sisa stoknya secara permanen dari sistem dan cloud?`;
+    confirmMsg = `Produk "${prodName}" belum pernah terjual di kasir POS, namun masih memiliki sisa stok (${stock} ${target["Satuan Dasar"] || "Unit"}).\n\nApakah Anda yakin ingin MENGHAPUS BERSIH produk ini dan MENOLKAN seluruh sisa stoknya secara permanen dari sistem dan cloud?`;
   }
 
   const confirmDelete = await window.KasirProDialog?.confirm(
-    "Hapus Bersih Produk Permanen",
+    "Hapus Produk Permanen",
     confirmMsg
   );
   if (!confirmDelete) return;
@@ -1034,7 +1017,7 @@ async function handleDeleteProduct(code) {
   try {
     await deleteMasterProduct(code);
     renderProducts();
-    window.KasirProDialog?.success("Berhasil Dihapus", `Produk "${prodName}" beserta seluruh sisa stoknya berhasil dihapus secara permanen.`);
+    window.KasirProDialog?.success("Berhasil Dihapus", `Produk "${prodName}" beserta sisa stoknya berhasil dihapus secara permanen.`);
   } catch (err) {
     console.error("[Products] Gagal menghapus produk:", err);
     window.KasirProDialog?.error("Gagal Menghapus", err.message || "Terjadi kesalahan saat menghapus produk.");

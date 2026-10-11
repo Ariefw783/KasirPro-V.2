@@ -1785,16 +1785,15 @@ const exportCandidates = testPricingExportFilter([mock3UnitProd, mockDeactivated
 assert(!exportCandidates.some(p => p["Kode Produk"] === "MIP-00099"), "Filter Ekspor Harga: Produk Nonaktif Diabaikan & Tidak Diekspor ke Excel");
 
 // Verifikasi Logika Hapus Bersih Produk Sisa Faktur (Tanpa Penjualan)
-function canPermanentlyDeleteProduct({ stock, hasMovements, hasSales, hasInvoices }) {
+function canPermanentlyDeleteProduct({ stock, hasMovements, hasSales }) {
   if (hasSales) return { canDelete: false, reason: "has_sales" };
-  if (hasInvoices) return { canDelete: false, reason: "has_invoices" };
   return { canDelete: true, purgeStock: stock > 0 || hasMovements };
 }
 
-const checkDeletedInvProd = canPermanentlyDeleteProduct({ stock: 5, hasMovements: false, hasSales: false, hasInvoices: false });
-assert(checkDeletedInvProd.canDelete === true && checkDeletedInvProd.purgeStock === true, "Hapus Produk: Produk Tanpa Penjualan & Tanpa Faktur Aktif Diizinkan Dihapus Bersih");
+const checkDeletedInvProd = canPermanentlyDeleteProduct({ stock: 5, hasMovements: false, hasSales: false });
+assert(checkDeletedInvProd.canDelete === true && checkDeletedInvProd.purgeStock === true, "Hapus Produk: Produk Tanpa Penjualan Diizinkan Dihapus Bersih");
 
-const checkSoldProd = canPermanentlyDeleteProduct({ stock: 2, hasMovements: true, hasSales: true, hasInvoices: false });
+const checkSoldProd = canPermanentlyDeleteProduct({ stock: 2, hasMovements: true, hasSales: true });
 assert(checkSoldProd.canDelete === false && checkSoldProd.reason === "has_sales", "Hapus Produk: Produk dengan Riwayat Penjualan Tetap Dilindungi demi Audit");
 
 // Verifikasi Kompatibilitas Kasir POS
