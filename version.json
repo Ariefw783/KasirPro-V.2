@@ -1,13 +1,14 @@
 {
-  "version": "2.2.73",
-  "build": "20261011.20",
+  "version": "2.2.74",
+  "build": "20261011.21",
   "releaseDate": "11 Oktober 2026",
-  "title": "Strict TSV Supplier Isolation & Precision 3-Tier Unit Registration",
-  "description": "Isolasi ketat pencocokan supplier pada tempel TSV faktur manual dan sinkronisasi 100% presisi 3 konversi satuan saat mendaftarkan produk baru dari baris grid faktur.",
+  "title": "Absolute TSV Supplier Lock & Cache-Busted Isolation",
+  "description": "Penguncian mutlak isolasi supplier pada tempel TSV faktur manual, larangan total penautan produk ke supplier lain, pencegatan paste grid tabel, dan peremajaan cache PWA.",
   "changelog": [
-    "Normalisasi supplier akurat lintas format 'PT.', 'PT ', 'CV.' dan pemblokiran mutlak pencocokan ke produk milik supplier lain",
-    "Preservasi utuh 3 tingkat satuan (satuan beli, sedang, dasar, dan rasio konversi) saat registrasi produk baru dari baris faktur",
-    "Penyediaan tombol interaktif langsung '+ Daftarkan Produk Baru' pada baris faktur berstatus produk baru",
-    "Seluruh 268 uji verifikasi sistem lulus 100% tanpa kendala"
+    "Pemblokiran mutlak tempel TSV sebelum memilih supplier di Poin 1 demi isolasi data akurat",
+    "Peniadaan total penautan produk acuan ke supplier lain pada tempel TSV faktur manual grid mode",
+    "Pencegatan otomatis event Paste (Ctrl + V) pada seluruh sel input tabel grid untuk langsung diurai sebagai TSV",
+    "Sinkronisasi otomatis produk baru ke cache master saat registrasi dari baris faktur",
+    "Pembaruan Service Worker (v115) dan cache busting modul ES untuk memastikan eksekusi kode mutakhir"
   ]
 }

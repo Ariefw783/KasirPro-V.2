@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v114-batik-motif";
+const CACHE_VERSION = "kasirpro-pwa-v115-tsv-supplier-lock";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

@@ -229,7 +229,18 @@ export function normalizeSupplierName(name) {
     .trim()
     .toLowerCase()
     .replace(/^(pt\.?|cv\.?|ud\.?|pd\.?|nv\.?|fa\.?|toko|apotek)\s+/i, "")
+    .replace(/[,.\s]+(pt|cv|ud|pd|nv|fa|tbk|persero)\.?$/i, "")
     .replace(/[^a-z0-9]/g, "");
+}
+
+export function isSameSupplierName(sup1, sup2) {
+  if (!sup1 || !sup2) return false;
+  const n1 = normalizeSupplierName(sup1);
+  const n2 = normalizeSupplierName(sup2);
+  if (!n1 || !n2) return false;
+  if (n1 === n2) return true;
+  if (n1.includes(n2) || n2.includes(n1)) return true;
+  return false;
 }
 
 /**
@@ -253,7 +264,7 @@ export function findBestProductMatch(searchName, masterProducts = [], threshold 
 
   // Jika preferredSupplier diisi, ketat hanya mencari ke produk milik supplier tersebut demi keakuratan data faktur
   if (cleanPrefSup) {
-    const sameSupProds = masterProducts.filter(p => !p._isDeleted && normalizeSupplierName(p["Supplier"] || p["Produsen"] || p.supplier) === cleanPrefSup);
+    const sameSupProds = masterProducts.filter(p => !p._isDeleted && isSameSupplierName(preferredSupplier, p["Supplier"] || p["Produsen"] || p.supplier));
     if (sameSupProds.length > 0) {
       return findBestProductMatch(searchName, sameSupProds, threshold);
     }

@@ -1939,18 +1939,22 @@ assert(
 
 console.log("\n🔒 BAGIAN 26: PENGUJIAN AKURASI SUPPLIER TSV & PRESERVASI 3 KONVERSI SATUAN FAKTUR GRID");
 
-// 1. Uji Normalisasi Nama Supplier Lintas Variasi Badan Usaha & Casing
-const { normalizeSupplierName } = await import("../modules/core/utils.js");
+// 1. Uji Normalisasi & Penyelarasan Nama Supplier Lintas Variasi Badan Usaha & Casing
+const { normalizeSupplierName, isSameSupplierName } = await import("../modules/core/utils.js");
 assert(
   normalizeSupplierName("PT. Kimia Farma") === "kimiafarma" &&
   normalizeSupplierName("PT Kimia Farma") === "kimiafarma" &&
   normalizeSupplierName("Kimia Farma") === "kimiafarma" &&
-  normalizeSupplierName("PT. KIMIA FARMA") === "kimiafarma",
-  "Supplier Norm: 'PT. Kimia Farma', 'PT Kimia Farma', 'Kimia Farma' Menghasilkan Identitas Sama ('kimiafarma')"
+  normalizeSupplierName("PT. KIMIA FARMA") === "kimiafarma" &&
+  normalizeSupplierName("PT. Kimia Farma Tbk") === "kimiafarma",
+  "Supplier Norm: 'PT. Kimia Farma', 'Kimia Farma', 'Kimia Farma Tbk' Menghasilkan Identitas Sama ('kimiafarma')"
 );
 assert(
-  normalizeSupplierName("PT. MENSA BINASUKSES") === normalizeSupplierName("Mensa Binasukses"),
-  "Supplier Norm: Normalisasi Mensa Binasukses Akurat Lintas Prefiks & Casing"
+  isSameSupplierName("Kimia Farma", "PT. Kimia Farma") &&
+  isSameSupplierName("PT. Kimia Farma Tbk", "Kimia Farma") &&
+  !isSameSupplierName("PT. Mensa Binasukses", "PT. Kimia Farma") &&
+  !isSameSupplierName("Kalbe Farma", "Kimia Farma"),
+  "Supplier Match: isSameSupplierName Membedakan Supplier Sahih dan Menolak Supplier Berbeda"
 );
 
 // 2. Uji TSV Matching: Blokir Produk Berbeda Supplier Saat Supplier Dikunci via Dropdown
@@ -2045,6 +2049,14 @@ assert(
 assert(
   mgmtProductsJs.includes("input-prod-base-unit") && mgmtProductsJs.includes("prefill.baseUnit"),
   "Form Master Produk: Sinkronisasi Form Mendukung prefill.baseUnit Tanpa Reset ke Default Pcs"
+);
+assert(
+  mgmtInvoicesJs.includes('$("modal-manual-invoice")?.addEventListener("paste"'),
+  "Paste Interceptor: Event Paste Terintegrasi pada Modal Faktur Manual untuk Intersepsi Grid TSV"
+);
+assert(
+  mgmtInvoicesJs.includes("Pilih Supplier Terlebih Dahulu") && mgmtInvoicesJs.includes("if (!selectedSupplier)"),
+  "Proteksi Supplier: Sistem Wajib Memilih Supplier Sebelum Memproses Tempel TSV"
 );
 
 console.log("\n========================================================");

@@ -16,7 +16,7 @@
  * 10. Cetak PDF Faktur resmi A4 Portrait.
  */
 
-import { $, num, parseMoney, text, norm, rupiah, formatNumber, escapeHtml, nowIso, uid, INVOICE_TOLERANCE_RP, normalizeProductName, normalizeSupplierName, findBestProductMatch, stringSimilarity } from "../modules/core/utils.js";
+import { $, num, parseMoney, text, norm, rupiah, formatNumber, escapeHtml, nowIso, uid, INVOICE_TOLERANCE_RP, normalizeProductName, normalizeSupplierName, isSameSupplierName, findBestProductMatch, stringSimilarity } from "../modules/core/utils.js";
 import { STORE_KEYS, readStore, writeStore, writeMasterDelta, readCurrentStock, setActiveStock, writeStockTransaction, databaseStore, deletePurchaseInvoice } from "../modules/database/database-store.js";
 import { generatePurchaseInvoicePdf } from "../modules/core/pdf.js";
 import { generateAutoProductCode } from "./management-products.js";
@@ -78,6 +78,19 @@ function bindEvents() {
     closePasteTsvModal();
     if (textVal) {
       processTsvData(textVal);
+    }
+  });
+
+  // Intersep event Paste (Ctrl + V / Context Menu) di dalam modal faktur manual
+  // Mengarahkan langsung teks tabel multi-kolom ke proses TSV meski fokus pada sel input
+  $("modal-manual-invoice")?.addEventListener("paste", (e) => {
+    const pasteModal = $("modal-paste-tsv");
+    if (pasteModal && !pasteModal.hidden) return;
+
+    const clipText = e.clipboardData?.getData("text/plain") || "";
+    if (clipText && (clipText.includes("\t") || clipText.includes("\n"))) {
+      e.preventDefault();
+      processTsvData(clipText);
     }
   });
 
@@ -915,9 +928,7 @@ export async function executeConfirmInvoice(inv) {
 
       let prodIdx = products.findIndex(p => {
         const pSup = p["Supplier"] || p["Produsen"] || "";
-        const cleanInvSup = normalizeSupplierName(inv.supplierName);
-        const cleanPSup = normalizeSupplierName(pSup);
-        const isSameSupplier = !cleanInvSup || !cleanPSup || (cleanPSup === cleanInvSup);
+        const isSameSupplier = isSameSupplierName(inv.supplierName, pSup);
         if (item.matchedProductCode) return norm(p["Kode Produk"]) === norm(item.matchedProductCode);
         if (item.productCode) return norm(p["Kode Produk"]) === norm(item.productCode);
         if (item.barcode && p["Barcode"]) return norm(p["Barcode"]) === norm(item.barcode) && isSameSupplier;
@@ -1477,48 +1488,39 @@ function processTsvData(rawText) {
 
   const prods = cachedMasterProducts || (readStore(STORE_KEYS.master, {})?.produk || []);
   const selectedSupplier = text($("manual-inv-supplier")?.value);
-  const cleanSelectedSup = normalizeSupplierName(selectedSupplier);
 
-  // Pre-indexing Master Produk untuk pencocokan instan (< 10ms)
-  // Dipisahkan Tier 1 (Supplier Sama) dan Tier 2 (Supplier Lain/Umum)
+  // Blokir mutlak impor TSV jika supplier belum dipilih di Poin 1
+  if (!selectedSupplier) {
+    window.KasirProDialog?.warning(
+      "Pilih Supplier Terlebih Dahulu",
+      "Silakan pilih Nama Supplier pada Poin 1 (di atas tabel) terlebih dahulu sebelum menempel data TSV.\n\nPilihan supplier wajib dikunci agar seluruh produk faktur akurat dan terisolasi dari supplier lain."
+    );
+    $("manual-inv-supplier")?.focus();
+    return;
+  }
+
+  // Pre-indexing Master Produk HANYA untuk supplier terpilih
+  // Seluruh produk milik supplier lain diblokir 100% dari pencocokan!
   const exactNormMap_Sup = new Map();
   const barcodeMap_Sup = new Map();
   const codeMap_Sup = new Map();
   const candidateList_Sup = [];
 
-  const exactNormMap_Other = new Map();
-  const barcodeMap_Other = new Map();
-  const codeMap_Other = new Map();
-  const candidateList_Other = [];
-
   for (const p of prods) {
     if (p._isDeleted) continue;
-    const pCode = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.code || p.id);
-    const pBarcode = norm(p["Barcode"] || p.barcode);
-    const pName = p["Nama Produk"] || p.name || "";
-    const normPName = normalizeProductName(pName);
-    const cleanPSup = normalizeSupplierName(p["Supplier"] || p["Produsen"] || p.supplier || "");
-
-    const isSameSup = !!(cleanSelectedSup && cleanPSup && (cleanPSup === cleanSelectedSup));
+    const isSameSup = isSameSupplierName(selectedSupplier, p["Supplier"] || p["Produsen"] || p.supplier || "");
 
     if (isSameSup) {
+      const pCode = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.code || p.id);
+      const pBarcode = norm(p["Barcode"] || p.barcode);
+      const pName = p["Nama Produk"] || p.name || "";
+      const normPName = normalizeProductName(pName);
+
       if (pBarcode && !barcodeMap_Sup.has(pBarcode)) barcodeMap_Sup.set(pBarcode, p);
       if (pCode && !codeMap_Sup.has(pCode)) codeMap_Sup.set(pCode, p);
       if (normPName && !exactNormMap_Sup.has(normPName)) exactNormMap_Sup.set(normPName, p);
       if (normPName) {
         candidateList_Sup.push({
-          product: p,
-          normName: normPName,
-          tokens: new Set(normPName.split(/\s+/).filter(Boolean)),
-          len: normPName.length
-        });
-      }
-    } else {
-      if (pBarcode && !barcodeMap_Other.has(pBarcode)) barcodeMap_Other.set(pBarcode, p);
-      if (pCode && !codeMap_Other.has(pCode)) codeMap_Other.set(pCode, p);
-      if (normPName && !exactNormMap_Other.has(normPName)) exactNormMap_Other.set(normPName, p);
-      if (normPName) {
-        candidateList_Other.push({
           product: p,
           normName: normPName,
           tokens: new Set(normPName.split(/\s+/).filter(Boolean)),
@@ -1635,88 +1637,42 @@ function processTsvData(rawText) {
       rawSubtotal = Math.max(0, Math.round((rawQty * rawBuyPrice) - rawDiscRp));
     }
 
-    // Smart Product Matching dengan Prioritas Supplier Pilihan Pengguna
+    // Smart Product Matching: HANYA dicocokkan ke produk supplier terpilih
     const normRaw = norm(rawName);
     const normQuery = normalizeProductName(rawName);
     let match = null;
 
-    // 1. TAHAP 1: Utamakan kecocokan produk pada supplier yang dipilih terlebih dahulu
-    if (cleanSelectedSup) {
-      if (barcodeMap_Sup.has(normRaw)) {
-        match = { matchType: "exact", score: 1, product: barcodeMap_Sup.get(normRaw) };
-      } else if (codeMap_Sup.has(normRaw)) {
-        match = { matchType: "exact", score: 1, product: codeMap_Sup.get(normRaw) };
-      } else if (exactNormMap_Sup.has(normQuery)) {
-        match = { matchType: "exact", score: 1, product: exactNormMap_Sup.get(normQuery) };
-      } else {
-        let bestSupScore = 0;
-        let bestSupMatch = null;
-        const qTokens = new Set(normQuery.split(/\s+/).filter(Boolean));
-        const lenQ = normQuery.length;
+    if (barcodeMap_Sup.has(normRaw)) {
+      match = { matchType: "exact", score: 1, product: barcodeMap_Sup.get(normRaw) };
+    } else if (codeMap_Sup.has(normRaw)) {
+      match = { matchType: "exact", score: 1, product: codeMap_Sup.get(normRaw) };
+    } else if (exactNormMap_Sup.has(normQuery)) {
+      match = { matchType: "exact", score: 1, product: exactNormMap_Sup.get(normQuery) };
+    } else {
+      let bestSupScore = 0;
+      let bestSupMatch = null;
+      const qTokens = new Set(normQuery.split(/\s+/).filter(Boolean));
+      const lenQ = normQuery.length;
 
-        for (const cand of candidateList_Sup) {
-          if (Math.min(lenQ, cand.len) / Math.max(lenQ, cand.len) < 0.55) continue;
-          let commonTokens = 0;
-          for (const qt of qTokens) {
-            if (cand.tokens.has(qt)) commonTokens++;
-          }
-          if (qTokens.size >= 2 && commonTokens === 0) continue;
-          const score = stringSimilarity(normQuery, cand.normName);
-          if (score > bestSupScore) {
-            bestSupScore = score;
-            bestSupMatch = cand.product;
-          }
+      for (const cand of candidateList_Sup) {
+        if (Math.min(lenQ, cand.len) / Math.max(lenQ, cand.len) < 0.55) continue;
+        let commonTokens = 0;
+        for (const qt of qTokens) {
+          if (cand.tokens.has(qt)) commonTokens++;
         }
-
-        if (bestSupScore >= 0.999) {
-          match = { matchType: "exact", score: 1, product: bestSupMatch };
-        } else if (bestSupScore >= 0.8) {
-          match = { matchType: "fuzzy", score: bestSupScore, product: bestSupMatch };
+        if (qTokens.size >= 2 && commonTokens === 0) continue;
+        const score = stringSimilarity(normQuery, cand.normName);
+        if (score > bestSupScore) {
+          bestSupScore = score;
+          bestSupMatch = cand.product;
         }
       }
-    }
 
-    // 2. TAHAP 2: Jika tidak cocok di supplier pilihan atau supplier belum dipilih
-    if (!match) {
-      if (!cleanSelectedSup) {
-        // Jika belum ada supplier dipilih, cari di master secara netral
-        if (barcodeMap_Other.has(normRaw)) {
-          match = { matchType: "exact", score: 1, product: barcodeMap_Other.get(normRaw) };
-        } else if (codeMap_Other.has(normRaw)) {
-          match = { matchType: "exact", score: 1, product: codeMap_Other.get(normRaw) };
-        } else if (exactNormMap_Other.has(normQuery)) {
-          match = { matchType: "exact", score: 1, product: exactNormMap_Other.get(normQuery) };
-        } else {
-          let bestFuzzyMatch = null;
-          let bestFuzzyScore = 0;
-          const qTokens = new Set(normQuery.split(/\s+/).filter(Boolean));
-          const lenQ = normQuery.length;
-
-          for (const cand of candidateList_Other) {
-            if (Math.min(lenQ, cand.len) / Math.max(lenQ, cand.len) < 0.55) continue;
-            let commonTokens = 0;
-            for (const qt of qTokens) {
-              if (cand.tokens.has(qt)) commonTokens++;
-            }
-            if (qTokens.size >= 2 && commonTokens === 0) continue;
-            const score = stringSimilarity(normQuery, cand.normName);
-            if (score > bestFuzzyScore) {
-              bestFuzzyScore = score;
-              bestFuzzyMatch = cand.product;
-            }
-          }
-
-          if (bestFuzzyScore >= 0.999) {
-            match = { matchType: "exact", score: 1, product: bestFuzzyMatch };
-          } else if (bestFuzzyScore >= 0.8) {
-            match = { matchType: "fuzzy", score: bestFuzzyScore, product: bestFuzzyMatch };
-          } else {
-            match = { matchType: "none", score: bestFuzzyScore, product: null };
-          }
-        }
+      if (bestSupScore >= 0.999) {
+        match = { matchType: "exact", score: 1, product: bestSupMatch };
+      } else if (bestSupScore >= 0.8) {
+        match = { matchType: "fuzzy", score: bestSupScore, product: bestSupMatch };
       } else {
-        // Supplier dipilih, dan obat bukan milik supplier terpilih di master.
-        // Blokir produk acuan yang bukan berasal dari supplier terpilih demi keakuratan data.
         match = { matchType: "none", score: 0, product: null };
       }
     }
@@ -1789,7 +1745,7 @@ function processTsvData(rawText) {
       productCode: finalCode,
       name: rawName,
       barcode: finalBarcode,
-      supplier: selectedSupplier || (matchedProduct ? (matchedProduct["Supplier"] || matchedProduct["Produsen"] || "") : ""),
+      supplier: selectedSupplier,
       purchaseUnit: pUnit,
       intermediateUnit: mUnit,
       intermediateQty: mUnit ? (mQty || "") : "",
@@ -2361,14 +2317,11 @@ function showProductSuggestions(inputEl, idx, query) {
 
   const supMatches = [];
 
-  const cleanCurrentSup = normalizeSupplierName(currentSup);
-
   for (const p of prods) {
     if (p._isDeleted || norm(p["Status"] || p["Status Produk"]) === "nonaktif") continue;
 
-    const cleanPSup = normalizeSupplierName(p["Supplier"] || p["Produsen"] || p.supplier);
     // Blokir produk acuan yang bukan berasal dari supplier terpilih pada poin 1
-    if (cleanCurrentSup && cleanPSup !== cleanCurrentSup) continue;
+    if (!isSameSupplierName(currentSup, p["Supplier"] || p["Produsen"] || p.supplier)) continue;
 
     const name = (p["Nama Produk"] || p.name || "").toLowerCase();
     const code = (p["Kode Produk"] || p["Kode Produk Internal"] || "").toLowerCase();
@@ -2519,6 +2472,10 @@ function selectProductForRow(idx, prod) {
   item.matchStatus = "exact";
   item.matchScore = 100;
   item.matchedProduct = prod;
+
+  if (Array.isArray(cachedMasterProducts) && !cachedMasterProducts.some(p => norm(p["Kode Produk"] || p["Kode Produk Internal"]) === norm(prod["Kode Produk"] || prod["Kode Produk Internal"]))) {
+    cachedMasterProducts.push(prod);
+  }
 
   recalculateRow(idx);
   renderManualInvoiceItems();
