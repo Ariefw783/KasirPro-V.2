@@ -1,13 +1,13 @@
 {
   "version": "2.2.65",
-  "build": "20261011.07",
+  "build": "20261011.08",
   "releaseDate": "11 Oktober 2026",
   "title": "Evaluasi UX Produk, Filter Supplier Faktur, Paginasi Faktur, dan Logo Sidebar",
-  "description": "Menyempurnakan alur produk (banner Excel hanya saat filter Perlu Harga Jual), memblokir produk beda supplier pada grid faktur, paginasi 5 faktur per halaman, dan mengembalikan background gelap original logo sidebar KasirPro.",
+  "description": "Menyempurnakan alur produk (banner Excel hanya saat filter Perlu Harga Jual), memblokir produk beda supplier pada grid faktur, paginasi 5 faktur per halaman, background sidebar brand tetap putih dan menggunakan icon logo KasirPro gelap original.",
   "changelog": [
     "Show pricing excel action bar only on Perlu Harga Jual filter",
     "Strictly block reference products from different suppliers in manual invoice grid",
     "Implement 5-item pagination for purchase invoices list",
-    "Restore original dark background for top-left sidebar KasirPro logo"
+    "Use official dark-background KasirPro icon while keeping sidebar background white"
   ]
 }
