@@ -1,13 +1,13 @@
 {
-  "version": "2.2.67",
-  "build": "20261011.14",
+  "version": "2.2.68",
+  "build": "20261011.15",
   "releaseDate": "11 Oktober 2026",
-  "title": "Universal Collapsible Sidebar & Medical Gradient Topbar",
-  "description": "Menambahkan kemampuan sembunyikan sidebar pada PC, desktop, dan tablet via tombol toggle, serta memperbarui seluruh header topbar Management dengan gradasi Medical Teal ke Sky Blue yang harmonis.",
+  "title": "Executive Deep Navy Sidebar & Desktop Slim Dock Mode",
+  "description": "Menerapkan tema Executive Deep Night Navy pada sidebar navigasi yang harmonis dengan header Medical Gradient, serta menyempurnakan mode Slim Icon-Only Dock di desktop dengan floating tooltip.",
   "changelog": [
-    "Support universal desktop sidebar toggle",
-    "Apply medical teal gradient topbar",
-    "Persist desktop sidebar collapsed state",
-    "Harmonize high contrast header elements"
+    "Apply executive deep navy sidebar",
+    "Enable desktop slim dock mode",
+    "Add floating menu hover tooltips",
+    "Harmonize medical gradient header aesthetics"
   ]
 }

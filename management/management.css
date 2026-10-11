@@ -1237,23 +1237,28 @@ body.sidebar-collapsed .main-area {
    ============================================================================== */
 
 /* ==============================================================================
-   RENOVASI VISUAL PREMIUM — SIDEBAR NAVIGASI MENU KASIRPRO V2
-   Clean Modern Medical Sidebar with Soft Teal, Sky Blue, and Crisp Slate
+   RENOVASI VISUAL PREMIUM — SIDEBAR NAVIGASI MENU KASIRPRO V2 (OPSI B: EXECUTIVE DEEP NIGHT NAVY)
+   Harmonisasi dengan Header Teal-Sky Gradient, Kontras Tinggi, & Slim Icon-Only Dock
    ============================================================================== */
 
-/* 1. STRUKTUR SIDEBAR CLEAN MODERN MEDICAL */
+/* 1. STRUKTUR SIDEBAR EXECUTIVE DEEP NIGHT NAVY */
 .sidebar {
-    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 50%, #f0fdfa 100%) !important;
-    border-right: 1px solid #e2e8f0 !important;
-    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.05) !important;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    background: linear-gradient(180deg, #09131f 0%, #0c1b2c 50%, #08121e 100%) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25) !important;
+    transition: width 0.24s cubic-bezier(0.16, 1, 0.3, 1), transform 0.24s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    overflow-x: hidden !important;
 }
 
-/* 2. HEADER BRAND LOGO (APOTEK DOA IBU) - SIDEBAR BACKGROUND TETAP PUTIH & LOGO GELAP ORIGINAL */
+/* 2. HEADER BRAND LOGO - BACKGROUND TETAP PUTIH SOLID UNTUK KONTENSI SISTEM */
 .sidebar-brand {
     padding: 14px 18px !important;
-    border-bottom: 1px solid #e2e8f0 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
     background: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    transition: padding 0.24s ease !important;
 }
 
 .brand-logo {
@@ -1268,6 +1273,7 @@ body.sidebar-collapsed .main-area {
     border: 1px solid rgba(15, 42, 67, 0.12) !important;
     box-shadow: 0 4px 12px rgba(15, 42, 67, 0.16) !important;
     transition: transform 0.2s ease !important;
+    flex-shrink: 0 !important;
 }
 
 .brand-logo img {
@@ -1288,6 +1294,7 @@ body.sidebar-collapsed .main-area {
     color: #0f172a !important;
     background: none !important;
     -webkit-text-fill-color: initial !important;
+    white-space: nowrap !important;
 }
 
 .brand-text span {
@@ -1295,27 +1302,31 @@ body.sidebar-collapsed .main-area {
     font-weight: 750 !important;
     color: #0d9488 !important;
     letter-spacing: 0.02em !important;
+    white-space: nowrap !important;
 }
 
 /* 3. SECTION LABEL MENU */
 .nav-label {
-    margin: 16px 12px 8px !important;
-    font-size: 0.64rem !important;
+    margin: 16px 14px 8px !important;
+    font-size: 0.62rem !important;
     font-weight: 850 !important;
-    letter-spacing: 0.08em !important;
-    color: #0d9488 !important;
+    letter-spacing: 0.09em !important;
+    color: #38bdf8 !important;
     text-transform: uppercase !important;
+    opacity: 0.8 !important;
+    white-space: nowrap !important;
+    transition: opacity 0.2s ease !important;
 }
 
-/* 4. ITEM NAVIGASI MENU MODERN (CLEAN MODERN MEDICAL FLOATING PILL) */
+/* 4. ITEM NAVIGASI MENU (KONTRAST TINGGI DENGAN FLOATING PILL GRADIENT) */
 .nav-item {
     min-height: 42px !important;
-    margin: 4px 8px !important;
+    margin: 4px 10px !important;
     padding: 9px 12px !important;
     border-radius: 12px !important;
     font-size: 0.78rem !important;
     font-weight: 650 !important;
-    color: #475569 !important;
+    color: #cbd5e1 !important;
     display: flex !important;
     align-items: center !important;
     gap: 12px !important;
@@ -1323,26 +1334,33 @@ body.sidebar-collapsed .main-area {
     position: relative !important;
     background: transparent !important;
     border: 1px solid transparent !important;
+    text-decoration: none !important;
 }
 
 .nav-item > i:first-child {
-    width: 20px !important;
+    width: 22px !important;
     font-size: 0.95rem !important;
-    color: #0d9488 !important;
+    color: #38bdf8 !important;
     text-align: center !important;
     transition: all 0.2s ease !important;
+    flex-shrink: 0 !important;
+}
+
+.nav-item > span {
+    white-space: nowrap !important;
+    transition: opacity 0.2s ease !important;
 }
 
 /* State Hover Menu */
 .nav-item:hover {
-    color: #0f172a !important;
-    background: #f1f5f9 !important;
-    border-color: #e2e8f0 !important;
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
     transform: translateX(3px) !important;
 }
 
 .nav-item:hover > i:first-child {
-    color: #0284c7 !important;
+    color: #7dd3fc !important;
     transform: scale(1.15) !important;
 }
 
@@ -1351,9 +1369,9 @@ body.sidebar-collapsed .main-area {
     color: #ffffff !important;
     background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%) !important;
     font-weight: 750 !important;
-    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3) !important;
+    box-shadow: 0 4px 16px rgba(13, 148, 136, 0.4) !important;
     transform: translateX(2px) !important;
-    border-color: transparent !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 .nav-item.active > i:first-child {
@@ -1362,21 +1380,21 @@ body.sidebar-collapsed .main-area {
 
 /* Aksen Khusus Link POS Cepat di Sidebar */
 #sidebar-pos-link {
-    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%) !important;
-    border: 1px solid #a7f3d0 !important;
-    color: #047857 !important;
+    background: rgba(16, 185, 129, 0.15) !important;
+    border: 1px solid rgba(52, 211, 153, 0.3) !important;
+    color: #6ee7b7 !important;
     font-weight: 750 !important;
 }
 
 #sidebar-pos-link:hover {
     background: linear-gradient(135deg, #10b981 0%, #0d9488 100%) !important;
-    border-color: #10b981 !important;
+    border-color: #34d399 !important;
     color: #ffffff !important;
-    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25) !important;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35) !important;
 }
 
 #sidebar-pos-link > i:first-child {
-    color: #059669 !important;
+    color: #34d399 !important;
 }
 
 #sidebar-pos-link:hover > i:first-child {
@@ -1385,17 +1403,17 @@ body.sidebar-collapsed .main-area {
 
 /* 5. FOOTER SIDEBAR & TOMBOL KELUAR */
 .sidebar-footer {
-    padding: 12px 14px !important;
-    border-top: 1px solid #e2e8f0 !important;
-    background: #f8fafc !important;
+    padding: 12px 10px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgba(0, 0, 0, 0.2) !important;
 }
 
 .logout-button {
     min-height: 40px !important;
     border-radius: 12px !important;
-    background: #fff1f2 !important;
-    border: 1px solid #fecdd3 !important;
-    color: #e11d48 !important;
+    background: rgba(239, 68, 68, 0.12) !important;
+    border: 1px solid rgba(239, 68, 68, 0.25) !important;
+    color: #fca5a5 !important;
     font-size: 0.76rem !important;
     font-weight: 750 !important;
     box-shadow: none !important;
@@ -1403,11 +1421,11 @@ body.sidebar-collapsed .main-area {
 }
 
 .logout-button:hover {
-    background: #e11d48 !important;
+    background: #dc2626 !important;
     color: #ffffff !important;
-    border-color: #e11d48 !important;
+    border-color: #dc2626 !important;
     transform: translateY(-1.5px) !important;
-    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25) !important;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35) !important;
 }
 
 .logout-button i {
@@ -1417,6 +1435,83 @@ body.sidebar-collapsed .main-area {
 
 .logout-button:hover i {
     transform: translateX(2px) !important;
+}
+
+/* ==============================================================================
+   MODE SLIM ICON-ONLY DOCK SIDEBAR (PC, LAPTOP, TABLET)
+   Ketika di-toggle di desktop, sidebar meramping menjadi 68px (hanya ikon)
+   ============================================================================== */
+body.sidebar-collapsed .sidebar {
+    width: 68px !important;
+    transform: translateX(0) !important;
+}
+
+body.sidebar-collapsed .main-area {
+    margin-left: 68px !important;
+}
+
+body.sidebar-collapsed .sidebar-brand {
+    padding: 14px 12px !important;
+    justify-content: center !important;
+}
+
+body.sidebar-collapsed .brand-text,
+body.sidebar-collapsed .nav-label,
+body.sidebar-collapsed .nav-item > span,
+body.sidebar-collapsed .logout-button > span {
+    display: none !important;
+}
+
+body.sidebar-collapsed .nav-item,
+body.sidebar-collapsed .logout-button {
+    margin: 4px 8px !important;
+    padding: 10px 0 !important;
+    justify-content: center !important;
+    gap: 0 !important;
+}
+
+body.sidebar-collapsed .nav-item > i:first-child,
+body.sidebar-collapsed .logout-button > i {
+    width: auto !important;
+    font-size: 1.15rem !important;
+    margin: 0 auto !important;
+}
+
+body.sidebar-collapsed .nav-item:hover {
+    transform: scale(1.08) !important;
+}
+
+/* Tooltip Mengambang (Floating Tooltip) saat Sidebar dalam Mode Slim */
+body.sidebar-collapsed .nav-item[data-title]::after,
+body.sidebar-collapsed #sidebar-pos-link[data-title]::after,
+body.sidebar-collapsed #logout-button[data-title]::after {
+    content: attr(data-title);
+    position: absolute;
+    left: 72px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #0f172a;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    z-index: 9999;
+}
+
+body.sidebar-collapsed .nav-item[data-title]:hover::after,
+body.sidebar-collapsed #sidebar-pos-link[data-title]:hover::after,
+body.sidebar-collapsed #logout-button[data-title]:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) translateX(4px);
 }
 
 /* ==============================================================================
