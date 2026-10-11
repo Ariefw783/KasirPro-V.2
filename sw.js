@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v113-pricing-excel";
+const CACHE_VERSION = "kasirpro-pwa-v114-batik-motif";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
@@ -10,6 +10,7 @@ const STATIC_ASSETS = [
     "./login-theme.css",
     "./manifest.webmanifest",
     "./offline.html",
+    "./assets/batik-pattern.svg",
     "./assets/login-background.svg",
     "./assets/favicon.ico",
     "./assets/favicon-16.png",

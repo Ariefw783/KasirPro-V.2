@@ -1881,6 +1881,19 @@ assert(
   "Sidebar Logo: Menggunakan Simbol Resmi Berlatar Gelap Original KasirPro (icon-192.png)"
 );
 
+// 5. Uji Motif Batik Kawung Nusantara pada Background Halaman Management
+const mgmtBaseCss = fs.readFileSync(path.join(rootDir, "management/management-base.css"), "utf8");
+const batikPatternSvg = fs.readFileSync(path.join(rootDir, "assets/batik-pattern.svg"), "utf8");
+
+assert(
+  fs.existsSync(path.join(rootDir, "assets/batik-pattern.svg")) && batikPatternSvg.includes("b-outline"),
+  "Aset Batik: File Vektor Motif Batik Kawung Tersedia (assets/batik-pattern.svg)"
+);
+assert(
+  mgmtBaseCss.includes('url("../assets/batik-pattern.svg")'),
+  "Background Management: Menggunakan Motif Batik Kawung Nusantara pada .main-area::before"
+);
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);
