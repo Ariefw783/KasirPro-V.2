@@ -1,13 +1,13 @@
 {
-  "version": "2.2.68",
-  "build": "20261011.15",
+  "version": "2.2.69",
+  "build": "20261011.16",
   "releaseDate": "11 Oktober 2026",
-  "title": "Executive Deep Navy Sidebar & Desktop Slim Dock Mode",
-  "description": "Menerapkan tema Executive Deep Night Navy pada sidebar navigasi yang harmonis dengan header Medical Gradient, serta menyempurnakan mode Slim Icon-Only Dock di desktop dengan floating tooltip.",
+  "title": "Satin Ice Tint Sidebar & Harmonized Logo Header",
+  "description": "Menerapkan tema Opsi A Satin Ice Tint pada sidebar navigasi dan latar belakang logo brand di pojok kiri atas agar selaras, bersih, dan higienis dengan header Medical Gradient.",
   "changelog": [
-    "Apply executive deep navy sidebar",
-    "Enable desktop slim dock mode",
-    "Add floating menu hover tooltips",
-    "Harmonize medical gradient header aesthetics"
+    "Apply satin ice sidebar theme",
+    "Harmonize brand logo header background",
+    "Maintain responsive slim dock mode",
+    "Verify comprehensive system test suite"
   ]
 }
