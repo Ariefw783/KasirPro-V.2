@@ -5,9 +5,9 @@
   "title": "Motif Background Batik Kawung Nusantara & Evaluasi UI Management",
   "description": "Memperbarui motif latar belakang halaman management dengan ornamen Batik Kawung Nusantara yang elegan, harmonis, dan seamless watermark, serta menjaga kenyamanan visual data.",
   "changelog": [
-    "Replace old background pattern with authentic Batik Kawung Nusantara vector motif",
-    "Add assets/batik-pattern.svg and update service worker cache",
-    "Maintain clean medical white cards contrast and eye comfort",
-    "Lock verify-system test assertions for Batik motif asset and styling"
+    "Apply authentic Batik Kawung pattern",
+    "Add vector motif asset cache",
+    "Maintain high contrast medical cards",
+    "Verify system tests without regression"
   ]
 }

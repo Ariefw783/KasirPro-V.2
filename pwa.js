@@ -25,7 +25,7 @@
         /* MODAL PEMBARUAN WAJIB (TECHNICAL ENTERPRISE CODE MODAL) */
         .kp-update-modal{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:16px;background:rgba(10,18,30,.84);backdrop-filter:blur(10px);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
         .kp-update-modal[hidden]{display:none!important}
-        .kp-update-card{position:relative;width:min(480px,100%);max-height:92vh;overflow-y:auto;background:#ffffff;border-radius:20px;border:1px solid #cbd5e1;box-shadow:0 25px 70px rgba(10,18,30,.45);padding:24px 20px 20px;text-align:center;animation:kp-modal-pop .25s ease-out}
+        .kp-update-card{position:relative;width:min(480px,100%);max-height:92vh;overflow-y:auto;overflow-x:hidden;background:#ffffff;border-radius:20px;border:1px solid #cbd5e1;box-shadow:0 25px 70px rgba(10,18,30,.45);padding:24px 20px 20px;text-align:center;animation:kp-modal-pop .25s ease-out;box-sizing:border-box}
         @keyframes kp-modal-pop{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
         
         .kp-update-icon{width:56px;height:56px;margin:0 auto 12px;border-radius:16px;background:linear-gradient(135deg,#0f2a43,#1d4ed8);color:#fff;display:grid;place-items:center;font-size:24px;box-shadow:0 8px 22px rgba(15,42,67,.3)}
@@ -34,12 +34,12 @@
         .kp-update-subtitle{margin:0 0 14px;color:#64748b;font-size:12.5px;line-height:1.45}
         
         /* TECHNICAL CODE TERMINAL CHANGELOG BOX */
-        .kp-update-changelog-box{background:#091422;border:1px solid #1e3a5f;border-radius:12px;padding:14px 16px;margin-bottom:18px;text-align:left;box-shadow:inset 0 2px 8px rgba(0,0,0,.3);max-height:260px;overflow-y:auto}
+        .kp-update-changelog-box{background:#0a1526;border:1px solid #1e3a5f;border-radius:14px;padding:14px 14px;margin-bottom:18px;text-align:left;box-shadow:inset 0 2px 8px rgba(0,0,0,.3);max-height:280px;overflow-y:auto;overflow-x:hidden;box-sizing:border-box}
         .kp-update-changelog-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.08);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:10.5px;font-weight:700;color:#38bdf8;text-transform:uppercase;letter-spacing:.05em}
-        .kp-update-list{margin:0;padding:0;list-style:none;display:grid;gap:8px}
-        .kp-update-list li{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:12px;color:#e2e8f0;line-height:1.45;display:flex;align-items:flex-start;gap:8px}
-        .kp-update-item-num{color:#38bdf8;font-weight:750;font-size:11px;background:rgba(56,189,248,.12);padding:1px 5px;border-radius:4px;border:1px solid rgba(56,189,248,.25);flex:0 0 auto;margin-top:1px}
-        .kp-update-item-text{flex:1;min-width:0;white-space:normal;word-break:break-word;overflow-wrap:anywhere}
+        .kp-update-list{margin:0;padding:0;list-style:none;display:grid;gap:7px}
+        .kp-update-list li{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:11.5px;line-height:1.4;display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;box-sizing:border-box;max-width:100%;transition:background .3s ease}
+        .kp-update-item-num{font-weight:800;font-size:10.5px;padding:2px 6px;border-radius:5px;flex:0 0 auto;line-height:1.2}
+        .kp-update-item-text{flex:1;min-width:0;white-space:normal;word-break:break-word;overflow-wrap:anywhere;font-weight:550}
         
         .kp-update-btn{width:100%;min-height:46px;padding:11px 18px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s;box-shadow:0 6px 20px rgba(37,99,235,.35)}
         .kp-update-btn:hover{background:linear-gradient(135deg,#1e40af,#1d4ed8);box-shadow:0 8px 24px rgba(37,99,235,.45);transform:translateY(-1px)}
@@ -127,10 +127,68 @@
             document.body.appendChild(modal);
         }
 
+        // Palet gradien soft profesional yang otomatis berganti per versi/build
+        const GRADIENT_THEMES = [
+            // Tema 1: Soft Cyan - Sapphire
+            {
+                itemBg: "linear-gradient(135deg, rgba(14, 116, 144, 0.28) 0%, rgba(30, 58, 138, 0.22) 100%)",
+                itemBorder: "rgba(56, 189, 248, 0.22)",
+                numBg: "rgba(56, 189, 248, 0.2)",
+                numColor: "#38bdf8",
+                numBorder: "rgba(56, 189, 248, 0.35)",
+                textColor: "#f0f9ff"
+            },
+            // Tema 2: Soft Emerald - Teal
+            {
+                itemBg: "linear-gradient(135deg, rgba(6, 95, 70, 0.28) 0%, rgba(13, 148, 136, 0.22) 100%)",
+                itemBorder: "rgba(52, 211, 153, 0.22)",
+                numBg: "rgba(52, 211, 153, 0.2)",
+                numColor: "#34d399",
+                numBorder: "rgba(52, 211, 153, 0.35)",
+                textColor: "#ecfdf5"
+            },
+            // Tema 3: Soft Violet - Indigo
+            {
+                itemBg: "linear-gradient(135deg, rgba(109, 40, 217, 0.28) 0%, rgba(67, 56, 202, 0.22) 100%)",
+                itemBorder: "rgba(167, 139, 250, 0.22)",
+                numBg: "rgba(167, 139, 250, 0.2)",
+                numColor: "#c084fc",
+                numBorder: "rgba(167, 139, 250, 0.35)",
+                textColor: "#faf5ff"
+            },
+            // Tema 4: Soft Amber - Rose
+            {
+                itemBg: "linear-gradient(135deg, rgba(180, 83, 9, 0.25) 0%, rgba(190, 24, 93, 0.2) 100%)",
+                itemBorder: "rgba(251, 191, 36, 0.22)",
+                numBg: "rgba(251, 191, 36, 0.2)",
+                numColor: "#fbbf24",
+                numBorder: "rgba(251, 191, 36, 0.35)",
+                textColor: "#fffbeb"
+            },
+            // Tema 5: Soft Slate - Ice Blue
+            {
+                itemBg: "linear-gradient(135deg, rgba(71, 85, 105, 0.3) 0%, rgba(59, 130, 246, 0.2) 100%)",
+                itemBorder: "rgba(148, 163, 184, 0.25)",
+                numBg: "rgba(148, 163, 184, 0.2)",
+                numColor: "#93c5fd",
+                numBorder: "rgba(148, 163, 184, 0.35)",
+                textColor: "#f8fafc"
+            }
+        ];
+
+        // Tentukan tema secara otomatis berdasarkan checksum versi/build
+        const seedStr = String((meta.build || "") + (meta.version || ""));
+        let seedVal = 0;
+        for (let i = 0; i < seedStr.length; i++) {
+            seedVal = ((seedVal << 5) - seedVal) + seedStr.charCodeAt(i);
+            seedVal |= 0;
+        }
+        const activeTheme = GRADIENT_THEMES[Math.abs(seedVal) % GRADIENT_THEMES.length];
+
         const changelogListHtml = (meta.changelog || [])
             .map((item, index) => `
-                <li>
-                    <span class="kp-update-item-num">${String(index + 1).padStart(2, "0")}</span>
+                <li style="background:${activeTheme.itemBg}; border:1px solid ${activeTheme.itemBorder}; color:${activeTheme.textColor};">
+                    <span class="kp-update-item-num" style="background:${activeTheme.numBg}; color:${activeTheme.numColor}; border:1px solid ${activeTheme.numBorder};">${String(index + 1).padStart(2, "0")}</span>
                     <span class="kp-update-item-text">${escapeHtml(item)}</span>
                 </li>
             `).join("");
