@@ -1501,7 +1501,7 @@ assert(htmlContent.includes("exceljs@4.4.0"), "DOM Script: Pustaka ExcelJS CDN T
 assert(cssContent.includes(".pricing-excel-banner"), "CSS: Kelas .pricing-excel-banner Terdefinisi");
 assert(cssContent.includes("#btn-export-pricing-excel") && cssContent.includes("#btn-import-pricing-excel"), "CSS: Styling Tombol Export & Import Pricing Terdefinisi");
 
-// 2. Simulasi Pembangun Baris Excel 9 Kolom Berwarna
+// 2. Simulasi Pembangun Baris Excel 9 Kolom Berwarna (Rata Kiri, Format Tabel, Harga Kosong untuk Owner)
 function buildMockPricingRow9Col(p, idx) {
   const r = idx + 2;
   const baseUnit = String(p["Satuan Dasar"] || p["Satuan"] || "Pcs").trim();
@@ -1514,16 +1514,6 @@ function buildMockPricingRow9Col(p, idx) {
   const hasBuy = Boolean(buyUnit && buyUnit.toLowerCase() !== baseUnit.toLowerCase() && (!midUnit || buyUnit.toLowerCase() !== midUnit.toLowerCase()) && conversion > 1);
 
   const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
-  const modalEceran = Math.round(buyPrice / conversion);
-
-  const curBase = num(p["Harga Jual"]);
-  const defaultSellBase = curBase > 0 ? curBase : (modalEceran > 0 ? Math.ceil((modalEceran * 1.2) / 100) * 100 : 0);
-
-  const curMid = num(p["Harga Jual Satuan Sedang"]);
-  const defaultSellMid = curMid > 0 ? curMid : (hasMid ? defaultSellBase * midQty : 0);
-
-  const curBuy = num(p["Harga Jual Satuan Besar"]);
-  const defaultSellBuy = curBuy > 0 ? curBuy : (hasBuy ? defaultSellBase * conversion : defaultSellBase);
 
   return {
     code: p["Kode Produk"],
@@ -1531,21 +1521,25 @@ function buildMockPricingRow9Col(p, idx) {
     buyPrice,
     unitA: hasBuy ? `${buyUnit} (${conversion} ${baseUnit})` : buyUnit,
     cellPriceA: {
-      formula: hasBuy ? `I${r}*${conversion}` : `I${r}`,
-      result: defaultSellBuy,
-      isYellow: true
+      value: null, // Dibiarkan kosong/blank agar diisi owner
+      isYellow: true,
+      alignment: "left",
+      numFmt: '"Rp "#,##0'
     },
     unitB: hasMid ? `${midUnit} (${midQty} ${baseUnit})` : "-",
     cellPriceB: {
-      formula: hasMid ? `I${r}*${midQty}` : null,
-      result: hasMid ? defaultSellMid : "-",
-      isDisabledDark: !hasMid
+      value: hasMid ? null : "-",
+      isDisabledDark: !hasMid,
+      alignment: "left",
+      numFmt: '"Rp "#,##0'
     },
     unitC: baseUnit,
     cellPriceC: {
-      formula: `ROUNDUP((C${r}/${conversion})*1.2,-2)`,
-      result: defaultSellBase
-    }
+      value: null, // Dibiarkan kosong/blank agar diisi owner
+      alignment: "left",
+      numFmt: '"Rp "#,##0'
+    },
+    alignment: "left"
   };
 }
 
@@ -1565,13 +1559,11 @@ const mock3UnitProd = {
 
 const rowOut3Unit = buildMockPricingRow9Col(mock3UnitProd, 0);
 assert(rowOut3Unit.buyPrice === 50000, "Ekspor 9 Kolom: Modal Beli Faktur Tertera Utuh Rp 50.000");
-assert(rowOut3Unit.cellPriceC.formula === "ROUNDUP((C2/100)*1.2,-2)", "Ekspor 9 Kolom: Formula Eceran (Kolom I) ROUNDUP((C2/100)*1.2,-2)");
-assert(rowOut3Unit.cellPriceC.result === 600, "Ekspor 9 Kolom: Estimasi Jual Eceran Rp 600");
-assert(rowOut3Unit.cellPriceB.formula === "I2*10", "Ekspor 9 Kolom: Formula Sedang (Kolom G) I2*10");
-assert(rowOut3Unit.cellPriceB.result === 6000, "Ekspor 9 Kolom: Estimasi Jual Strip Rp 6.000");
-assert(rowOut3Unit.cellPriceA.formula === "I2*100", "Ekspor 9 Kolom: Formula Grosir Box (Kolom E) I2*100");
-assert(rowOut3Unit.cellPriceA.result === 60000, "Ekspor 9 Kolom: Estimasi Jual Box Rp 60.000");
-assert(rowOut3Unit.cellPriceA.isYellow === true, "Warna Excel: Kolom A Diberi Latar Kuning Soft (Opsional)");
+assert(rowOut3Unit.cellPriceC.value === null, "Ekspor 9 Kolom: Harga Kemasan C Dikosongkan agar Diisi Mandiri oleh Owner");
+assert(rowOut3Unit.cellPriceC.alignment === "left", "Rata Kiri: Seluruh Sel Data Termasuk Harga Dibuat Rata Kiri");
+assert(rowOut3Unit.cellPriceB.value === null, "Ekspor 9 Kolom: Harga Kemasan B Dikosongkan jika Satuan Antara Ada");
+assert(rowOut3Unit.cellPriceA.value === null, "Ekspor 9 Kolom: Harga Kemasan A Dikosongkan agar Diisi Mandiri oleh Owner");
+assert(rowOut3Unit.cellPriceA.isYellow === true, "Warna Excel: Kemasan A Diberi Latar Kuning Soft (Opsional)");
 assert(rowOut3Unit.cellPriceB.isDisabledDark === false, "Warna Excel: Obat 3 Tingkat Memiliki Satuan B Aktif (Tidak Diblok)");
 
 // Kasus 2: Obat 1 Satuan (Sirup Batuk 60ml: Botol Tunggal, Modal 15.000)
@@ -1588,9 +1580,9 @@ const mock1UnitProd = {
 
 const rowOut1Unit = buildMockPricingRow9Col(mock1UnitProd, 1);
 assert(rowOut1Unit.buyPrice === 15000, "Ekspor 9 Kolom: Modal Beli Faktur Botol Rp 15.000");
-assert(rowOut1Unit.cellPriceB.result === "-", "Ekspor 9 Kolom: Satuan B Ditandai '-' untuk Botol Tunggal");
+assert(rowOut1Unit.cellPriceB.value === "-", "Ekspor 9 Kolom: Satuan B Ditandai '-' untuk Botol Tunggal");
 assert(rowOut1Unit.cellPriceB.isDisabledDark === true, "Warna Excel: Kolom B Diarsir Abu Gelap/Charcoal (#334155) untuk Botol Tunggal");
-assert(rowOut1Unit.cellPriceC.result === 18000, "Ekspor 9 Kolom: Estimasi Jual Botol Rp 18.000");
+assert(rowOut1Unit.cellPriceC.value === null, "Ekspor 9 Kolom: Harga Kemasan C Botol Dikosongkan untuk Owner");
 
 // Kasus 3: Obat 2 Satuan (Minyak Kayu Putih: Karton isi 24 Botol, Modal 240.000)
 const mock2UnitProd = {
@@ -1606,10 +1598,10 @@ const mock2UnitProd = {
 
 const rowOut2Unit = buildMockPricingRow9Col(mock2UnitProd, 2);
 assert(rowOut2Unit.cellPriceB.isDisabledDark === true, "Warna Excel: Kolom B Diarsir Abu Gelap untuk Produk Tanpa Satuan Antara");
-assert(rowOut2Unit.cellPriceA.formula === "I4*24", "Ekspor 9 Kolom: Formula Karton I4*24");
-assert(rowOut2Unit.cellPriceA.result === 288000, "Ekspor 9 Kolom: Estimasi Jual Karton Rp 288.000");
+assert(rowOut2Unit.cellPriceA.value === null, "Ekspor 9 Kolom: Harga Kemasan A Karton Dikosongkan untuk Owner");
+assert(rowOut2Unit.cellPriceA.isYellow === true, "Warna Excel: Kemasan A Karton Kuning Soft (Opsional)");
 
-// 3. Simulasi Parsing Impor 9 Kolom Baru dari Excel Owner
+// 3. Simulasi Parsing Impor 9 Kolom Baru dari Excel Owner (Header Baru: Jenis & Harga Kemasan A/B/C)
 function simulateParsePricingRows9Col(rows, masterProducts) {
   const prodByCode = new Map(masterProducts.map(p => [String(p["Kode Produk"] || p.id).toLowerCase(), p]));
   const updated = [];
@@ -1620,17 +1612,20 @@ function simulateParsePricingRows9Col(rows, masterProducts) {
     if (!target) continue;
 
     let priceBase = num(
+      row["Harga Kemasan C"] ??
       row["Harga Jual C [Eceran]"] ?? 
       row["Harga Jual C"] ?? 
       row["Harga Jual Eceran"] ?? 
       row["Harga Jual"]
     );
     let priceMid = num(
+      row["Harga Kemasan B"] ??
       row["Harga Jual B [Sedang]"] ?? 
       row["Harga Jual B"] ?? 
       row["Harga Jual Sedang"]
     );
     let priceBuy = num(
+      row["Harga Kemasan A"] ??
       row["Harga Jual A [Opsional]"] ?? 
       row["Harga Jual A"] ?? 
       row["Harga Jual Kemasan Beli"]
@@ -1682,28 +1677,40 @@ function simulateParsePricingRows9Col(rows, masterProducts) {
   return updated;
 }
 
-// Uji Impor: Data Excel 9 Kolom diisi Owner
+// Uji Impor: Data Excel 9 Kolom dengan Nama Kolom Baru Yang Diisi Owner
 const incomingExcelRows9Col = [
   {
     "Kode Produk": "RNA-NEW-001",
     "Nama Produk": "AMOXICILLIN 500MG KAPLET",
-    "Harga Jual A [Opsional]": 68000, // Diskon grosir Box dari owner
-    "Harga Jual B [Sedang]": 7000,
-    "Harga Jual C [Eceran]": 700
+    "Harga Beli Faktur": 50000,
+    "Jenis Kemasan A": "BOX (100 KAPLET)",
+    "Harga Kemasan A": 68000, // Diskon grosir Box dari owner
+    "Jenis Kemasan B": "STRIP (10 KAPLET)",
+    "Harga Kemasan B": 7000,
+    "Jenis Kemasan C": "KAPLET",
+    "Harga Kemasan C": 700
   },
   {
     "Kode Produk": "RNA-NEW-002",
     "Nama Produk": "OBAT BATUK SIRUP 60ML",
-    "Harga Jual A [Opsional]": 20000,
-    "Harga Jual B [Sedang]": "-",
-    "Harga Jual C [Eceran]": 20000
+    "Harga Beli Faktur": 15000,
+    "Jenis Kemasan A": "BOTOL",
+    "Harga Kemasan A": 20000,
+    "Jenis Kemasan B": "-",
+    "Harga Kemasan B": "-",
+    "Jenis Kemasan C": "BOTOL",
+    "Harga Kemasan C": 20000
   },
   {
     "Kode Produk": "RNA-NEW-003",
     "Nama Produk": "MINYAK KAYU PUTIH 60ML",
-    "Harga Jual A [Opsional]": 300000,
-    "Harga Jual B [Sedang]": "-",
-    "Harga Jual C [Eceran]": 13000
+    "Harga Beli Faktur": 240000,
+    "Jenis Kemasan A": "KARTON (24 BOTOL)",
+    "Harga Kemasan A": 300000,
+    "Jenis Kemasan B": "-",
+    "Harga Kemasan B": "-",
+    "Jenis Kemasan C": "BOTOL",
+    "Harga Kemasan C": 13000
   }
 ];
 
@@ -1714,7 +1721,7 @@ const masterMockCatalog = [
 ];
 
 const importedResults = simulateParsePricingRows9Col(incomingExcelRows9Col, masterMockCatalog);
-assert(importedResults.length === 3, "Impor 9 Kolom: 3 Produk Berhasil Diproses");
+assert(importedResults.length === 3, "Impor 9 Kolom: 3 Produk Berhasil Diproses dengan Header Kolom Baru");
 
 const resAmox = importedResults.find(p => p["Kode Produk"] === "RNA-NEW-001");
 assert(resAmox["Harga Jual"] === 700, "Impor 9 Kolom: Harga Jual Eceran Rp 700 Berhasil Disimpan");

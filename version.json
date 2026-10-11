@@ -1,13 +1,13 @@
 {
-  "version": "2.2.60",
-  "build": "20261011.02",
+  "version": "2.2.61",
+  "build": "20261011.03",
   "releaseDate": "11 Oktober 2026",
-  "title": "Colored Multi-Unit Pricing Excel",
-  "description": "Format Excel 9 kolom berwarna, rapi, terstruktur, non-standar dengan warna kuning soft dan abu gelap.",
+  "title": "Table-Styled Left-Aligned Pricing Excel",
+  "description": "Format tabel Excel rata kiri dengan harga kosong untuk diinput owner dan nama kolom kemasan A/B/C.",
   "changelog": [
-    "Implement colored pricing excel structure",
-    "Support soft yellow optional tier",
-    "Add dark slate inactive cell",
-    "Format rupiah currency automatically"
+    "Align excel cells left",
+    "Add table border styling",
+    "Leave pricing cells blank",
+    "Rename packaging pricing columns"
   ]
 }

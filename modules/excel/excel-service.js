@@ -362,42 +362,48 @@ async function exportPricingWithExcelJS(items, fileName) {
     views: [{ showGridLines: true }]
   });
 
-  // Konfigurasi 9 Kolom Baku
+  // Konfigurasi 9 Kolom Baku (Sesuai Permintaan: Jenis Kemasan A, Harga Kemasan A, dst)
   ws.columns = [
     { header: "Kode Produk", key: "code", width: 18 },
     { header: "Nama Produk", key: "name", width: 38 },
-    { header: "Harga Beli Faktur (Rp)", key: "buyPrice", width: 22 },
-    { header: "Kemasan A (Besar)", key: "unitA", width: 20 },
-    { header: "Harga Jual A [Opsional]", key: "priceA", width: 24 },
-    { header: "Kemasan B (Sedang)", key: "unitB", width: 20 },
-    { header: "Harga Jual B [Sedang]", key: "priceB", width: 22 },
-    { header: "Kemasan C (Eceran)", key: "unitC", width: 18 },
-    { header: "Harga Jual C [Eceran]", key: "priceC", width: 22 }
+    { header: "Harga Beli Faktur", key: "buyPrice", width: 22 },
+    { header: "Jenis Kemasan A", key: "unitA", width: 20 },
+    { header: "Harga Kemasan A", key: "priceA", width: 22 },
+    { header: "Jenis Kemasan B", key: "unitB", width: 20 },
+    { header: "Harga Kemasan B", key: "priceB", width: 22 },
+    { header: "Jenis Kemasan C", key: "unitC", width: 20 },
+    { header: "Harga Kemasan C", key: "priceC", width: 22 }
   ];
 
-  // Styling Header (Baris 1)
+  // Aktifkan Filter Otomatis Tabel Excel (Filter ListObject A1:I)
+  ws.autoFilter = {
+    from: "A1",
+    to: `I${items.length + 1}`
+  };
+
+  // Styling Header (Baris 1) - RATA KIRI SEMUANYA
   const headerRow = ws.getRow(1);
   headerRow.height = 32;
   headerRow.eachCell((cell, colNumber) => {
     cell.font = { name: "Segoe UI", size: 10.5, bold: true, color: { argb: "FFFFFFFF" } };
-    cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+    cell.alignment = { vertical: "middle", horizontal: "left", wrapText: true }; // RATA KIRI
 
     if (colNumber === 4 || colNumber === 5) {
-      // Kelompok A (Amber / Kuning Tebal untuk teks putih)
+      // Kelompok Kemasan A (Amber / Kuning Tebal untuk teks putih)
       cell.fill = {
         type: "pattern",
         pattern: "solid",
         fgColor: { argb: "FFB45309" }
       };
     } else if (colNumber === 6 || colNumber === 7) {
-      // Kelompok B (Slate Dark)
+      // Kelompok Kemasan B (Slate Dark)
       cell.fill = {
         type: "pattern",
         pattern: "solid",
         fgColor: { argb: "FF334155" }
       };
     } else if (colNumber === 8 || colNumber === 9) {
-      // Kelompok C (Emerald Hijau Eceran Utama)
+      // Kelompok Kemasan C (Emerald Hijau Eceran Utama)
       cell.fill = {
         type: "pattern",
         pattern: "solid",
@@ -421,13 +427,13 @@ async function exportPricingWithExcelJS(items, fileName) {
   });
 
   const dataBorder = {
-    top: { style: "thin", color: { argb: "FFE2E8F0" } },
-    bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
-    left: { style: "thin", color: { argb: "FFE2E8F0" } },
-    right: { style: "thin", color: { argb: "FFE2E8F0" } }
+    top: { style: "thin", color: { argb: "FFCBD5E1" } },
+    bottom: { style: "thin", color: { argb: "FFCBD5E1" } },
+    left: { style: "thin", color: { argb: "FFCBD5E1" } },
+    right: { style: "thin", color: { argb: "FFCBD5E1" } }
   };
 
-  // Warna Kuning Soft untuk Kolom A (Opsional Grosir)
+  // Warna Kuning Soft untuk Kolom A (Opsional)
   const yellowFill = {
     type: "pattern",
     pattern: "solid",
@@ -461,10 +467,8 @@ async function exportPricingWithExcelJS(items, fileName) {
     color: { argb: "FF0F172A" }
   };
 
-  // Isi Baris Data
+  // Isi Baris Data (Harga Kosong / Tidak Diisi agar Diinput Owner)
   items.forEach((p, idx) => {
-    const r = idx + 2;
-
     const code = p["Kode Produk"] || p["Kode Produk Internal"] || p.id || "";
     const name = p["Nama Produk"] || p.name || "";
 
@@ -478,105 +482,91 @@ async function exportPricingWithExcelJS(items, fileName) {
     const hasBuy = Boolean(buyUnit && norm(buyUnit) !== norm(baseUnit) && (!midUnit || norm(buyUnit) !== norm(midUnit)) && conversion > 1);
 
     const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
-    const modalEceran = Math.round(buyPrice / conversion);
-
-    const curBase = num(p["Harga Jual"]);
-    const defaultSellBase = curBase > 0 ? curBase : (modalEceran > 0 ? Math.ceil((modalEceran * 1.2) / 100) * 100 : 0);
-
-    const curMid = num(p["Harga Jual Satuan Sedang"]);
-    const defaultSellMid = curMid > 0 ? curMid : (hasMid ? defaultSellBase * midQty : 0);
-
-    const curBuy = num(p["Harga Jual Satuan Besar"]);
-    const defaultSellBuy = curBuy > 0 ? curBuy : (hasBuy ? defaultSellBase * conversion : defaultSellBase);
 
     const row = ws.addRow({
       code,
       name,
       buyPrice,
       unitA: hasBuy ? `${buyUnit} (${conversion} ${baseUnit})` : buyUnit,
-      priceA: hasBuy 
-        ? { formula: `I${r}*${conversion}`, result: defaultSellBuy } 
-        : { formula: `I${r}`, result: defaultSellBase },
+      priceA: null, // HARGA JUAL KOSONG (UNTUK DIISI OWNER)
       unitB: hasMid ? `${midUnit} (${midQty} ${baseUnit})` : "-",
-      priceB: hasMid 
-        ? { formula: `I${r}*${midQty}`, result: defaultSellMid } 
-        : "-",
+      priceB: hasMid ? null : "-", // JIKA TIDAK ADA SATUAN B: "-"
       unitC: baseUnit,
-      priceC: { formula: `ROUNDUP((C${r}/${conversion})*1.2,-2)`, result: defaultSellBase }
+      priceC: null // HARGA JUAL KOSONG (UNTUK DIISI OWNER)
     });
 
     row.height = 24;
 
-    // Kolom 1: Kode Produk
+    // Kolom 1: Kode Produk (RATA KIRI)
     const c1 = row.getCell(1);
     c1.font = standardFont;
     c1.border = dataBorder;
-    c1.alignment = { vertical: "middle", horizontal: "center" };
+    c1.alignment = { vertical: "middle", horizontal: "left" };
 
-    // Kolom 2: Nama Produk
+    // Kolom 2: Nama Produk (RATA KIRI)
     const c2 = row.getCell(2);
     c2.font = boldFont;
     c2.border = dataBorder;
     c2.alignment = { vertical: "middle", horizontal: "left" };
 
-    // Kolom 3: Harga Beli Faktur (Rp)
+    // Kolom 3: Harga Beli Faktur (RATA KIRI + FORMAT RP)
     const c3 = row.getCell(3);
     c3.font = standardFont;
     c3.border = dataBorder;
     c3.numFmt = '"Rp "#,##0';
-    c3.alignment = { vertical: "middle", horizontal: "right" };
+    c3.alignment = { vertical: "middle", horizontal: "left" };
 
-    // Kolom 4 & 5: Satuan A & Harga Jual A (KUNING SOFT - OPSIONAL)
+    // Kolom 4 & 5: Jenis Kemasan A & Harga Kemasan A (KUNING SOFT - RATA KIRI + FORMAT RP)
     const c4 = row.getCell(4);
     c4.font = standardFont;
     c4.fill = yellowFill;
     c4.border = dataBorder;
-    c4.alignment = { vertical: "middle", horizontal: "center" };
+    c4.alignment = { vertical: "middle", horizontal: "left" };
 
     const c5 = row.getCell(5);
     c5.font = boldFont;
     c5.fill = yellowFill;
     c5.border = dataBorder;
     c5.numFmt = '"Rp "#,##0';
-    c5.alignment = { vertical: "middle", horizontal: "right" };
+    c5.alignment = { vertical: "middle", horizontal: "left" };
 
-    // Kolom 6 & 7: Satuan B & Harga Jual B (SEDANG)
+    // Kolom 6 & 7: Jenis Kemasan B & Harga Kemasan B (SEDANG)
     const c6 = row.getCell(6);
     const c7 = row.getCell(7);
 
     if (hasMid) {
       c6.font = standardFont;
       c6.border = dataBorder;
-      c6.alignment = { vertical: "middle", horizontal: "center" };
+      c6.alignment = { vertical: "middle", horizontal: "left" };
 
       c7.font = boldFont;
       c7.border = dataBorder;
       c7.numFmt = '"Rp "#,##0';
-      c7.alignment = { vertical: "middle", horizontal: "right" };
+      c7.alignment = { vertical: "middle", horizontal: "left" };
     } else {
       // TIDAK ADA SATUAN B -> DIARSIR ABU GELAP / CHARCOAL OTOMATIS
       c6.font = disabledFont;
       c6.fill = disabledFill;
       c6.border = dataBorder;
-      c6.alignment = { vertical: "middle", horizontal: "center" };
+      c6.alignment = { vertical: "middle", horizontal: "left" };
 
       c7.font = disabledFont;
       c7.fill = disabledFill;
       c7.border = dataBorder;
-      c7.alignment = { vertical: "middle", horizontal: "center" };
+      c7.alignment = { vertical: "middle", horizontal: "left" };
     }
 
-    // Kolom 8 & 9: Satuan C & Harga Jual C (ECERAN UTAMA)
+    // Kolom 8 & 9: Jenis Kemasan C & Harga Kemasan C (ECERAN UTAMA - RATA KIRI + FORMAT RP)
     const c8 = row.getCell(8);
     c8.font = boldFont;
     c8.border = dataBorder;
-    c8.alignment = { vertical: "middle", horizontal: "center" };
+    c8.alignment = { vertical: "middle", horizontal: "left" };
 
     const c9 = row.getCell(9);
     c9.font = boldFont;
     c9.border = dataBorder;
     c9.numFmt = '"Rp "#,##0';
-    c9.alignment = { vertical: "middle", horizontal: "right" };
+    c9.alignment = { vertical: "middle", horizontal: "left" };
   });
 
   // 2. Sheet PANDUAN_OWNER
@@ -595,13 +585,13 @@ async function exportPricingWithExcelJS(items, fileName) {
   guideHeader.eachCell(c => {
     c.font = { name: "Segoe UI", size: 10.5, bold: true, color: { argb: "FFFFFFFF" } };
     c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F766E" } };
-    c.alignment = { vertical: "middle", horizontal: "center" };
+    c.alignment = { vertical: "middle", horizontal: "left" };
   });
 
   const guideItems = [
-    { no: 1, section: "Kolom I (Harga Jual C - Eceran)", desc: "Kolom ini adalah harga jual satuan eceran utama (Kaplet / Botol / Tablet / Pcs). Sudah terisi rumus otomatis estimasi laba 20% pembulatan ratusan. Anda bebas langsung mengetik nominal harga eceran yang diinginkan (misal: 600, 1500, 5000)." },
-    { no: 2, section: "Kolom G (Harga Jual B - Sedang)", desc: "Otomatis menghitung kelipatan dari Harga Eceran (Kolom I) dikali isi kemasan sedang (misal Strip = 10 x Eceran). Jika produk tidak memiliki kemasan sedang, sel ini otomatis berwarna abu gelap dan tidak perlu diisi." },
-    { no: 3, section: "Kolom E (Harga Jual A - Kuning Soft)", desc: "Warna kuning menandakan kolom ini bersifat opsional untuk diskon grosir pembelian kemasan besar (Box/Dus/Karton). Otomatis menghitung kelipatan, namun Anda bisa mengetik langsung harga diskon grosir jika diinginkan." },
+    { no: 1, section: "Kolom I (Harga Kemasan C - Eceran)", desc: "Ketikkan harga jual satuan eceran utama (Kaplet / Botol / Tablet / Pcs) yang Anda inginkan (misal: 800, 1500, 20000)." },
+    { no: 2, section: "Kolom G (Harga Kemasan B)", desc: "Ketikkan harga jual per kemasan sedang (misal Strip / Blister). Jika dikosongkan, sistem otomatis menghitung kelipatan dari eceran. Jika produk tidak memiliki kemasan sedang, sel ini berwarna abu gelap dan tidak perlu diisi." },
+    { no: 3, section: "Kolom E (Harga Kemasan A - Kuning Soft)", desc: "Warna kuning menandakan kolom ini bersifat opsional untuk harga grosir kemasan besar (Box/Dus/Karton). Anda bisa mengetik harga promo/grosir, atau dikosongkan agar otomatis menghitung kelipatan." },
     { no: 4, section: "Kolom A (Kode Produk)", desc: "JANGAN mengubah atau menghapus isi Kode Produk. Kolom ini adalah kunci pencocokan otomatis sistem KasirPro." },
     { no: 5, section: "Cara Simpan & Upload", desc: "Setelah selesai, simpan berkas ini (Ctrl+S). Buka menu Master Produk di KasirPro, lalu klik tombol 'Upload & Terapkan Harga Jual'. Produk akan langsung AKTIF dan bisa ditransaksikan di kasir POS!" }
   ];
@@ -612,7 +602,7 @@ async function exportPricingWithExcelJS(items, fileName) {
     gr.eachCell(c => {
       c.font = { name: "Segoe UI", size: 10 };
       c.border = dataBorder;
-      c.alignment = { vertical: "middle", wrapText: true };
+      c.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
     });
   });
 
@@ -639,20 +629,18 @@ function exportPricingWithSheetJS(items, fileName) {
   const headers = [
     "Kode Produk",
     "Nama Produk",
-    "Harga Beli Faktur (Rp)",
-    "Kemasan A (Besar)",
-    "Harga Jual A [Opsional]",
-    "Kemasan B (Sedang)",
-    "Harga Jual B [Sedang]",
-    "Kemasan C (Eceran)",
-    "Harga Jual C [Eceran]"
+    "Harga Beli Faktur",
+    "Jenis Kemasan A",
+    "Harga Kemasan A",
+    "Jenis Kemasan B",
+    "Harga Kemasan B",
+    "Jenis Kemasan C",
+    "Harga Kemasan C"
   ];
 
   const rows = [headers];
 
-  items.forEach((p, idx) => {
-    const r = idx + 2;
-
+  items.forEach(p => {
     const code = p["Kode Produk"] || p["Kode Produk Internal"] || p.id || "";
     const name = p["Nama Produk"] || p.name || "";
 
@@ -666,60 +654,34 @@ function exportPricingWithSheetJS(items, fileName) {
     const hasBuy = Boolean(buyUnit && norm(buyUnit) !== norm(baseUnit) && (!midUnit || norm(buyUnit) !== norm(midUnit)) && conversion > 1);
 
     const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
-    const modalEceran = Math.round(buyPrice / conversion);
-
-    const curBase = num(p["Harga Jual"]);
-    const defaultSellBase = curBase > 0 ? curBase : (modalEceran > 0 ? Math.ceil((modalEceran * 1.2) / 100) * 100 : 0);
-
-    const curMid = num(p["Harga Jual Satuan Sedang"]);
-    const defaultSellMid = curMid > 0 ? curMid : (hasMid ? defaultSellBase * midQty : 0);
-
-    const curBuy = num(p["Harga Jual Satuan Besar"]);
-    const defaultSellBuy = curBuy > 0 ? curBuy : (hasBuy ? defaultSellBase * conversion : defaultSellBase);
-
     const cellBuyPrice = { t: "n", v: buyPrice, z: '"Rp "#,##0' };
-    const cellPriceA = {
-      t: "n",
-      v: defaultSellBuy,
-      f: hasBuy ? `I${r}*${conversion}` : `I${r}`,
-      z: '"Rp "#,##0'
-    };
-    const cellPriceB = hasMid
-      ? { t: "n", v: defaultSellMid, f: `I${r}*${midQty}`, z: '"Rp "#,##0' }
-      : "-";
-    const cellPriceC = {
-      t: "n",
-      v: defaultSellBase,
-      f: `ROUNDUP((C${r}/${conversion})*1.2,-2)`,
-      z: '"Rp "#,##0'
-    };
 
     rows.push([
       code,
       name,
       cellBuyPrice,
       hasBuy ? `${buyUnit} (${conversion} ${baseUnit})` : buyUnit,
-      cellPriceA,
+      "", // KOSONG AGAR DIISI OWNER
       hasMid ? `${midUnit} (${midQty} ${baseUnit})` : "-",
-      cellPriceB,
+      hasMid ? "" : "-", // KOSONG JIKA ADA SATUAN SEDANG
       baseUnit,
-      cellPriceC
+      "" // KOSONG AGAR DIISI OWNER
     ]);
   });
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws["!cols"] = [
     { wch: 18 }, { wch: 38 }, { wch: 22 },
-    { wch: 20 }, { wch: 24 }, { wch: 20 },
-    { wch: 22 }, { wch: 18 }, { wch: 22 }
+    { wch: 20 }, { wch: 22 }, { wch: 20 },
+    { wch: 22 }, { wch: 20 }, { wch: 22 }
   ];
   XLSX.utils.book_append_sheet(wb, ws, "DAFTAR_HARGA");
 
   const guideRows = [
     ["NO", "BAGIAN", "PETUNJUK LENGKAP UNTUK OWNER / PEMILIK APOTEK"],
-    [1, "Kolom I (Harga Jual C - Eceran)", "Kolom harga satuan eceran utama (Kaplet / Botol / Tablet). Terisi rumus otomatis laba 20% pembulatan ratusan."],
-    [2, "Kolom G (Harga Jual B - Sedang)", "Otomatis menghitung kelipatan dari Harga Eceran dikali isi sedang. Jika tidak ada, bertanda '-' (abu gelap)."],
-    [3, "Kolom E (Harga Jual A - Kuning)", "Opsional untuk diskon grosir Box/Karton. Otomatis kelipatan atau bisa ditimpa."],
+    [1, "Kolom I (Harga Kemasan C - Eceran)", "Ketikkan harga jual satuan eceran utama (Kaplet / Botol / Tablet / Pcs) yang Anda inginkan."],
+    [2, "Kolom G (Harga Kemasan B)", "Ketikkan harga jual per kemasan sedang (misal Strip). Jika dikosongkan, sistem otomatis menghitung kelipatan."],
+    [3, "Kolom E (Harga Kemasan A - Kuning)", "Opsional untuk diskon grosir Box/Karton. Anda bisa mengetik harga promo/grosir."],
     [4, "Kolom A (Kode Produk)", "JANGAN mengubah kode produk sebagai kunci pencocokan sistem."],
     [5, "Simpan & Upload", "Simpan lalu upload kembali di KasirPro agar obat langsung AKTIF di kasir POS."]
   ];
@@ -787,6 +749,7 @@ export async function parsePricingWorkbook(file, currentMaster = {}) {
 
     // Ambil harga dari baris Excel (dukung kolom format 9-kolom baru & alias)
     let priceBase = num(
+      row["Harga Kemasan C"] ??
       row["Harga Jual C [Eceran]"] ?? 
       row["Harga Jual C"] ?? 
       row["Harga Jual Eceran"] ?? 
@@ -794,12 +757,14 @@ export async function parsePricingWorkbook(file, currentMaster = {}) {
       row["Harga Jual"]
     );
     let priceMid = num(
+      row["Harga Kemasan B"] ??
       row["Harga Jual B [Sedang]"] ?? 
       row["Harga Jual B"] ?? 
       row["Harga Jual Sedang"] ?? 
       row["Harga Jual Satuan Sedang"]
     );
     let priceBuy = num(
+      row["Harga Kemasan A"] ??
       row["Harga Jual A [Opsional]"] ?? 
       row["Harga Jual A"] ?? 
       row["Harga Jual Kemasan Beli"] ?? 
