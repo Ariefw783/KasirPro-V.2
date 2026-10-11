@@ -293,3 +293,64 @@ export function generateStockOpnamePdf(session, storeSettings = {}, user = "Admi
   addPageFooters(doc);
   doc.save(`Stock_Opname_${session.id || Date.now()}.pdf`);
 }
+
+/**
+ * 6. Cetak Kartu Stok Produk (Stock Card Ledger Report)
+ */
+export function generateStockCardPdf(product = {}, movements = [], storeSettings = {}, user = "Admin") {
+  const doc = createA4Doc();
+  const prodName = product["Nama Produk"] || product.name || "Produk";
+  const prodCode = product["Kode Produk"] || product.code || "—";
+  const unit = product["Satuan Dasar"] || product["Satuan"] || product.unit || "Item";
+  const curStock = product.stock !== undefined ? product.stock : (product["Stok Awal"] ?? 0);
+
+  const totalIn = movements.filter(m => Number(m.delta ?? m.quantity) > 0).reduce((sum, m) => sum + Number(m.delta ?? m.quantity), 0);
+  const totalOut = movements.filter(m => Number(m.delta ?? m.quantity) < 0).reduce((sum, m) => sum + Math.abs(Number(m.delta ?? m.quantity)), 0);
+
+  const startY = addDocHeader(doc, `KARTU STOK PRODUK: ${prodName}`, storeSettings, [
+    `Kode Produk: ${prodCode} | Satuan: ${unit}`,
+    `Total Masuk: +${formatNumber(totalIn)} ${unit} | Total Keluar: -${formatNumber(totalOut)} ${unit}`,
+    `Sisa Stok Saat Ini: ${formatNumber(curStock)} ${unit}`,
+    `Dicetak oleh: ${user}`
+  ]);
+
+  const tableBody = movements.map((m, idx) => {
+    const isPositive = Number(m.delta ?? m.quantity) > 0;
+    const deltaStr = isPositive ? `+${formatNumber(m.delta ?? m.quantity)}` : `${formatNumber(m.delta ?? m.quantity)}`;
+    return [
+      idx + 1,
+      formatDateTime(m.createdAt || m.date || m.at),
+      m.type || "Mutasi",
+      m.reference || "—",
+      m.source || "—",
+      deltaStr,
+      m.stockAfter !== undefined ? formatNumber(m.stockAfter) : "—",
+      m.user || "—",
+      m.batch ? `Batch: ${m.batch}${m.expiryDate ? ` (EXP: ${m.expiryDate})` : ""}` : (m.note || m.notes || "—")
+    ];
+  });
+
+  doc.autoTable({
+    startY,
+    head: [["No", "Waktu", "Jenis", "No. Referensi", "Sumber", "Qty", "Saldo", "Petugas", "Keterangan/Batch"]],
+    body: tableBody,
+    theme: "striped",
+    headStyles: { fillColor: [15, 42, 67], textColor: 255, fontSize: 8 },
+    styles: { fontSize: 7.5, cellPadding: 2 },
+    columnStyles: {
+      0: { cellWidth: 8 },
+      1: { cellWidth: 26 },
+      2: { cellWidth: 22 },
+      3: { cellWidth: 25 },
+      4: { cellWidth: 26 },
+      5: { cellWidth: 16, halign: "right" },
+      6: { cellWidth: 16, halign: "right" },
+      7: { cellWidth: 18 },
+      8: { cellWidth: "auto" }
+    },
+    margin: { left: 14, right: 14 }
+  });
+
+  addPageFooters(doc);
+  doc.save(`Kartu_Stok_${prodCode}_${Date.now()}.pdf`);
+}

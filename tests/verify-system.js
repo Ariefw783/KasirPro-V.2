@@ -1894,6 +1894,41 @@ assert(
   "Background Management: Menggunakan Motif Batik Kawung Nusantara pada .main-area::before"
 );
 
+// ========================================================
+// BAGIAN 25: PENGUJIAN FITUR KARTU STOK & AUDIT MUTASI LENGKAP
+// ========================================================
+console.log("\n📋 BAGIAN 25: PENGUJIAN FITUR KARTU STOK PRODUK & AUDIT MUTASI LENGKAP");
+
+const mgmtStockJs = fs.readFileSync(path.join(rootDir, "management/management-stock.js"), "utf8");
+const mgmtProductsCurrentJs = fs.readFileSync(path.join(rootDir, "management/management-products.js"), "utf8");
+const corePdfJs = fs.readFileSync(path.join(rootDir, "modules/core/pdf.js"), "utf8");
+const posCoreJs = fs.readFileSync(path.join(rootDir, "pos/pos-at07-core.js"), "utf8");
+
+assert(
+  mgmtStockJs.includes("openStockHistoryModal") && mgmtStockJs.includes("Kartu Stok"),
+  "Manajemen Stok: Tombol Aksi Kartu Stok Terpasang di Tabel & Kartu Responsif"
+);
+assert(
+  mgmtStockJs.includes("modal-stock-history") && mgmtStockJs.includes("btn-print-stock-card"),
+  "Modal Kartu Stok: Dialog Audit Lengkap dengan Tombol Cetak PDF Tersedia"
+);
+assert(
+  mgmtStockJs.includes("Saldo Stok Saat Ini") && mgmtStockJs.includes("Total Barang Masuk") && mgmtStockJs.includes("Total Barang Keluar"),
+  "Modal Kartu Stok: Ringkasan Saldo, Total Masuk, dan Total Keluar Ditampilkan"
+);
+assert(
+  mgmtProductsCurrentJs.includes("btn-product-stock-card") && mgmtProductsCurrentJs.includes("openStockHistoryModal"),
+  "Master Produk: Tombol Kartu Stok Terintegrasi Langsung ke Seluruh Baris & Kartu Produk"
+);
+assert(
+  corePdfJs.includes("export function generateStockCardPdf"),
+  "Ekspor PDF: Fungsi Pembuatan Laporan Resmi Kartu Stok Produk Siap Digunakan"
+);
+assert(
+  posCoreJs.includes("source:\"Transaksi Kasir (POS)\"") && posCoreJs.includes("user:session.name"),
+  "POS Kasir: Record Mutasi Penjualan Melampirkan User Kasir dan Sumber Transaksi secara Akurat"
+);
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

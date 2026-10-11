@@ -1,13 +1,13 @@
 {
-  "version": "2.2.70",
-  "build": "20261011.17",
+  "version": "2.2.71",
+  "build": "20261011.18",
   "releaseDate": "11 Oktober 2026",
-  "title": "Standardize Management Header & Breadcrumb Consistency",
-  "description": "Menyelaraskan teks judul header dan subjudul halaman Produk di topbar dan modul Management agar konsisten, rapi, dan tidak terpotong.",
+  "title": "Stock Card Ledger & Complete Audit Trail",
+  "description": "Menghadirkan fitur Kartu Stok Produk & Rekam Jejak Audit Lalu Lintas Barang Masuk, Keluar, dan Penyesuaian lengkap dengan detail jam, sumber, pelaku, nomor bukti, serta cetak PDF.",
   "changelog": [
-    "Standardize product menu header title",
-    "Shorten page subtitle description text",
-    "Align sidebar navigation menu labels",
-    "Pass all system verification tests"
+    "Peluncuran Buku Kartu Stok Produk (Stock Card Ledger) interaktif per produk",
+    "Pencatatan presisi waktu & jam, jenis mutasi, nomor faktur/struk, dan petugas/kasir",
+    "Tombol cepat akses Kartu Stok di halaman Master Produk dan Manajemen Stok",
+    "Integrasi ekspor berkas cetak PDF resmi untuk audit fisik persediaan obat/barang"
   ]
 }

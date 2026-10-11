@@ -527,13 +527,17 @@ async function completeSale(){
         moves.unshift({
             id:`MOV-${number}-${String(itemIndex+1).padStart(2,"0")}`,
             at:saleAt,
-            type:"sale",
+            createdAt:saleAt,
+            type:"Penjualan Kasir",
             reference:number,
             productCode:item.code,
             productName:item.name,
             delta:-totalDeduct,
+            quantity:-totalDeduct,
             stockBefore:before,
             stockAfter:after,
+            source:"Transaksi Kasir (POS)",
+            user:session.name || session.username || "Kasir",
             note:`Penjualan ${number} (${item.qty} ${unitName}${mult > 1 ? ` @${mult} ${p["Satuan Dasar"]||""}` : ""})`
         });
     }

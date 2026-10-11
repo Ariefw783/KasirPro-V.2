@@ -17,6 +17,7 @@ import { $, num, text, norm, rupiah, formatNumber, escapeHtml } from "../modules
 import { STORE_KEYS, readStore, writeMasterDelta, deleteMasterProduct, readCurrentStock } from "../modules/database/database-store.js";
 import { indexedDBStore, STORES } from "../modules/local/indexeddb-store.js";
 import { exportMasterData, parseMasterWorkbook, exportPricingWorkbook, parsePricingWorkbook } from "../modules/excel/excel-service.js";
+import { openStockHistoryModal } from "./management-stock.js";
 
 const PAGE_SIZE = 25;
 let currentPage = 1;
@@ -591,6 +592,9 @@ function renderTable() {
           <td>${statusBadge}</td>
           <td>
             <div style="display:flex;align-items:center;gap:4px;">
+              <button type="button" class="btn-product-stock-card button button-small button-secondary" data-code="${escapeHtml(code)}" title="Lihat Kartu Stok & Riwayat Mutasi">
+                <i class="fa-solid fa-clipboard-list" style="color:#0284c7;"></i>
+              </button>
               <button type="button" class="btn-delete-product button button-small button-danger" data-code="${escapeHtml(code)}" title="Hapus Produk">
                 <i class="fa-solid fa-trash"></i>
               </button>
@@ -696,6 +700,9 @@ function renderTable() {
                 </div>
               </div>
               <div class="card-action-bar">
+                <button type="button" class="btn-product-stock-card button button-small button-secondary" data-code="${escapeHtml(code)}" title="Lihat Kartu Stok & Riwayat Mutasi">
+                  <i class="fa-solid fa-clipboard-list" style="color:#0284c7;"></i> Kartu Stok
+                </button>
                 ${stock > 0 ? `
                   <button type="button" class="btn-edit-price button button-small button-primary" data-code="${escapeHtml(code)}">
                     <i class="fa-solid fa-pen"></i> Atur Harga Jual
@@ -722,9 +729,17 @@ function renderTable() {
       });
     }
 
-    // Bind event Edit & Hapus ke seluruh elemen dalam section produk (baik tabel maupun kartu)
+    // Bind event Edit, Kartu Stok, & Hapus ke seluruh elemen dalam section produk (baik tabel maupun kartu)
     const pContainer = document.querySelector('[data-view-section="products"]');
     if (pContainer) {
+      pContainer.querySelectorAll(".btn-product-stock-card").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const code = btn.dataset.code;
+          openStockHistoryModal(code);
+        });
+      });
+
       pContainer.querySelectorAll(".btn-edit-price").forEach(btn => {
         btn.addEventListener("click", (e) => {
           e.stopPropagation();

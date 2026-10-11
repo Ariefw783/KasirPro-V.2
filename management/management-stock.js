@@ -12,7 +12,7 @@
 
 import { $, num, text, norm, rupiah, formatNumber, formatDateTime, escapeHtml } from "../modules/core/utils.js";
 import { STORE_KEYS, readStore, readCurrentStock, normalizeNegativeStocks } from "../modules/database/database-store.js";
-import { generateStockReportPdf } from "../modules/core/pdf.js";
+import { generateStockReportPdf, generateStockCardPdf } from "../modules/core/pdf.js";
 
 const PAGE_SIZE = 25;
 let currentStockPage = 1;
@@ -259,8 +259,8 @@ function renderStockTable() {
           <td><strong style="color:#0369a1;">${rupiah(item.totalValue)}</strong></td>
           <td>${getStockStatusBadge(item.status)}</td>
           <td>
-            <button type="button" class="btn-stock-history button button-small button-secondary" data-code="${escapeHtml(item.code)}" title="Lihat Histori Masuk/Batch">
-              <i class="fa-solid fa-clock-rotate-left"></i> Histori
+            <button type="button" class="btn-stock-history button button-small button-secondary" data-code="${escapeHtml(item.code)}" title="Lihat Kartu Stok & Riwayat Mutasi">
+              <i class="fa-solid fa-clipboard-list" style="color:#0284c7;"></i> Kartu Stok
             </button>
           </td>
         </tr>
@@ -342,8 +342,8 @@ function renderStockTable() {
                 </div>
               </div>
               <div class="card-action-bar">
-                <button type="button" class="btn-stock-history button button-small button-secondary" data-code="${escapeHtml(item.code)}" title="Lihat Histori Masuk/Batch">
-                  <i class="fa-solid fa-clock-rotate-left"></i> Histori Masuk/Batch
+                <button type="button" class="btn-stock-history button button-small button-secondary" data-code="${escapeHtml(item.code)}" title="Lihat Kartu Stok & Riwayat Mutasi">
+                  <i class="fa-solid fa-clipboard-list" style="color:#0284c7;"></i> Kartu Stok
                 </button>
               </div>
             </div>
@@ -444,14 +444,17 @@ function renderMovementTable() {
 
     return `
       <tr>
-        <td>${formatDateTime(m.createdAt || m.date)}</td>
+        <td style="white-space:nowrap;font-weight:600;">${formatDateTime(m.createdAt || m.date || m.at)}</td>
         <td><strong>${escapeHtml(m.type || 'Mutasi')}</strong></td>
-        <td>${escapeHtml(m.reference || '—')}</td>
-        <td>${escapeHtml(m.productCode || '—')}</td>
+        <td><strong style="color:#0284c7;">${escapeHtml(m.reference || '—')}</strong></td>
+        <td><code>${escapeHtml(m.productCode || '—')}</code></td>
         <td><strong>${escapeHtml(m.productName || '—')}</strong></td>
-        <td style="color:${isPositive ? '#059669' : '#dc2626'};font-weight:700;">${deltaStr}</td>
-        <td>${m.stockAfter !== undefined ? formatNumber(m.stockAfter) : '—'}</td>
-        <td><small class="text-muted">User: ${escapeHtml(m.user || '—')}${m.batch ? ` | Batch: ${escapeHtml(m.batch)}` : ''}</small></td>
+        <td style="color:${isPositive ? '#059669' : '#dc2626'};font-weight:700;text-align:right;">${deltaStr}</td>
+        <td style="text-align:right;font-weight:700;">${m.stockAfter !== undefined ? formatNumber(m.stockAfter) : '—'}</td>
+        <td>
+          <span style="font-weight:600;color:#334155;">${escapeHtml(m.source || 'Sistem')}</span>
+          <small class="text-muted" style="display:block;">User: ${escapeHtml(m.user || '—')}${m.batch ? ` | Batch: ${escapeHtml(m.batch)}` : ''}${m.note || m.notes ? ` | ${escapeHtml(m.note || m.notes)}` : ''}</small>
+        </td>
       </tr>
     `;
   }).join("");
@@ -508,13 +511,21 @@ function renderMovementTable() {
                   <span class="card-detail-value"><strong>${m.stockAfter !== undefined ? formatNumber(m.stockAfter) : '—'}</strong></span>
                 </div>
                 <div class="card-detail-item">
-                  <span class="card-detail-label">Petugas / User</span>
-                  <span class="card-detail-value">${escapeHtml(m.user || '—')}</span>
+                  <span class="card-detail-label">Sumber & Pelaku</span>
+                  <span class="card-detail-value">
+                    <strong>${escapeHtml(m.source || 'Sistem')}</strong> 
+                    <small class="text-muted">(${escapeHtml(m.user || '—')})</small>
+                  </span>
                 </div>
+                ${m.note || m.notes ? `
+                <div class="card-detail-item">
+                  <span class="card-detail-label">Keterangan / Rincian</span>
+                  <span class="card-detail-value">${escapeHtml(m.note || m.notes)}</span>
+                </div>` : ''}
                 ${m.batch ? `
                 <div class="card-detail-item">
                   <span class="card-detail-label">No. Batch / Exp</span>
-                  <span class="card-detail-value">${escapeHtml(m.batch)}${m.exp ? ` (EXP: ${escapeHtml(m.exp)})` : ''}</span>
+                  <span class="card-detail-value">${escapeHtml(m.batch)}${m.expiryDate ? ` (EXP: ${escapeHtml(m.expiryDate)})` : ''}</span>
                 </div>` : ''}
               </div>
             </div>
@@ -533,26 +544,34 @@ function renderMovementTable() {
 }
 
 /**
- * 3. MODAL HISTORI BATCH & EXP (INFORMASI HISTORIS FAKTUR)
+ * 3. MODAL KARTU STOK & AUDIT MUTASI LENGKAP
  */
-function installStockHistoryModal() {
+export function installStockHistoryModal() {
   if ($("modal-stock-history")) return;
 
   const modalHtml = `
     <div id="modal-stock-history" class="kp-dialog-v4" hidden>
       <div class="kp-dialog-v4__backdrop"></div>
-      <section class="kp-dialog-v4__card" style="width:min(94vw,680px);max-height:90vh;overflow-y:auto;" role="dialog">
-        <header style="padding:18px 20px 12px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+      <section class="kp-dialog-v4__card" style="width:min(96vw,840px);max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;" role="dialog">
+        <header style="padding:16px 20px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#f8fafc;border-top-left-radius:12px;border-top-right-radius:12px;">
           <div>
-            <h2 id="stock-hist-title" style="font-size:16px;font-weight:800;margin:0;">Histori Masuk & Batch</h2>
-            <span id="stock-hist-sub" style="font-size:12px;color:#64748b;">Informasi historis dari faktur pembelian (bukan bucket stok)</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;background:#e0f2fe;color:#0284c7;font-size:14px;"><i class="fa-solid fa-clipboard-list"></i></span>
+              <h2 id="stock-hist-title" style="font-size:16px;font-weight:800;color:#0f2a43;margin:0;">Kartu Stok Produk</h2>
+            </div>
+            <span id="stock-hist-sub" style="font-size:12px;color:#64748b;margin-left:36px;display:block;">Buku rekaman audit lalu lintas stok masuk, keluar, dan penyesuaian</span>
           </div>
           <button type="button" id="close-modal-stock-hist" class="button button-small button-secondary" style="padding:4px 8px;"><i class="fa-solid fa-xmark"></i></button>
         </header>
-        <div id="stock-hist-body" style="padding:20px;text-align:left;">
-          <!-- Konten tabel mutasi dan batch -->
+
+        <div id="stock-hist-body" style="padding:16px 20px;text-align:left;flex:1;overflow-y:auto;">
+          <!-- Konten kartu stok -->
         </div>
-        <footer style="padding:12px 20px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;">
+
+        <footer style="padding:12px 20px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;border-bottom-left-radius:12px;border-bottom-right-radius:12px;">
+          <button type="button" id="btn-print-stock-card" class="button button-secondary button-small" style="display:inline-flex;align-items:center;gap:6px;">
+            <i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> Cetak PDF Kartu Stok
+          </button>
           <button type="button" id="btn-close-stock-hist" class="button button-secondary">Tutup</button>
         </footer>
       </section>
@@ -564,56 +583,157 @@ function installStockHistoryModal() {
   $("btn-close-stock-hist")?.addEventListener("click", () => $("modal-stock-history").hidden = true);
 }
 
-function openStockHistoryModal(productCode) {
+let activeStockCardProduct = null;
+let activeStockCardMovements = [];
+
+export function openStockHistoryModal(productCode) {
+  installStockHistoryModal();
   const modal = $("modal-stock-history");
   if (!modal) return;
 
   const master = readStore(STORE_KEYS.master, {});
   const prods = Array.isArray(master.produk) ? master.produk : [];
-  const prod = prods.find(p => norm(p["Kode Produk"]) === norm(productCode));
+  const prod = prods.find(p => norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id) === norm(productCode));
   const movs = readStore(STORE_KEYS.movements, []);
-  const invoices = readStore(STORE_KEYS.invoices, []);
+  const settings = readStore(STORE_KEYS.settings, {});
 
-  $("stock-hist-title").textContent = prod ? prod["Nama Produk"] : productCode;
+  const prodName = prod ? prod["Nama Produk"] : productCode;
+  const unit = prod ? (prod["Satuan Dasar"] || prod["Satuan"] || "Item") : "Item";
+  const curStock = prod ? readCurrentStock(prod["Kode Produk"] || productCode) : 0;
 
-  // Filter faktur dan mutasi produk ini
+  $("stock-hist-title").textContent = prodName;
+  $("stock-hist-sub").textContent = `Kode: ${productCode} | Satuan Dasar: ${unit} | Stok Saat Ini: ${formatNumber(curStock)} ${unit}`;
+
+  // Filter faktur dan mutasi produk ini, urutkan dari yang terbaru ke terlama
   const prodMovs = (movs || []).filter(m => norm(m.productCode) === norm(productCode)).reverse();
+
+  activeStockCardProduct = prod || { code: productCode, name: prodName, unit, stock: curStock };
+  activeStockCardMovements = prodMovs;
+
+  const totalIn = prodMovs.filter(m => num(m.delta ?? m.quantity) > 0).reduce((sum, m) => sum + num(m.delta ?? m.quantity), 0);
+  const totalOut = prodMovs.filter(m => num(m.delta ?? m.quantity) < 0).reduce((sum, m) => sum + Math.abs(num(m.delta ?? m.quantity)), 0);
 
   const bodyEl = $("stock-hist-body");
   if (!prodMovs.length) {
-    bodyEl.innerHTML = `<p style="text-align:center;padding:20px;color:#64748b;">Belum ada riwayat faktur masuk atau mutasi untuk produk ini.</p>`;
+    bodyEl.innerHTML = `
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap;">
+        <div><small style="color:#64748b;display:block;">Stok Saat Ini</small><strong style="font-size:15px;color:#0f172a;">${formatNumber(curStock)} ${escapeHtml(unit)}</strong></div>
+        <div><small style="color:#64748b;display:block;">Total Masuk</small><strong style="font-size:15px;color:#059669;">+0 ${escapeHtml(unit)}</strong></div>
+        <div><small style="color:#64748b;display:block;">Total Keluar</small><strong style="font-size:15px;color:#dc2626;">-0 ${escapeHtml(unit)}</strong></div>
+      </div>
+      <p style="text-align:center;padding:32px 16px;color:#64748b;background:#fff;border-radius:8px;border:1px dashed #cbd5e1;">
+        <i class="fa-solid fa-clipboard-question" style="font-size:24px;margin-bottom:8px;display:block;color:#94a3b8;"></i>
+        Belum ada riwayat mutasi / lalu lintas stok yang tercatat untuk produk ini.
+      </p>
+    `;
   } else {
     bodyEl.innerHTML = `
-      <div class="table-wrapper" style="max-height:300px;overflow-y:auto;">
-        <table class="data-table">
-          <thead>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+        <div>
+          <small style="color:#64748b;display:block;font-size:11px;text-transform:uppercase;font-weight:700;">Saldo Stok Saat Ini</small>
+          <strong style="font-size:16px;color:#0f2a43;">${formatNumber(curStock)}</strong> <small style="color:#64748b;">${escapeHtml(unit)}</small>
+        </div>
+        <div style="border-left:1px solid #cbd5e1;height:28px;"></div>
+        <div>
+          <small style="color:#64748b;display:block;font-size:11px;text-transform:uppercase;font-weight:700;">Total Barang Masuk</small>
+          <strong style="font-size:16px;color:#059669;">+${formatNumber(totalIn)}</strong> <small style="color:#64748b;">${escapeHtml(unit)}</small>
+        </div>
+        <div style="border-left:1px solid #cbd5e1;height:28px;"></div>
+        <div>
+          <small style="color:#64748b;display:block;font-size:11px;text-transform:uppercase;font-weight:700;">Total Barang Keluar</small>
+          <strong style="font-size:16px;color:#dc2626;">-${formatNumber(totalOut)}</strong> <small style="color:#64748b;">${escapeHtml(unit)}</small>
+        </div>
+        <div style="border-left:1px solid #cbd5e1;height:28px;"></div>
+        <div>
+          <small style="color:#64748b;display:block;font-size:11px;text-transform:uppercase;font-weight:700;">Total Transaksi Mutasi</small>
+          <strong style="font-size:16px;color:#0284c7;">${formatNumber(prodMovs.length)}</strong> <small style="color:#64748b;">kali</small>
+        </div>
+      </div>
+
+      <div class="table-wrapper" style="max-height:360px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;">
+        <table class="data-table" style="font-size:12.5px;">
+          <thead style="position:sticky;top:0;background:#f1f5f9;z-index:2;">
             <tr>
-              <th>Waktu</th>
-              <th>Jenis</th>
-              <th>Referensi</th>
-              <th>Qty Masuk/Keluar</th>
-              <th>Batch</th>
-              <th>Exp Date</th>
+              <th style="padding:8px 10px;">Waktu & Jam</th>
+              <th style="padding:8px 10px;">Jenis Mutasi</th>
+              <th style="padding:8px 10px;">No. Referensi</th>
+              <th style="padding:8px 10px;text-align:right;">Perubahan</th>
+              <th style="padding:8px 10px;text-align:right;">Saldo Setelah</th>
+              <th style="padding:8px 10px;">Sumber / User</th>
+              <th style="padding:8px 10px;">Batch / EXP / Info</th>
             </tr>
           </thead>
           <tbody>
-            ${prodMovs.map(m => `
-              <tr>
-                <td>${formatDateTime(m.createdAt || m.date)}</td>
-                <td><strong>${escapeHtml(m.type || '—')}</strong></td>
-                <td>${escapeHtml(m.reference || '—')}</td>
-                <td style="color:${num(m.delta) >= 0 ? '#059669' : '#dc2626'};font-weight:700;">
-                  ${num(m.delta) >= 0 ? `+${m.delta}` : m.delta}
-                </td>
-                <td>${escapeHtml(m.batch || '—')}</td>
-                <td>${escapeHtml(m.expiryDate || '—')}</td>
-              </tr>
-            `).join("")}
+            ${prodMovs.map(m => {
+              const deltaVal = num(m.delta ?? m.quantity);
+              const isPositive = deltaVal > 0;
+              const deltaStr = isPositive ? `+${formatNumber(deltaVal)}` : `${formatNumber(deltaVal)}`;
+              const timeDisplay = formatDateTime(m.createdAt || m.date || m.at);
+
+              let badgeBg = "#f1f5f9";
+              let badgeColor = "#475569";
+              const typeStr = norm(m.type);
+              if (typeStr.includes("faktur") || typeStr.includes("masuk")) {
+                badgeBg = "#dcfce7"; badgeColor = "#15803d";
+              } else if (typeStr.includes("penjualan") || typeStr.includes("sale")) {
+                badgeBg = "#fee2e2"; badgeColor = "#b91c1c";
+              } else if (typeStr.includes("opname")) {
+                badgeBg = "#fef3c7"; badgeColor = "#b45309";
+              } else if (typeStr.includes("retur") || typeStr.includes("pembatalan")) {
+                badgeBg = "#f3e8ff"; badgeColor = "#7e22ce";
+              }
+
+              return `
+                <tr>
+                  <td style="white-space:nowrap;color:#0f172a;font-weight:600;">${timeDisplay}</td>
+                  <td>
+                    <span class="badge" style="background:${badgeBg};color:${badgeColor};font-weight:700;font-size:11px;padding:3px 7px;border-radius:5px;">
+                      ${escapeHtml(m.type || 'Mutasi')}
+                    </span>
+                  </td>
+                  <td>
+                    <span style="font-weight:700;color:#0284c7;">${escapeHtml(m.reference || '—')}</span>
+                    ${m.supplier ? `<small style="display:block;color:#64748b;font-size:11px;">${escapeHtml(m.supplier)}</small>` : ''}
+                  </td>
+                  <td style="text-align:right;font-weight:800;color:${isPositive ? '#059669' : '#dc2626'};">
+                    ${deltaStr}
+                  </td>
+                  <td style="text-align:right;font-weight:700;color:#0f172a;">
+                    ${m.stockAfter !== undefined ? formatNumber(m.stockAfter) : '—'}
+                  </td>
+                  <td>
+                    <small style="color:#334155;font-weight:600;display:block;">${escapeHtml(m.source || 'Sistem')}</small>
+                    <small style="color:#64748b;font-size:11px;">Oleh: ${escapeHtml(m.user || '—')}</small>
+                  </td>
+                  <td>
+                    ${m.batch ? `<span style="font-weight:600;color:#0f172a;">Batch: ${escapeHtml(m.batch)}</span>` : ''}
+                    ${m.expiryDate ? `<small style="display:block;color:#64748b;font-size:11px;">EXP: ${escapeHtml(m.expiryDate)}</small>` : ''}
+                    ${m.note || m.notes ? `<small style="display:block;color:#64748b;font-size:11px;font-style:italic;">${escapeHtml(m.note || m.notes)}</small>` : ''}
+                    ${!m.batch && !m.expiryDate && !m.note && !m.notes ? '<span style="color:#94a3b8;">—</span>' : ''}
+                  </td>
+                </tr>
+              `;
+            }).join("")}
           </tbody>
         </table>
       </div>
-      <p style="margin-top:12px;font-size:11.5px;color:#64748b;"><i class="fa-solid fa-circle-info"></i> Batch dan EXP merupakan catatan historis pengiriman faktur dan tidak membagi stok menjadi bucket atau FEFO.</p>
+      <p style="margin-top:10px;font-size:11.5px;color:#64748b;display:flex;align-items:center;gap:6px;">
+        <i class="fa-solid fa-circle-info" style="color:#0284c7;"></i> 
+        Setiap entri memuat saldo sebelum & sesudah, nomor bukti faktur/struk, dan petugas penanggung jawab secara transparan.
+      </p>
     `;
+  }
+
+  // Setup tombol Cetak PDF
+  const printBtn = $("btn-print-stock-card");
+  if (printBtn) {
+    printBtn.onclick = () => {
+      try {
+        generateStockCardPdf(activeStockCardProduct, activeStockCardMovements, settings, "Administrator");
+      } catch (err) {
+        window.KasirProDialog?.error("Gagal Cetak PDF", err.message);
+      }
+    };
   }
 
   modal.hidden = false;
