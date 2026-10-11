@@ -663,7 +663,17 @@
     grid-column: 2 !important;
   }
 
-  /* 3. Wadah Konversi: Satuan Besar & Satuan Terkecil (50% - 50%) */
+  /* 3. Wadah Konversi 3 Tingkat Berantai (Universal Form 1 & Form 2) */
+  .manual-grid-table tbody td.col-chained-conversion-wrapper {
+    grid-column: 1 / -1 !important;
+    display: block !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+  .manual-grid-table tbody td.col-chained-conversion-wrapper::before,
+  .manual-grid-table tbody td.col-chained-conversion-wrapper [data-mobile-label]::before {
+    display: none !important;
+  }
   .manual-grid-table tbody td.col-unit-buy {
     grid-column: 1 !important;
   }

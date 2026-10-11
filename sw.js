@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v116-chained-3tier-units";
+const CACHE_VERSION = "kasirpro-pwa-v117-chained-grid-mode";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

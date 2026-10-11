@@ -2148,6 +2148,20 @@ assert(
   mgmtInvoicesJs.includes("conversion: conv"),
   "Pendaftaran Produk dari Baris Faktur: Menghitung & Mengoper baseQty, midQty, dan conversion ke Form Registrasi"
 );
+assert(
+  mgmtInvoicesJs.includes("col-chained-conversion-wrapper") &&
+  mgmtInvoicesJs.includes("Form 1: Masukkan 3 Jenis Satuan Kemasan") &&
+  mgmtInvoicesJs.includes("Form 2: Hubungan Isi Kemasan Berantai"),
+  "Poin 2 Faktur Grid Mode: Struktur 2 Tahap (Form 1 & Form 2) Terpasang Utuh pada Seluruh Kartu Faktur"
+);
+assert(
+  mgmtInvoicesJs.includes("row-dyn-buy-lbl") &&
+  mgmtInvoicesJs.includes("row-dyn-mid-lbl") &&
+  mgmtInvoicesJs.includes("row-dyn-base-lbl") &&
+  mgmtInvoicesJs.includes("row-base-qty") &&
+  mgmtInvoicesJs.includes("updateRowChainedUnitLabelsAndTotal"),
+  "Poin 2 Faktur Grid Mode: Live Label Dinamis, Input baseQty, dan Fungsi Sinkronisasi Terhubung Penuh"
+);
 
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);

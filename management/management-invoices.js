@@ -1845,15 +1845,48 @@ function renderManualInvoiceItems() {
 
   tbody.innerHTML = manualInvoiceItems.map((item, idx) => {
     const qNum = num(item.qty) || 0;
-    const convNum = num(item.conversionRatio) || 1;
-    const totalBase = qNum * convNum;
 
+    const buyU = item.purchaseUnit || "BOX";
+    const midU = item.intermediateUnit || buyU;
+    const baseU = item.baseUnit || "TABLET";
+
+    let midQ = (item.intermediateQty !== undefined && item.intermediateQty !== null && item.intermediateQty !== "") ? num(item.intermediateQty) : 1;
+    let baseQ = (item.baseQty !== undefined && item.baseQty !== null && item.baseQty !== "") ? num(item.baseQty) : 0;
+    let convTotal = num(item.conversionRatio) || 0;
+
+    if (!baseQ && convTotal) {
+      if (midQ > 1 && convTotal % midQ === 0) {
+        if (convTotal === 30 && midQ === 10) {
+          baseQ = 10;
+          midQ = 3;
+        } else {
+          baseQ = Math.max(1, Math.round(convTotal / midQ));
+        }
+      } else {
+        baseQ = convTotal;
+        midQ = 1;
+      }
+    } else if (!baseQ && !convTotal) {
+      baseQ = 1;
+      convTotal = midQ * baseQ;
+    }
+
+    if (!convTotal) convTotal = midQ * baseQ;
+    item.purchaseUnit = buyU;
+    item.intermediateUnit = midU;
+    item.intermediateQty = midQ;
+    item.baseUnit = baseU;
+    item.baseQty = baseQ;
+    item.conversionRatio = convTotal;
+
+    const totalBase = qNum * convTotal;
     const buyPriceStr = (item.buyPrice !== undefined && item.buyPrice !== null && item.buyPrice !== "") ? (num(item.buyPrice) ? formatNumber(num(item.buyPrice)) : "") : "";
     const discRpStr = (item.discountRp !== undefined && item.discountRp !== null && item.discountRp !== "") ? (num(item.discountRp) ? formatNumber(num(item.discountRp)) : "") : "";
     const discPctStr = (item.discountPercent !== undefined && item.discountPercent !== null && item.discountPercent !== "" && item.discountPercent !== 0) ? item.discountPercent : "";
     const qtyStr = (item.qty !== undefined && item.qty !== null && item.qty !== "") ? item.qty : "";
-    const convStr = (item.conversionRatio !== undefined && item.conversionRatio !== null && item.conversionRatio !== "") ? item.conversionRatio : "";
-    const midQtyStr = (item.intermediateQty !== undefined && item.intermediateQty !== null && item.intermediateQty !== "" && item.intermediateUnit) ? item.intermediateQty : "";
+    const convStr = convTotal;
+    const midQtyStr = midQ;
+    const baseQtyStr = baseQ;
     const isCollapsed = !!item._collapsed;
 
     let matchClass = "match-new";
@@ -1960,20 +1993,68 @@ function renderManualInvoiceItems() {
         <td class="col-exp" data-mobile-label="Exp Date">
           <input type="date" class="row-exp" data-index="${idx}" value="${escapeHtml(item.expiryDate || '')}" style="font-size:11.5px;">
         </td>
-        <td class="col-unit-buy" data-mobile-label="Kemasan Supplier">
-          <input type="text" class="row-purchase-unit" data-index="${idx}" value="${escapeHtml(item.purchaseUnit || '')}" placeholder="BOX / BTL" title="Satuan Kemasan Supplier">
-        </td>
-        <td class="col-unit-mid" data-mobile-label="Kemasan Sedang">
-          <div style="display:flex;align-items:center;gap:4px;">
-            <input type="text" class="row-mid-unit" data-index="${idx}" value="${escapeHtml(item.intermediateUnit || '')}" placeholder="STRIP / BTL" style="flex:1;" title="Satuan Kemasan Sedang">
-            <input type="number" inputmode="numeric" class="row-mid-qty" data-index="${idx}" min="1" step="1" value="${midQtyStr}" title="Isi Kemasan Sedang per Kemasan Supplier" style="width:48px;" placeholder="Isi">
+        <td class="col-chained-conversion-wrapper" colspan="4" style="grid-column: 1 / -1 !important; width: 100%; padding: 0 !important; border: none !important;">
+          <div class="card-chained-conversion-box" style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;padding:12px;margin:4px 0 8px 0;display:flex;flex-direction:column;gap:10px;box-sizing:border-box;">
+            
+            <!-- Form 1: Masukkan 3 Jenis Satuan Kemasan -->
+            <div class="chained-form-1-block">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <span style="font-size:11.5px;font-weight:700;color:#0284c7;display:inline-flex;align-items:center;gap:5px;">
+                  <i class="fa-solid fa-boxes-stacked"></i> Form 1: Masukkan 3 Jenis Satuan Kemasan
+                </span>
+                <small style="font-size:10px;color:#64748b;">(Tentukan urutan kemasan terbesar ke terkecil)</small>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:8px;">
+                <div class="col-unit-buy" data-mobile-label="Kemasan Supplier">
+                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">1. Kemasan Supplier</label>
+                  <input type="text" class="row-purchase-unit" data-index="${idx}" value="${escapeHtml(item.purchaseUnit || '')}" placeholder="BOX / BOTOL" style="font-weight:700;background:#fff;" title="Satuan Kemasan Beli Supplier">
+                </div>
+                <div class="col-unit-mid" data-mobile-label="Kemasan Sedang">
+                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">2. Kemasan Sedang</label>
+                  <input type="text" class="row-mid-unit" data-index="${idx}" value="${escapeHtml(item.intermediateUnit || '')}" placeholder="STRIP / BLISTER / DLL" style="background:#fff;" title="Satuan Kemasan Sedang">
+                </div>
+                <div class="col-unit-base" data-mobile-label="Kemasan Terkecil">
+                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">3. Kemasan Terkecil</label>
+                  <input type="text" class="row-base-unit" data-index="${idx}" value="${escapeHtml(item.baseUnit || '')}" placeholder="TABLET / KAPLET / PCS" style="background:#fff;" title="Satuan Kemasan Terkecil Apotek">
+                </div>
+              </div>
+            </div>
+
+            <!-- Form 2: Hubungan Isi Kemasan Berantai (Dinamis Live) -->
+            <div class="chained-form-2-block" style="background:#fff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:11.5px;font-weight:700;color:#0369a1;display:inline-flex;align-items:center;gap:5px;">
+                  <i class="fa-solid fa-link"></i> Form 2: Hubungan Isi Kemasan Berantai (Dinamis)
+                </span>
+                <span style="font-size:10px;font-weight:600;background:#e0f2fe;color:#0284c7;padding:2px 7px;border-radius:4px;">
+                  Dinamis Otomatis
+                </span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:#1e293b;">
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#f8fafc;padding:6px 10px;border-radius:6px;border:1px solid #e2e8f0;">
+                  <span style="min-width:18px;font-weight:700;color:#64748b;">1.</span>
+                  <span>1 <strong class="row-dyn-buy-lbl" style="color:#0369a1;">${buyU}</strong> Berisi</span>
+                  <input type="number" inputmode="numeric" class="row-mid-qty" data-index="${idx}" min="1" step="1" value="${midQ}" style="width:65px;font-weight:700;text-align:center;color:#0f172a;background:#fff;border:1px solid #cbd5e1;padding:4px 6px;border-radius:6px;" title="Isi Kemasan Sedang per Kemasan Supplier">
+                  <strong class="row-dyn-mid-lbl" style="color:#0369a1;">${midU}</strong>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#f8fafc;padding:6px 10px;border-radius:6px;border:1px solid #e2e8f0;">
+                  <span style="min-width:18px;font-weight:700;color:#64748b;">2.</span>
+                  <span>1 <strong class="row-dyn-mid-lbl-2" style="color:#0369a1;">${midU}</strong> Berisi</span>
+                  <input type="number" inputmode="numeric" class="row-base-qty" data-index="${idx}" min="1" step="1" value="${baseQ}" style="width:65px;font-weight:700;text-align:center;color:#0f172a;background:#fff;border:1px solid #cbd5e1;padding:4px 6px;border-radius:6px;" title="Isi Kemasan Terkecil per Kemasan Sedang">
+                  <strong class="row-dyn-base-lbl" style="color:#0369a1;">${baseU}</strong>
+                </div>
+                <div class="col-conv" data-mobile-label="Total Konversi" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#eff6ff;padding:8px 10px;border-radius:6px;border:1px solid #bfdbfe;font-weight:700;color:#0369a1;">
+                  <span style="min-width:18px;font-weight:800;color:#0284c7;">3.</span>
+                  <span>Total isi 1 <span class="row-dyn-buy-lbl-2">${buyU}</span> =</span>
+                  <input type="number" inputmode="numeric" class="row-conversion" data-index="${idx}" min="1" step="1" value="${convTotal}" readonly style="width:75px;font-weight:800;text-align:center;color:#0284c7;background:#fff;border:1.5px solid #0284c7;border-radius:6px;padding:4px 6px;" title="Total Konversi Kemasan Terkecil">
+                  <span class="row-dyn-base-lbl-2">${baseU}</span>
+                  <span class="row-dyn-calc-hint" style="font-size:11px;font-weight:600;color:#0284c7;margin-left:auto;">
+                    (Otomatis: ${midQ} × ${baseQ} = ${convTotal})
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
-        </td>
-        <td class="col-unit-base" data-mobile-label="Kemasan Terkecil">
-          <input type="text" class="row-base-unit" data-index="${idx}" value="${escapeHtml(item.baseUnit || '')}" placeholder="TAB / BTL" title="Satuan Kemasan Terkecil">
-        </td>
-        <td class="col-conv" data-mobile-label="Total Konversi">
-          <input type="number" inputmode="numeric" class="row-conversion" data-index="${idx}" min="1" step="1" value="${convStr}" title="Total Kemasan Terkecil dalam 1 Kemasan Supplier" style="font-weight:800;color:#0369a1;" placeholder="1">
         </td>
         <td class="col-qty" data-mobile-label="Qty Beli">
           <input type="number" inputmode="decimal" class="row-qty" data-index="${idx}" min="0.01" step="any" value="${qtyStr}" style="font-weight:700;" placeholder="1">
@@ -2104,6 +2185,42 @@ function checkAutoUnitFallback(idx) {
   }
 }
 
+function updateRowChainedUnitLabelsAndTotal(idx) {
+  const item = manualInvoiceItems[idx];
+  if (!item) return;
+
+  const row = document.querySelector(`tr[data-index="${idx}"]`);
+  if (!row) return;
+
+  const buyVal = text(row.querySelector(".row-purchase-unit")?.value) || "BOX";
+  const midVal = text(row.querySelector(".row-mid-unit")?.value) || buyVal;
+  const baseVal = text(row.querySelector(".row-base-unit")?.value) || "TABLET";
+
+  const midQty = num(row.querySelector(".row-mid-qty")?.value) || 1;
+  const baseQty = num(row.querySelector(".row-base-qty")?.value) || 1;
+  const totalConv = Math.max(1, midQty * baseQty);
+
+  item.purchaseUnit = buyVal;
+  item.intermediateUnit = midVal;
+  item.intermediateQty = midQty;
+  item.baseUnit = baseVal;
+  item.baseQty = baseQty;
+  item.conversionRatio = totalConv;
+
+  // Sinkronisasi live label di Form 2
+  row.querySelectorAll(".row-dyn-buy-lbl, .row-dyn-buy-lbl-2").forEach(el => el.textContent = buyVal);
+  row.querySelectorAll(".row-dyn-mid-lbl, .row-dyn-mid-lbl-2").forEach(el => el.textContent = midVal);
+  row.querySelectorAll(".row-dyn-base-lbl, .row-dyn-base-lbl-2").forEach(el => el.textContent = baseVal);
+
+  const convInp = row.querySelector(".row-conversion");
+  if (convInp) convInp.value = totalConv;
+
+  const hintEl = row.querySelector(".row-dyn-calc-hint");
+  if (hintEl) hintEl.textContent = `(Otomatis: ${midQty} × ${baseQty} = ${totalConv})`;
+
+  recalculateRow(idx, false);
+}
+
 function bindManualItemRowEvents() {
   const tbody = $("manual-invoice-items-body");
   if (!tbody) return;
@@ -2147,44 +2264,76 @@ function bindManualItemRowEvents() {
     });
   });
 
-  // Input Satuan & Konversi
+  // Input Satuan & Konversi 3 Tingkat Universal (Form 1 & Form 2)
   tbody.querySelectorAll(".row-purchase-unit").forEach(el => {
     el.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.index, 10);
-      manualInvoiceItems[idx].purchaseUnit = e.target.value.trim();
-      checkAutoUnitFallback(idx);
+      updateRowChainedUnitLabelsAndTotal(idx);
       updateMobileRowHeader(idx);
+    });
+    el.addEventListener("change", (e) => {
+      const idx = parseInt(e.target.dataset.index, 10);
+      const val = text(e.target.value).toUpperCase();
+      const isSingle = ["BOTOL", "BTL", "PCS", "PIECES", "TUBE", "SACHET", "POT", "JERIGEN", "VIAL", "AMPUL"].includes(val);
+      if (isSingle) {
+        const row = tbody.querySelector(`tr[data-index="${idx}"]`);
+        if (row) {
+          const midEl = row.querySelector(".row-mid-unit");
+          const baseEl = row.querySelector(".row-base-unit");
+          const midQtyEl = row.querySelector(".row-mid-qty");
+          const baseQtyEl = row.querySelector(".row-base-qty");
+          if (midEl && (!midEl.value || midEl.value.toLowerCase() === "strip")) midEl.value = val;
+          if (baseEl && (!baseEl.value || baseEl.value.toLowerCase() === "pcs" || baseEl.value.toLowerCase() === "tablet")) baseEl.value = val;
+          if (midQtyEl) midQtyEl.value = 1;
+          if (baseQtyEl) baseQtyEl.value = 1;
+          updateRowChainedUnitLabelsAndTotal(idx);
+        }
+      }
     });
   });
 
   tbody.querySelectorAll(".row-mid-unit").forEach(el => {
     el.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.index, 10);
-      manualInvoiceItems[idx].intermediateUnit = e.target.value.trim();
-    });
-  });
-
-  tbody.querySelectorAll(".row-mid-qty").forEach(el => {
-    el.addEventListener("input", (e) => {
-      const idx = parseInt(e.target.dataset.index, 10);
-      manualInvoiceItems[idx].intermediateQty = num(e.target.value) || 1;
-      calculateManualInvoiceTotals();
+      updateRowChainedUnitLabelsAndTotal(idx);
     });
   });
 
   tbody.querySelectorAll(".row-base-unit").forEach(el => {
     el.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.index, 10);
-      manualInvoiceItems[idx].baseUnit = e.target.value.trim();
-      checkAutoUnitFallback(idx);
-      recalculateRow(idx, false);
+      updateRowChainedUnitLabelsAndTotal(idx);
+    });
+  });
+
+  tbody.querySelectorAll(".row-mid-qty").forEach(el => {
+    el.addEventListener("input", (e) => {
+      const idx = parseInt(e.target.dataset.index, 10);
+      updateRowChainedUnitLabelsAndTotal(idx);
+    });
+  });
+
+  tbody.querySelectorAll(".row-base-qty").forEach(el => {
+    el.addEventListener("input", (e) => {
+      const idx = parseInt(e.target.dataset.index, 10);
+      updateRowChainedUnitLabelsAndTotal(idx);
     });
   });
 
   tbody.querySelectorAll(".row-conversion").forEach(el => {
     el.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.index, 10);
-      manualInvoiceItems[idx].conversionRatio = num(e.target.value) || 1;
+      const c = num(e.target.value) || 1;
+      manualInvoiceItems[idx].conversionRatio = c;
+      const m = num(manualInvoiceItems[idx].intermediateQty) || 1;
+      manualInvoiceItems[idx].baseQty = Math.max(1, Math.round(c / m));
+      const row = tbody.querySelector(`tr[data-index="${idx}"]`);
+      if (row) {
+        const bInp = row.querySelector(".row-base-qty");
+        if (bInp) bInp.value = manualInvoiceItems[idx].baseQty;
+        const hintEl = row.querySelector(".row-dyn-calc-hint");
+        if (hintEl) hintEl.textContent = `(Otomatis: ${m} × ${manualInvoiceItems[idx].baseQty} = ${c})`;
+      }
       recalculateRow(idx, false);
     });
   });
@@ -2459,18 +2608,36 @@ function selectProductForRow(idx, prod) {
     item.barcode = prod["Barcode"];
   }
 
-  // 2. Sinkronisasi 3 Tingkat Satuan & Konversi
+  // 2. Sinkronisasi 3 Tingkat Satuan & Konversi Berantai
   const buyU = prod["Kemasan Beli"] || prod["Satuan Pembelian"] || item.purchaseUnit || "BOX";
   const baseU = prod["Satuan Dasar"] || prod["Satuan"] || item.baseUnit || "TABLET";
   const interU = prod["Satuan Antara"] || item.intermediateUnit || "";
   const conv = num(prod["Konversi"] ?? prod["Isi Kemasan"] ?? item.conversionRatio) || 1;
-  const interQty = num(prod["Isi Satuan Antara"] ?? item.intermediateQty) || 1;
+  let interQty = num(prod["Isi Satuan Antara"]) || 0;
+  let baseQty = num(prod["Isi Satuan Dasar"]) || 0;
+
+  if (interQty && baseQty && (interQty * baseQty === conv)) {
+    // Format berantai lengkap
+  } else if (interQty && !baseQty) {
+    if (conv > interQty && conv % interQty === 0) {
+      baseQty = interQty;
+      interQty = Math.round(conv / interQty);
+    } else {
+      baseQty = Math.max(1, Math.round(conv / (interQty || 1)));
+    }
+  } else if (!interQty && !baseQty) {
+    interQty = 1;
+    baseQty = conv;
+  } else if (!interQty && baseQty) {
+    interQty = Math.max(1, Math.round(conv / (baseQty || 1)));
+  }
 
   item.purchaseUnit = buyU;
   item.baseUnit = baseU;
-  item.intermediateUnit = (interU && norm(interU) !== norm(baseU)) ? interU : "";
-  item.intermediateQty = item.intermediateUnit ? interQty : "";
-  item.conversionRatio = conv;
+  item.intermediateUnit = (interU && norm(interU) !== norm(baseU)) ? interU : buyU;
+  item.intermediateQty = interQty || 1;
+  item.baseQty = baseQty || 1;
+  item.conversionRatio = Math.max(1, (interQty || 1) * (baseQty || 1));
 
   // HARGA BELI FAKTUR: HANYA ISI JIKA DI BARIS FAKTUR FISIK MASIH KOSONG / 0
   const masterBuyPrice = num(prod["Harga Beli Terakhir"] ?? prod["Harga Beli"] ?? 0);
