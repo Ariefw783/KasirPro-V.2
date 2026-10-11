@@ -1867,10 +1867,10 @@ assert(page1.length === 5, "Paginasi Faktur: Halaman 1 Maksimal Menampilkan Tepa
 assert(page2.length === 5, "Paginasi Faktur: Halaman 2 Menampilkan Tepat 5 Faktur");
 assert(page3.length === 2, "Paginasi Faktur: Halaman 3 Menampilkan Sisa 2 Faktur");
 
-// 4. Uji Sidebar Navigasi Gradasi Royal Sapphire ke Deep Navy & Logo Original
+// 4. Uji Sidebar Logo KasirPro Berlatar Gelap (Original Dark Theme) & Background Sidebar Tetap Putih
 assert(
-  mgmtCss.includes(".sidebar") && mgmtCss.includes("linear-gradient(180deg, #1e40af 0%, #1e3a8a 30%, #172554 70%, #0b1329 100%)"),
-  "Sidebar Navigasi: Menggunakan Gradasi Nyata Royal Sapphire ke Deep Navy (#1e40af / #0b1329)"
+  mgmtCss.includes(".sidebar-brand") && mgmtCss.includes("background: #ffffff !important;"),
+  "Sidebar Header: Background Sidebar Brand Tetap Putih (#ffffff)"
 );
 assert(
   mgmtCss.includes(".brand-logo") && mgmtCss.includes("#0f2a43"),

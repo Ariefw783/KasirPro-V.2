@@ -1,13 +1,13 @@
 {
   "version": "2.2.65",
-  "build": "20261011.11",
+  "build": "20261011.09",
   "releaseDate": "11 Oktober 2026",
-  "title": "Vibrant Royal Sapphire to Deep Navy Gradient Sidebar",
-  "description": "Menyempurnakan gradasi sidebar menjadi Royal Sapphire ke Deep Navy yang kontras dan terlihat nyata dengan ambient halo spotlight di header, menggantikan warna gelap pekat.",
+  "title": "Motif Background Batik Kawung Nusantara & Evaluasi UI Management",
+  "description": "Memperbarui motif latar belakang halaman management dengan ornamen Batik Kawung Nusantara yang elegan, harmonis, dan seamless watermark, serta menjaga kenyamanan visual data.",
   "changelog": [
-    "Upgrade sidebar to vibrant Royal Sapphire to Deep Navy gradient (#1e40af to #0b1329)",
-    "Add top ambient radial glow spotlight for high visual depth",
-    "Ensure seamless transparent integration with brand header and footer",
-    "Pass all 248 comprehensive system test suites"
+    "Replace old background pattern with authentic Batik Kawung Nusantara vector motif",
+    "Add assets/batik-pattern.svg and update service worker cache",
+    "Maintain clean medical white cards contrast and eye comfort",
+    "Lock verify-system test assertions for Batik motif asset and styling"
   ]
 }

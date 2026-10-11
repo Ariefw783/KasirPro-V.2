@@ -34,12 +34,12 @@
         .kp-update-subtitle{margin:0 0 14px;color:#64748b;font-size:12.5px;line-height:1.45}
         
         /* TECHNICAL CODE TERMINAL CHANGELOG BOX */
-        .kp-update-changelog-box{background:#091422;border:1px solid #1e3a5f;border-radius:12px;padding:14px 16px;margin-bottom:18px;text-align:left;box-shadow:inset 0 2px 8px rgba(0,0,0,.3)}
+        .kp-update-changelog-box{background:#091422;border:1px solid #1e3a5f;border-radius:12px;padding:14px 16px;margin-bottom:18px;text-align:left;box-shadow:inset 0 2px 8px rgba(0,0,0,.3);max-height:260px;overflow-y:auto}
         .kp-update-changelog-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.08);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:10.5px;font-weight:700;color:#38bdf8;text-transform:uppercase;letter-spacing:.05em}
-        .kp-update-list{margin:0;padding:0;list-style:none;display:grid;gap:6.5px}
-        .kp-update-list li{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:12px;color:#e2e8f0;line-height:1.4;display:flex;align-items:center;gap:8px}
-        .kp-update-item-num{color:#38bdf8;font-weight:750;font-size:11px;background:rgba(56,189,248,.12);padding:1px 5px;border-radius:4px;border:1px solid rgba(56,189,248,.25);flex:0 0 auto}
-        .kp-update-item-text{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .kp-update-list{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+        .kp-update-list li{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:12px;color:#e2e8f0;line-height:1.45;display:flex;align-items:flex-start;gap:8px}
+        .kp-update-item-num{color:#38bdf8;font-weight:750;font-size:11px;background:rgba(56,189,248,.12);padding:1px 5px;border-radius:4px;border:1px solid rgba(56,189,248,.25);flex:0 0 auto;margin-top:1px}
+        .kp-update-item-text{flex:1;min-width:0;white-space:normal;word-break:break-word;overflow-wrap:anywhere}
         
         .kp-update-btn{width:100%;min-height:46px;padding:11px 18px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .18s;box-shadow:0 6px 20px rgba(37,99,235,.35)}
         .kp-update-btn:hover{background:linear-gradient(135deg,#1e40af,#1d4ed8);box-shadow:0 8px 24px rgba(37,99,235,.45);transform:translateY(-1px)}

@@ -1102,24 +1102,22 @@
 
 /* ==============================================================================
    RENOVASI VISUAL PREMIUM — SIDEBAR NAVIGASI MENU KASIRPRO V2
-   Modern Executive Deep Midnight Navy Sidebar with High-Contrast Floating Pills
+   Clean Modern Medical Sidebar with Soft Teal, Sky Blue, and Crisp Slate
    ============================================================================== */
 
-/* 1. STRUKTUR SIDEBAR DENGAN GRADASI NYATA (ROYAL SAPPHIRE KE DEEP NAVY) */
+/* 1. STRUKTUR SIDEBAR CLEAN MODERN MEDICAL */
 .sidebar {
-    background: 
-        radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.35) 0%, transparent 60%),
-        linear-gradient(180deg, #1e40af 0%, #1e3a8a 30%, #172554 70%, #0b1329 100%) !important;
-    border-right: 1px solid rgba(56, 189, 248, 0.25) !important;
-    box-shadow: 6px 0 28px rgba(10, 25, 47, 0.35) !important;
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 50%, #f0fdfa 100%) !important;
+    border-right: 1px solid #e2e8f0 !important;
+    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.05) !important;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-/* 2. HEADER BRAND LOGO (APOTEK DOA IBU) - TRANSPARAN MENYATU DENGAN ALIRAN GRADASI */
+/* 2. HEADER BRAND LOGO (APOTEK DOA IBU) - SIDEBAR BACKGROUND TETAP PUTIH & LOGO GELAP ORIGINAL */
 .sidebar-brand {
     padding: 14px 18px !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-    background: transparent !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    background: #ffffff !important;
 }
 
 .brand-logo {
@@ -1131,8 +1129,8 @@
     align-items: center !important;
     justify-content: center !important;
     overflow: hidden !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35) !important;
+    border: 1px solid rgba(15, 42, 67, 0.12) !important;
+    box-shadow: 0 4px 12px rgba(15, 42, 67, 0.16) !important;
     transition: transform 0.2s ease !important;
 }
 
@@ -1151,30 +1149,29 @@
     font-size: 0.98rem !important;
     font-weight: 850 !important;
     letter-spacing: -0.01em !important;
-    background: linear-gradient(135deg, #ffffff 0%, #7dd3fc 100%) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    color: #ffffff !important;
+    color: #0f172a !important;
+    background: none !important;
+    -webkit-text-fill-color: initial !important;
 }
 
 .brand-text span {
     font-size: 0.68rem !important;
-    font-weight: 650 !important;
-    color: #7dd3fc !important;
+    font-weight: 750 !important;
+    color: #0d9488 !important;
     letter-spacing: 0.02em !important;
 }
 
 /* 3. SECTION LABEL MENU */
 .nav-label {
     margin: 16px 12px 8px !important;
-    font-size: 0.63rem !important;
+    font-size: 0.64rem !important;
     font-weight: 850 !important;
-    letter-spacing: 0.1em !important;
-    color: #93c5fd !important;
+    letter-spacing: 0.08em !important;
+    color: #0d9488 !important;
     text-transform: uppercase !important;
 }
 
-/* 4. ITEM NAVIGASI MENU MODERN (FLOATING PILL & HIGH CONTRAST GLOW) */
+/* 4. ITEM NAVIGASI MENU MODERN (CLEAN MODERN MEDICAL FLOATING PILL) */
 .nav-item {
     min-height: 42px !important;
     margin: 4px 8px !important;
@@ -1182,7 +1179,7 @@
     border-radius: 12px !important;
     font-size: 0.78rem !important;
     font-weight: 650 !important;
-    color: #e2e8f0 !important;
+    color: #475569 !important;
     display: flex !important;
     align-items: center !important;
     gap: 12px !important;
@@ -1195,30 +1192,30 @@
 .nav-item > i:first-child {
     width: 20px !important;
     font-size: 0.95rem !important;
-    color: #7dd3fc !important;
+    color: #0d9488 !important;
     text-align: center !important;
     transition: all 0.2s ease !important;
 }
 
 /* State Hover Menu */
 .nav-item:hover {
-    color: #ffffff !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: #0f172a !important;
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
     transform: translateX(3px) !important;
 }
 
 .nav-item:hover > i:first-child {
-    color: #38bdf8 !important;
+    color: #0284c7 !important;
     transform: scale(1.15) !important;
 }
 
-/* State Aktif Menu (Medical Teal to Sky Blue Gradient + High Contrast Glow) */
+/* State Aktif Menu (Medical Teal to Sky Blue Gradient + Glow) */
 .nav-item.active {
     color: #ffffff !important;
-    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
-    font-weight: 800 !important;
-    box-shadow: 0 4px 16px rgba(2, 132, 199, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+    background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%) !important;
+    font-weight: 750 !important;
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.3) !important;
     transform: translateX(2px) !important;
     border-color: transparent !important;
 }
@@ -1229,9 +1226,9 @@
 
 /* Aksen Khusus Link POS Cepat di Sidebar */
 #sidebar-pos-link {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(6, 182, 212, 0.18) 100%) !important;
-    border: 1px solid rgba(16, 185, 129, 0.45) !important;
-    color: #34d399 !important;
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%) !important;
+    border: 1px solid #a7f3d0 !important;
+    color: #047857 !important;
     font-weight: 750 !important;
 }
 
@@ -1239,30 +1236,30 @@
     background: linear-gradient(135deg, #10b981 0%, #0d9488 100%) !important;
     border-color: #10b981 !important;
     color: #ffffff !important;
-    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25) !important;
 }
 
 #sidebar-pos-link > i:first-child {
-    color: #34d399 !important;
+    color: #059669 !important;
 }
 
 #sidebar-pos-link:hover > i:first-child {
     color: #ffffff !important;
 }
 
-/* 5. FOOTER SIDEBAR & TOMBOL KELUAR - MENYATU DENGAN ALIRAN GRADASI */
+/* 5. FOOTER SIDEBAR & TOMBOL KELUAR */
 .sidebar-footer {
     padding: 12px 14px !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-    background: transparent !important;
+    border-top: 1px solid #e2e8f0 !important;
+    background: #f8fafc !important;
 }
 
 .logout-button {
     min-height: 40px !important;
     border-radius: 12px !important;
-    background: rgba(239, 68, 68, 0.12) !important;
-    border: 1px solid rgba(239, 68, 68, 0.3) !important;
-    color: #f87171 !important;
+    background: #fff1f2 !important;
+    border: 1px solid #fecdd3 !important;
+    color: #e11d48 !important;
     font-size: 0.76rem !important;
     font-weight: 750 !important;
     box-shadow: none !important;
@@ -1270,11 +1267,11 @@
 }
 
 .logout-button:hover {
-    background: #dc2626 !important;
+    background: #e11d48 !important;
     color: #ffffff !important;
-    border-color: #dc2626 !important;
+    border-color: #e11d48 !important;
     transform: translateY(-1.5px) !important;
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25) !important;
 }
 
 .logout-button i {
