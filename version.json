@@ -1,14 +1,14 @@
 {
-  "version": "2.2.74",
-  "build": "20261011.21",
+  "version": "2.2.75",
+  "build": "20261011.22",
   "releaseDate": "11 Oktober 2026",
-  "title": "Absolute TSV Supplier Lock & Cache-Busted Isolation",
-  "description": "Penguncian mutlak isolasi supplier pada tempel TSV faktur manual, larangan total penautan produk ke supplier lain, pencegatan paste grid tabel, dan peremajaan cache PWA.",
+  "title": "Universal Chained 3-Tier Unit Conversion Architecture",
+  "description": "Restrukturisasi universal konversi 3 satuan bertahap (Form 1 Satuan Kemasan & Form 2 Relasi Berantai Dinamis), penyeragaman istilah Kemasan Supplier, Sedang, Terkecil, dan integrasi penuh pada grid faktur serta master produk.",
   "changelog": [
-    "Pemblokiran mutlak tempel TSV sebelum memilih supplier di Poin 1 demi isolasi data akurat",
-    "Peniadaan total penautan produk acuan ke supplier lain pada tempel TSV faktur manual grid mode",
-    "Pencegatan otomatis event Paste (Ctrl + V) pada seluruh sel input tabel grid untuk langsung diurai sebagai TSV",
-    "Sinkronisasi otomatis produk baru ke cache master saat registrasi dari baris faktur",
-    "Pembaruan Service Worker (v115) dan cache busting modul ES untuk memastikan eksekusi kode mutakhir"
+    "Restrukturisasi 2 tahap input konversi satuan produk: Form 1 (3 Jenis Satuan Kemasan) dan Form 2 (Relasi Isi Kemasan Berantai Dinamis)",
+    "Perhitungan dinamis berantai otomatis: Total Kemasan Terkecil = (Isi Kemasan Sedang) x (Isi Kemasan Terkecil) dengan auto-select saat fokus/klik",
+    "Standarisasi universal 3 tingkat untuk seluruh obat (termasuk 2-tingkat dan 1-tingkat botol/pcs dengan smart auto-fill)",
+    "Pembaruan istilah resmi tabel grid faktur dan TSV: Kemasan Supplier, Kemasan Sedang, Kemasan Terkecil, dan Total Konversi",
+    "Integrasi menyeluruh pendaftaran produk baru langsung dari baris faktur dengan perhitungan akurat rasio konversi berantai"
   ]
 }

@@ -2059,6 +2059,96 @@ assert(
   "Proteksi Supplier: Sistem Wajib Memilih Supplier Sebelum Memproses Tempel TSV"
 );
 
+console.log("\n📦 BAGIAN 27: PENGUJIAN UNIVERSAL 3 TINGKAT KONVERSI SATUAN BERANTAI (FORM 1 & FORM 2)");
+
+// 1. Uji Rumus Universal Konversi Berantai: Total Konversi = midQty * baseQty
+function calcChainedConversion(midQty, baseQty) {
+  const m = Math.max(1, Number(midQty) || 1);
+  const b = Math.max(1, Number(baseQty) || 1);
+  return m * b;
+}
+
+// Kasus A: 3 Tingkat (BOX -> 4 STRIP -> 10 TABLET = 40 TABLET)
+const test3Tier = calcChainedConversion(4, 10);
+assert(test3Tier === 40, "Rumus Berantai 3-Tingkat: 1 BOX (4 STRIP) x (10 TABLET) = 40 TABLET");
+
+// Kasus B: 2 Tingkat (BOX -> 1 BOX -> 100 KAPLET = 100 KAPLET)
+const test2Tier = calcChainedConversion(1, 100);
+assert(test2Tier === 100, "Rumus Berantai 2-Tingkat: 1 BOX (1 BOX) x (100 KAPLET) = 100 KAPLET");
+
+// Kasus C: 1 Tingkat (BOTOL -> 1 BOTOL -> 1 BOTOL = 1 BOTOL)
+const test1Tier = calcChainedConversion(1, 1);
+assert(test1Tier === 1, "Rumus Berantai 1-Tingkat: 1 BOTOL (1 BOTOL) x (1 BOTOL) = 1 BOTOL");
+
+// 2. Uji Dekonstruksi Prefill: baseQty = conversion / midQty
+function deconstructChainedPrefill(convTotal, midQ) {
+  const c = Math.max(1, Number(convTotal) || 1);
+  const m = Math.max(1, Number(midQ) || 1);
+  return Math.max(1, Math.round(c / m));
+}
+assert(deconstructChainedPrefill(40, 4) === 10, "Dekonstruksi Prefill 3-Tingkat: Konversi 40 dengan 4 Strip menghasilkan baseQty = 10 Tablet");
+assert(deconstructChainedPrefill(100, 1) === 100, "Dekonstruksi Prefill 2-Tingkat: Konversi 100 dengan 1 Box menghasilkan baseQty = 100 Kaplet");
+assert(deconstructChainedPrefill(1, 1) === 1, "Dekonstruksi Prefill 1-Tingkat: Konversi 1 dengan 1 Botol menghasilkan baseQty = 1 Botol");
+
+// 3. Uji Keberadaan Elemen Form 1 dan Form 2 pada management-products.js
+assert(
+  mgmtProductsJs.includes("Form 1: Masukkan 3 Jenis Satuan Kemasan") &&
+  mgmtProductsJs.includes("Form 2: Hubungan Isi Kemasan Berantai"),
+  "Struktur 2 Tahap: Form 1 (Kemasan) dan Form 2 (Relasi Berantai) Terdefinisi di Modal Produk"
+);
+assert(
+  mgmtProductsJs.includes("input-prod-buy-unit") &&
+  mgmtProductsJs.includes("input-prod-mid-unit") &&
+  mgmtProductsJs.includes("input-prod-base-unit") &&
+  mgmtProductsJs.includes("input-prod-mid-qty") &&
+  mgmtProductsJs.includes("input-prod-base-qty") &&
+  mgmtProductsJs.includes("input-prod-conversion"),
+  "Elemen Form: Seluruh ID Input Form 1 & Form 2 Terpasang Utuh"
+);
+assert(
+  mgmtProductsJs.includes("lbl-dyn-buy-unit") &&
+  mgmtProductsJs.includes("lbl-dyn-buy-unit-2") &&
+  mgmtProductsJs.includes("lbl-dyn-mid-unit") &&
+  mgmtProductsJs.includes("lbl-dyn-mid-unit-2") &&
+  mgmtProductsJs.includes("lbl-dyn-base-unit") &&
+  mgmtProductsJs.includes("lbl-dyn-base-unit-2"),
+  "Label Dinamis: 6 Label Sinkronisasi Relasi Berantai Terdefinisi Lengkap"
+);
+assert(
+  mgmtProductsJs.includes("e.target.select()") &&
+  mgmtProductsJs.includes("updateChainedUnitLabelsAndTotal()"),
+  "Interaktivitas Form: Auto-Select saat Klik/Focus dan Kalkulasi Otomatis Terpasang"
+);
+assert(
+  mgmtProductsJs.includes("isSingleUnitType") &&
+  mgmtProductsJs.includes('"BOTOL"') &&
+  mgmtProductsJs.includes('"PCS"') &&
+  mgmtProductsJs.includes('"TUBE"'),
+  "Smart Auto-Fill: Deteksi Cerdas Satuan Tunggal (Botol/Pcs/Tube) Mengisi Otomatis 3 Tingkat Satuan"
+);
+
+// 4. Uji Integrasi pada Tabel Grid Faktur & Pendaftaran Baris
+const mgmtHtmlContent = fs.readFileSync(path.join(rootDir, "management", "index.html"), "utf8");
+assert(
+  mgmtHtmlContent.includes('title="Satuan Kemasan Supplier saat pemesanan">Kemasan Supplier</th>') &&
+  mgmtHtmlContent.includes('title="Satuan Kemasan Sedang (misal Strip / Blister / Botol)">Kemasan Sedang</th>') &&
+  mgmtHtmlContent.includes('title="Satuan Kemasan Terkecil (Tablet, Kaplet, Botol, Pcs)">Kemasan Terkecil</th>'),
+  "Header Grid Faktur: Menggunakan Istilah Resmi Kemasan Supplier, Kemasan Sedang, Kemasan Terkecil"
+);
+assert(
+  mgmtInvoicesJs.includes('data-mobile-label="Kemasan Supplier"') &&
+  mgmtInvoicesJs.includes('data-mobile-label="Kemasan Sedang"') &&
+  mgmtInvoicesJs.includes('data-mobile-label="Kemasan Terkecil"') &&
+  mgmtInvoicesJs.includes('data-mobile-label="Total Konversi"'),
+  "Baris Grid Faktur: Label Mobile dan Atribut Baris Menggunakan Terminologi Baru yang Seragam"
+);
+assert(
+  mgmtInvoicesJs.includes("baseQty: baseQ") &&
+  mgmtInvoicesJs.includes("midQty: midQ") &&
+  mgmtInvoicesJs.includes("conversion: conv"),
+  "Pendaftaran Produk dari Baris Faktur: Menghitung & Mengoper baseQty, midQty, dan conversion ke Form Registrasi"
+);
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

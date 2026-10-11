@@ -1819,33 +1819,54 @@ function installProductModal() {
 
           <!-- Kolom 2: Satuan, Konversi Kemasan & Finansial -->
           <div style="display:flex;flex-direction:column;gap:12px;">
-            <!-- Satuan & Konversi 3 Tingkat -->
+            <!-- Satuan & Konversi 3 Tingkat Universal (Chained Breakdown) -->
             <div style="background:#ffffff;padding:16px;border-radius:10px;border:1px solid #e2e8f0;">
               <div style="font-size:12.5px;font-weight:700;color:#0369a1;border-bottom:1px dashed #cbd5e1;padding-bottom:6px;margin-bottom:10px;display:flex;align-items:center;gap:6px;">
-                <i class="fa-solid fa-boxes-stacked"></i> 2. Konversi Kemasan (3 Tingkat)
+                <i class="fa-solid fa-boxes-stacked"></i> 2. Konversi Kemasan (3 Tingkat Universal)
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+
+              <!-- Form 1: 3 Jenis Satuan Kemasan -->
+              <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:6px;">
+                Form 1: Masukkan 3 Jenis Satuan Kemasan
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
                 <div>
-                  <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px;">1. Satuan Beli</label>
-                  <input type="text" id="input-prod-buy-unit" style="width:100%;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;" placeholder="Box" value="Box">
+                  <label style="display:block;font-size:11px;font-weight:700;color:#1e293b;margin-bottom:4px;" title="Kemasan pembelian langsung dari supplier">1. Satuan Kemasan Supplier <span class="text-danger">*</span></label>
+                  <input type="text" id="input-prod-buy-unit" style="width:100%;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;font-weight:700;color:#0284c7;" placeholder="BOX / KARTON / BOTOL" value="Box">
                 </div>
                 <div>
-                  <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px;">2. Satuan Sedang</label>
-                  <input type="text" id="input-prod-mid-unit" style="width:100%;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;" placeholder="Strip (opsi)">
+                  <label style="display:block;font-size:11px;font-weight:700;color:#1e293b;margin-bottom:4px;" title="Kemasan sedang (Strip / Blister / dll)">2. Satuan Kemasan Sedang</label>
+                  <input type="text" id="input-prod-mid-unit" style="width:100%;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;" placeholder="STRIP / BLISTER / DLL" value="">
                 </div>
                 <div>
-                  <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:4px;">3. Satuan Dasar <span class="text-danger">*</span></label>
-                  <input type="text" id="input-prod-base-unit" required style="width:100%;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;" placeholder="Pcs / Tab" value="Pcs">
+                  <label style="display:block;font-size:11px;font-weight:700;color:#1e293b;margin-bottom:4px;" title="Kemasan terkecil / eceran pasien">3. Satuan Kemasan Terkecil <span class="text-danger">*</span></label>
+                  <input type="text" id="input-prod-base-unit" required style="width:100%;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;font-weight:700;color:#0f172a;" placeholder="TABLET / KAPLET / PCS / BOTOL" value="Pcs">
                 </div>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-                <div>
-                  <label style="display:block;font-size:11px;color:#64748b;margin-bottom:2px;">Isi per Satuan Sedang</label>
-                  <input type="number" id="input-prod-mid-qty" min="1" step="1" style="width:100%;min-height:34px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;" value="1">
+
+              <!-- Form 2: Hubungan Isi Kemasan Berantai (Dinamis Live) -->
+              <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:6px;border-top:1px dashed #e2e8f0;padding-top:8px;">
+                Form 2: Hubungan Isi Kemasan Berantai (Dinamis):
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;background:#f8fafc;padding:10px 12px;border-radius:8px;border:1px solid #e2e8f0;">
+                <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#1e293b;flex-wrap:wrap;">
+                  <span style="font-weight:700;min-width:18px;">1.</span>
+                  <span>1 <strong id="lbl-dyn-buy-unit" style="color:#0284c7;">BOX</strong> berisi</span>
+                  <input type="number" id="input-prod-mid-qty" min="1" step="1" style="width:64px;min-height:30px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;font-weight:700;text-align:center;" value="1">
+                  <span id="lbl-dyn-mid-unit" style="font-weight:700;color:#0369a1;">STRIP</span>
                 </div>
-                <div>
-                  <label style="display:block;font-size:11px;color:#64748b;margin-bottom:2px;">Total Isi dlm 1 Box <span class="text-danger">*</span></label>
-                  <input type="number" id="input-prod-conversion" min="1" step="1" style="width:100%;min-height:34px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;font-weight:700;color:#0284c7;" value="1">
+                <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#1e293b;flex-wrap:wrap;">
+                  <span style="font-weight:700;min-width:18px;">2.</span>
+                  <span>1 <strong id="lbl-dyn-mid-unit-2" style="color:#0369a1;">STRIP</strong> berisi</span>
+                  <input type="number" id="input-prod-base-qty" min="1" step="1" style="width:64px;min-height:30px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;font-weight:700;text-align:center;" value="1">
+                  <span id="lbl-dyn-base-unit" style="font-weight:700;color:#0f172a;">TABLET</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#0f172a;border-top:1px dashed #cbd5e1;padding-top:6px;margin-top:2px;flex-wrap:wrap;">
+                  <span style="font-weight:700;min-width:18px;">3.</span>
+                  <span>Total isi 1 <strong id="lbl-dyn-buy-unit-2" style="color:#0284c7;">BOX</strong> =</span>
+                  <input type="number" id="input-prod-conversion" readonly style="width:72px;min-height:30px;padding:3px 6px;border:1px solid #bae6fd;border-radius:6px;font-size:13px;font-weight:800;color:#0284c7;background:#e0f2fe;text-align:center;" value="1">
+                  <span id="lbl-dyn-base-unit-2" style="font-weight:700;color:#0f172a;">TABLET</span>
+                  <small style="font-size:10.5px;color:#64748b;margin-left:auto;">(Otomatis dihitung: Isi 1 × Isi 2)</small>
                 </div>
               </div>
             </div>
@@ -1889,6 +1910,9 @@ function installProductModal() {
   $("close-modal-product")?.addEventListener("click", closeProductModal);
   $("cancel-product-form")?.addEventListener("click", closeProductModal);
   $("save-product-form")?.addEventListener("click", handleSaveProductModal);
+
+  // Setup Live Interaksi Konversi 3 Tingkat Berantai
+  setupChainedUnitConversionEvents();
 
   // Kalkulator Margin otomatis dengan format titik live
   const calcFromMargin = () => {
@@ -1979,6 +2003,60 @@ function installProductModal() {
   });
 }
 
+function updateChainedUnitLabelsAndTotal() {
+  const buyVal = text($("input-prod-buy-unit")?.value) || "BOX";
+  const midVal = text($("input-prod-mid-unit")?.value) || buyVal;
+  const baseVal = text($("input-prod-base-unit")?.value) || "TABLET";
+
+  const midQty = num($("input-prod-mid-qty")?.value) || 1;
+  const baseQty = num($("input-prod-base-qty")?.value) || 1;
+  const totalConv = Math.max(1, midQty * baseQty);
+
+  const lblBuy = $("lbl-dyn-buy-unit");
+  const lblBuy2 = $("lbl-dyn-buy-unit-2");
+  const lblMid = $("lbl-dyn-mid-unit");
+  const lblMid2 = $("lbl-dyn-mid-unit-2");
+  const lblBase = $("lbl-dyn-base-unit");
+  const lblBase2 = $("lbl-dyn-base-unit-2");
+  const convInput = $("input-prod-conversion");
+
+  if (lblBuy) lblBuy.textContent = buyVal;
+  if (lblBuy2) lblBuy2.textContent = buyVal;
+  if (lblMid) lblMid.textContent = midVal;
+  if (lblMid2) lblMid2.textContent = midVal;
+  if (lblBase) lblBase.textContent = baseVal;
+  if (lblBase2) lblBase2.textContent = baseVal;
+  if (convInput) convInput.value = totalConv;
+}
+
+function setupChainedUnitConversionEvents() {
+  const unitInputs = ["input-prod-buy-unit", "input-prod-mid-unit", "input-prod-base-unit", "input-prod-mid-qty", "input-prod-base-qty"];
+  unitInputs.forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener("focus", (e) => e.target.select());
+    el.addEventListener("input", updateChainedUnitLabelsAndTotal);
+  });
+
+  // Smart Auto-fill: saat kemasan supplier diisi nama satuan tunggal (Botol/Pcs/dll),
+  // jika kemasan sedang kosong atau default, otomatis sinkronkan ke 1-tingkat
+  $("input-prod-buy-unit")?.addEventListener("change", (e) => {
+    const val = text(e.target.value).toUpperCase();
+    const isSingleUnitType = ["BOTOL", "BTL", "PCS", "PIECES", "TUBE", "SACHET", "POT", "JERIGEN", "VIAL", "AMPUL"].includes(val);
+    if (isSingleUnitType) {
+      const midEl = $("input-prod-mid-unit");
+      const baseEl = $("input-prod-base-unit");
+      const midQtyEl = $("input-prod-mid-qty");
+      const baseQtyEl = $("input-prod-base-qty");
+      if (midEl && (!midEl.value || midEl.value.toLowerCase() === "strip")) midEl.value = val;
+      if (baseEl && (!baseEl.value || baseEl.value.toLowerCase() === "pcs")) baseEl.value = val;
+      if (midQtyEl) midQtyEl.value = 1;
+      if (baseQtyEl) baseQtyEl.value = 1;
+      updateChainedUnitLabelsAndTotal();
+    }
+  });
+}
+
 let activeProductSavedCallback = null;
 
 export function openProductModal(prefill = {}, callback = null) {
@@ -2027,14 +2105,29 @@ export function openProductModal(prefill = {}, callback = null) {
   $("input-prod-code").value = prefill.code || (targetSupplier ? generateAutoProductCode(targetSupplier) : "");
   $("input-prod-name").value = prefill.name || "";
   $("input-prod-barcode").value = prefill.barcode || "";
-  $("input-prod-buy-unit").value = prefill.buyUnit || "Box";
-  const midInput = $("input-prod-mid-unit");
-  if (midInput) midInput.value = prefill.midUnit || "";
-  const midQtyInput = $("input-prod-mid-qty");
-  if (midQtyInput) midQtyInput.value = (prefill.midQty !== undefined && prefill.midQty !== null && prefill.midQty !== "") ? prefill.midQty : 1;
-  const baseInput = $("input-prod-base-unit");
-  if (baseInput) baseInput.value = prefill.baseUnit || "Pcs";
-  $("input-prod-conversion").value = prefill.conversion || 1;
+
+  // 3 Tingkat Kemasan Berantai Universal
+  const buyU = prefill.buyUnit || prefill.purchaseUnit || "Box";
+  const midU = prefill.midUnit || prefill.intermediateUnit || "";
+  const baseU = prefill.baseUnit || "Pcs";
+  const midQ = (prefill.midQty !== undefined && prefill.midQty !== null && prefill.midQty !== "") ? num(prefill.midQty) : 1;
+  let baseQ = 1;
+  if (prefill.baseQty !== undefined && prefill.baseQty !== null && prefill.baseQty !== "") {
+    baseQ = num(prefill.baseQty) || 1;
+  } else if (prefill.conversion !== undefined && prefill.conversion !== null) {
+    const totalConv = num(prefill.conversion) || 1;
+    baseQ = Math.max(1, Math.round(totalConv / (midQ || 1)));
+  }
+
+  $("input-prod-buy-unit").value = buyU;
+  if ($("input-prod-mid-unit")) $("input-prod-mid-unit").value = midU;
+  if ($("input-prod-base-unit")) $("input-prod-base-unit").value = baseU;
+  if ($("input-prod-mid-qty")) $("input-prod-mid-qty").value = midQ || 1;
+  if ($("input-prod-base-qty")) $("input-prod-base-qty").value = baseQ || 1;
+  if ($("input-prod-conversion")) $("input-prod-conversion").value = (midQ || 1) * (baseQ || 1);
+
+  updateChainedUnitLabelsAndTotal();
+
   const bPriceVal = num(prefill.buyPrice);
   $("input-prod-buy-price").value = bPriceVal > 0 ? formatNumber(bPriceVal) : "";
   const sPriceVal = num(prefill.sellPrice);
@@ -2044,7 +2137,7 @@ export function openProductModal(prefill = {}, callback = null) {
   modal.hidden = false;
   setTimeout(() => {
     if (!prefill.name) $("input-prod-name")?.focus();
-    else $("input-prod-conversion")?.focus();
+    else $("input-prod-buy-price")?.focus();
   }, 60);
 }
 
@@ -2064,11 +2157,15 @@ async function handleSaveProductModal() {
   const name = text($("input-prod-name")?.value);
   const barcode = text($("input-prod-barcode")?.value);
   const category = text($("input-prod-category")?.value);
+
+  // Satuan & Konversi 3 Tingkat Berantai
   const buyUnit = text($("input-prod-buy-unit")?.value) || "Box";
-  const midUnit = text($("input-prod-mid-unit")?.value) || "";
-  const midQty = num($("input-prod-mid-qty")?.value) || 1;
-  const conversion = num($("input-prod-conversion")?.value) || 1;
+  const midUnit = text($("input-prod-mid-unit")?.value) || buyUnit;
   const baseUnit = text($("input-prod-base-unit")?.value) || "Pcs";
+  const midQty = num($("input-prod-mid-qty")?.value) || 1;
+  const baseQty = num($("input-prod-base-qty")?.value) || 1;
+  const conversion = Math.max(1, midQty * baseQty);
+
   const buyPrice = num($("input-prod-buy-price")?.value);
   const sellPrice = num($("input-prod-sell-price")?.value);
   const minStock = num($("input-prod-min-stock")?.value);
@@ -2127,6 +2224,7 @@ async function handleSaveProductModal() {
     "Satuan": baseUnit,
     "Satuan Antara": midUnit || baseUnit,
     "Isi Satuan Antara": midQty || 1,
+    "Isi Satuan Dasar": baseQty || 1,
     "Stok Minimum": minStock,
     "Stok Awal": 0,
     "Status": status,

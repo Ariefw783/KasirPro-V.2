@@ -1960,20 +1960,20 @@ function renderManualInvoiceItems() {
         <td class="col-exp" data-mobile-label="Exp Date">
           <input type="date" class="row-exp" data-index="${idx}" value="${escapeHtml(item.expiryDate || '')}" style="font-size:11.5px;">
         </td>
-        <td class="col-unit-buy" data-mobile-label="Satuan Besar">
-          <input type="text" class="row-purchase-unit" data-index="${idx}" value="${escapeHtml(item.purchaseUnit || '')}" placeholder="BOX / BTL">
+        <td class="col-unit-buy" data-mobile-label="Kemasan Supplier">
+          <input type="text" class="row-purchase-unit" data-index="${idx}" value="${escapeHtml(item.purchaseUnit || '')}" placeholder="BOX / BTL" title="Satuan Kemasan Supplier">
         </td>
-        <td class="col-unit-mid" data-mobile-label="Satuan Sedang">
+        <td class="col-unit-mid" data-mobile-label="Kemasan Sedang">
           <div style="display:flex;align-items:center;gap:4px;">
-            <input type="text" class="row-mid-unit" data-index="${idx}" value="${escapeHtml(item.intermediateUnit || '')}" placeholder="Opsional" style="flex:1;">
-            <input type="number" inputmode="numeric" class="row-mid-qty" data-index="${idx}" min="1" step="1" value="${midQtyStr}" title="Isi per Satuan Sedang" style="width:48px;" placeholder="Isi">
+            <input type="text" class="row-mid-unit" data-index="${idx}" value="${escapeHtml(item.intermediateUnit || '')}" placeholder="STRIP / BTL" style="flex:1;" title="Satuan Kemasan Sedang">
+            <input type="number" inputmode="numeric" class="row-mid-qty" data-index="${idx}" min="1" step="1" value="${midQtyStr}" title="Isi Kemasan Sedang per Kemasan Supplier" style="width:48px;" placeholder="Isi">
           </div>
         </td>
-        <td class="col-unit-base" data-mobile-label="Satuan Terkecil">
-          <input type="text" class="row-base-unit" data-index="${idx}" value="${escapeHtml(item.baseUnit || '')}" placeholder="TAB / BTL">
+        <td class="col-unit-base" data-mobile-label="Kemasan Terkecil">
+          <input type="text" class="row-base-unit" data-index="${idx}" value="${escapeHtml(item.baseUnit || '')}" placeholder="TAB / BTL" title="Satuan Kemasan Terkecil">
         </td>
-        <td class="col-conv" data-mobile-label="Isi Konversi">
-          <input type="number" inputmode="numeric" class="row-conversion" data-index="${idx}" min="1" step="1" value="${convStr}" title="Total Satuan Terkecil dalam 1 Satuan Besar" style="font-weight:800;color:#0369a1;" placeholder="1">
+        <td class="col-conv" data-mobile-label="Total Konversi">
+          <input type="number" inputmode="numeric" class="row-conversion" data-index="${idx}" min="1" step="1" value="${convStr}" title="Total Kemasan Terkecil dalam 1 Kemasan Supplier" style="font-weight:800;color:#0369a1;" placeholder="1">
         </td>
         <td class="col-qty" data-mobile-label="Qty Beli">
           <input type="number" inputmode="decimal" class="row-qty" data-index="${idx}" min="0.01" step="any" value="${qtyStr}" style="font-weight:700;" placeholder="1">
@@ -2279,6 +2279,10 @@ function bindManualItemRowEvents() {
       const idx = parseInt(btn.dataset.index, 10);
       const curItem = manualInvoiceItems[idx] || {};
       const currentSup = text($("manual-inv-supplier")?.value);
+      const conv = Math.max(1, num(curItem.conversionRatio) || 1);
+      const midQ = Math.max(1, num(curItem.intermediateQty) || 1);
+      const baseQ = Math.max(1, Math.round(conv / midQ));
+
       if (typeof window.openProductModal === "function") {
         window.openProductModal(
           {
@@ -2286,9 +2290,10 @@ function bindManualItemRowEvents() {
             supplier: currentSup,
             buyUnit: curItem.purchaseUnit || "Box",
             midUnit: curItem.intermediateUnit || "",
-            midQty: num(curItem.intermediateQty) || 1,
+            midQty: midQ,
             baseUnit: curItem.baseUnit || "Pcs",
-            conversion: num(curItem.conversionRatio) || 1,
+            baseQty: baseQ,
+            conversion: conv,
             buyPrice: num(curItem.buyPrice) || 0
           },
           (newProd) => {
@@ -2417,6 +2422,10 @@ function showProductSuggestions(inputEl, idx, query) {
     hideGlobalAc();
     const prodName = addName;
     const curItem = manualInvoiceItems[idx] || {};
+    const conv = Math.max(1, num(curItem.conversionRatio) || 1);
+    const midQ = Math.max(1, num(curItem.intermediateQty) || 1);
+    const baseQ = Math.max(1, Math.round(conv / midQ));
+
     if (typeof window.openProductModal === "function") {
       window.openProductModal(
         {
@@ -2424,9 +2433,10 @@ function showProductSuggestions(inputEl, idx, query) {
           supplier: currentSup,
           buyUnit: curItem.purchaseUnit || "Box",
           midUnit: curItem.intermediateUnit || "",
-          midQty: curItem.intermediateQty || 1,
+          midQty: midQ,
           baseUnit: curItem.baseUnit || "Pcs",
-          conversion: num(curItem.conversionRatio) || 1,
+          baseQty: baseQ,
+          conversion: conv,
           buyPrice: num(curItem.buyPrice) || 0
         },
         (newProd) => {

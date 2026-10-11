@@ -2561,10 +2561,10 @@
                                                 <th class="col-prod" style="min-width:240px;">Nama Produk &amp; Pencarian</th>
                                                 <th class="col-batch" style="width:105px;" title="Nomor batch fisik dari pabrik">No. Batch</th>
                                                 <th class="col-exp" style="width:125px;" title="Tanggal kedaluwarsa fisik obat">Exp. Date</th>
-                                                <th class="col-unit-buy" style="width:85px;" title="Satuan Beli saat pesan ke supplier">Satuan Besar</th>
-                                                <th class="col-unit-mid" style="width:115px;" title="Satuan Antara (misal Strip / Blister)">Satuan Sedang</th>
-                                                <th class="col-unit-base" style="width:100px;" title="Unit terkecil stok apotek (Tablet, Kaplet, Botol, Pcs)">Satuan Terkecil</th>
-                                                <th class="col-conv" style="width:80px;" title="Total Satuan Terkecil dalam 1 Satuan Besar">Isi Konversi</th>
+                                                <th class="col-unit-buy" style="width:85px;" title="Satuan Kemasan Supplier saat pemesanan">Kemasan Supplier</th>
+                                                <th class="col-unit-mid" style="width:115px;" title="Satuan Kemasan Sedang (misal Strip / Blister / Botol)">Kemasan Sedang</th>
+                                                <th class="col-unit-base" style="width:100px;" title="Satuan Kemasan Terkecil (Tablet, Kaplet, Botol, Pcs)">Kemasan Terkecil</th>
+                                                <th class="col-conv" style="width:80px;" title="Total Kemasan Terkecil dalam 1 Kemasan Supplier">Isi Konversi</th>
                                                 <th class="col-qty" style="width:65px;">Qty Beli</th>
                                                 <th class="col-total-base" style="width:80px;" title="Jumlah stok satuan terkecil yang masuk">Total Masuk</th>
                                                 <th class="col-buy-price" style="width:100px;">Harga Beli (Rp)</th>
@@ -2594,7 +2594,7 @@
                                     <div class="product-detail-body" style="padding:16px;">
                                         <div style="font-size:11.5px;color:#334155;margin-bottom:10px;background:#eff6ff;padding:9px 12px;border-radius:8px;border:1px solid #bfdbfe;line-height:1.5;">
                                             <i class="fa-solid fa-circle-info text-primary"></i> <strong>Urutan Kolom TSV:</strong><br>
-                                            <small style="color:#64748b;">Nama Produk &bull; No Batch &bull; Exp Date &bull; Satuan Besar &bull; Satuan Sedang &bull; Satuan Terkecil &bull; Konversi &bull; Qty &bull; Total Masuk &bull; Harga Beli &bull; Disc% &bull; Disc Rp &bull; Subtotal</small>
+                                            <small style="color:#64748b;">Nama Produk &bull; No Batch &bull; Exp Date &bull; Kemasan Supplier &bull; Kemasan Sedang &bull; Kemasan Terkecil &bull; Konversi &bull; Qty &bull; Total Masuk &bull; Harga Beli &bull; Disc% &bull; Disc Rp &bull; Subtotal</small>
                                         </div>
                                         <textarea id="tsv-paste-textarea" rows="9" placeholder="Klik di sini lalu tekan Ctrl + V (atau tempel teks berformat tab-separated)..." style="width:100%;font-family:monospace;font-size:12px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;resize:vertical;background:#f8fafc;color:#0f172a;box-sizing:border-box;"></textarea>
                                     </div>
@@ -2690,7 +2690,7 @@
 </div>
 
 
-<script src="../pwa.js?v=20261011.21" defer></script>
+<script src="../pwa.js?v=20261011.22" defer></script>
 
 <script
     src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
@@ -2710,12 +2710,12 @@
 
 <script
     type="module"
-    src="../modules/diagnostic-reporter.js?v=20261011.21"
+    src="../modules/diagnostic-reporter.js?v=20261011.22"
 ></script>
 
 <script
     type="module"
-    src="management.js?v=20261011.21"
+    src="management.js?v=20261011.22"
 ></script>
 
 </body>
