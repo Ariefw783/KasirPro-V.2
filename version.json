@@ -1,13 +1,13 @@
 {
-  "version": "2.2.71",
-  "build": "20261011.18",
+  "version": "2.2.72",
+  "build": "20261011.19",
   "releaseDate": "11 Oktober 2026",
-  "title": "Stock Card Ledger & Complete Audit Trail",
-  "description": "Menghadirkan fitur Kartu Stok Produk & Rekam Jejak Audit Lalu Lintas Barang Masuk, Keluar, dan Penyesuaian lengkap dengan detail jam, sumber, pelaku, nomor bukti, serta cetak PDF.",
+  "title": "Complete Pagination for Stock Card Ledger & Movement Audit Trail",
+  "description": "Menambahkan sistem paginasi lengkap pada Modal Kartu Stok Produk dan Panel Riwayat Mutasi Stok & Barang Masuk untuk kenyamanan audit ribuan transaksi.",
   "changelog": [
-    "Peluncuran Buku Kartu Stok Produk (Stock Card Ledger) interaktif per produk",
-    "Pencatatan presisi waktu & jam, jenis mutasi, nomor faktur/struk, dan petugas/kasir",
-    "Tombol cepat akses Kartu Stok di halaman Master Produk dan Manajemen Stok",
-    "Integrasi ekspor berkas cetak PDF resmi untuk audit fisik persediaan obat/barang"
+    "Paginasi interaktif pada Modal Kartu Stok Produk (10 entri per halaman)",
+    "Paginasi adaptif pada Panel Riwayat Mutasi Stok & Barang Masuk (25 entri per halaman)",
+    "Sinkronisasi tombol navigasi Sebelumnya/Berikutnya dan teks metadata halaman",
+    "Seluruh 256 uji verifikasi sistem lulus 100% tanpa kendala"
   ]
 }

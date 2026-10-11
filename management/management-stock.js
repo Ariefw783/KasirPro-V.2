@@ -77,15 +77,42 @@ function bindEvents() {
     window.KasirProDialog?.success("Berhasil", "Riwayat mutasi stok berhasil dimuat ulang.");
   });
 
-  $("movement-search")?.addEventListener("input", () => {
+  const onMovementFilterChange = () => {
     currentMovementsPage = 1;
     applyMovementFilters();
+  };
+
+  $("movement-search")?.addEventListener("input", onMovementFilterChange);
+  $("movement-type-filter")?.addEventListener("change", onMovementFilterChange);
+  $("goods-in-search")?.addEventListener("input", (e) => {
+    const mInput = $("movement-search");
+    if (mInput) mInput.value = e.target.value;
+    onMovementFilterChange();
+  });
+  $("goods-in-type-filter")?.addEventListener("change", (e) => {
+    const mSelect = $("movement-type-filter");
+    if (mSelect) mSelect.value = e.target.value;
+    onMovementFilterChange();
   });
 
-  $("movement-type-filter")?.addEventListener("change", () => {
-    currentMovementsPage = 1;
-    applyMovementFilters();
-  });
+  const handlePrevMovementPage = () => {
+    if (currentMovementsPage > 1) {
+      currentMovementsPage--;
+      renderMovementTable();
+    }
+  };
+  const handleNextMovementPage = () => {
+    const totalPages = Math.ceil(filteredMovementList.length / PAGE_SIZE) || 1;
+    if (currentMovementsPage < totalPages) {
+      currentMovementsPage++;
+      renderMovementTable();
+    }
+  };
+
+  $("movement-prev-page")?.addEventListener("click", handlePrevMovementPage);
+  $("movement-next-page")?.addEventListener("click", handleNextMovementPage);
+  $("goods-in-prev-page")?.addEventListener("click", handlePrevMovementPage);
+  $("goods-in-next-page")?.addEventListener("click", handleNextMovementPage);
 
   installStockHistoryModal();
 }
@@ -431,41 +458,48 @@ function applyMovementFilters() {
 
 function renderMovementTable() {
   const tbody = $("movement-table-body");
-  if (!tbody) return;
+  const total = filteredMovementList.length;
+  const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
+  if (currentMovementsPage > totalPages) currentMovementsPage = totalPages;
+  if (currentMovementsPage < 1) currentMovementsPage = 1;
 
-  if (!filteredMovementList.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="empty-table-state" style="text-align:center;padding:24px;">Tidak ada riwayat mutasi stok.</td></tr>`;
-    return;
+  const startIndex = (currentMovementsPage - 1) * PAGE_SIZE;
+  const pageMovements = filteredMovementList.slice(startIndex, startIndex + PAGE_SIZE);
+
+  if (tbody) {
+    if (!total) {
+      tbody.innerHTML = `<tr><td colspan="8" class="empty-table-state" style="text-align:center;padding:24px;">Tidak ada riwayat mutasi stok.</td></tr>`;
+    } else {
+      tbody.innerHTML = pageMovements.map(m => {
+        const isPositive = num(m.delta ?? m.quantity) > 0;
+        const deltaStr = isPositive ? `+${formatNumber(m.delta ?? m.quantity)}` : `${formatNumber(m.delta ?? m.quantity)}`;
+
+        return `
+          <tr>
+            <td style="white-space:nowrap;font-weight:600;">${formatDateTime(m.createdAt || m.date || m.at)}</td>
+            <td><strong>${escapeHtml(m.type || 'Mutasi')}</strong></td>
+            <td><strong style="color:#0284c7;">${escapeHtml(m.reference || '—')}</strong></td>
+            <td><code>${escapeHtml(m.productCode || '—')}</code></td>
+            <td><strong>${escapeHtml(m.productName || '—')}</strong></td>
+            <td style="color:${isPositive ? '#059669' : '#dc2626'};font-weight:700;text-align:right;">${deltaStr}</td>
+            <td style="text-align:right;font-weight:700;">${m.stockAfter !== undefined ? formatNumber(m.stockAfter) : '—'}</td>
+            <td>
+              <span style="font-weight:600;color:#334155;">${escapeHtml(m.source || 'Sistem')}</span>
+              <small class="text-muted" style="display:block;">User: ${escapeHtml(m.user || '—')}${m.batch ? ` | Batch: ${escapeHtml(m.batch)}` : ''}${m.note || m.notes ? ` | ${escapeHtml(m.note || m.notes)}` : ''}</small>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
   }
-
-  tbody.innerHTML = filteredMovementList.slice(0, 100).map(m => {
-    const isPositive = num(m.delta ?? m.quantity) > 0;
-    const deltaStr = isPositive ? `+${formatNumber(m.delta ?? m.quantity)}` : `${formatNumber(m.delta ?? m.quantity)}`;
-
-    return `
-      <tr>
-        <td style="white-space:nowrap;font-weight:600;">${formatDateTime(m.createdAt || m.date || m.at)}</td>
-        <td><strong>${escapeHtml(m.type || 'Mutasi')}</strong></td>
-        <td><strong style="color:#0284c7;">${escapeHtml(m.reference || '—')}</strong></td>
-        <td><code>${escapeHtml(m.productCode || '—')}</code></td>
-        <td><strong>${escapeHtml(m.productName || '—')}</strong></td>
-        <td style="color:${isPositive ? '#059669' : '#dc2626'};font-weight:700;text-align:right;">${deltaStr}</td>
-        <td style="text-align:right;font-weight:700;">${m.stockAfter !== undefined ? formatNumber(m.stockAfter) : '—'}</td>
-        <td>
-          <span style="font-weight:600;color:#334155;">${escapeHtml(m.source || 'Sistem')}</span>
-          <small class="text-muted" style="display:block;">User: ${escapeHtml(m.user || '—')}${m.batch ? ` | Batch: ${escapeHtml(m.batch)}` : ''}${m.note || m.notes ? ` | ${escapeHtml(m.note || m.notes)}` : ''}</small>
-        </td>
-      </tr>
-    `;
-  }).join("");
 
   // Render juga ke card list adaptif
   const cardLists = [ $("movement-card-list"), $("goods-in-card-list") ].filter(Boolean);
   cardLists.forEach(cardList => {
-    if (!filteredMovementList.length) {
+    if (!total) {
       cardList.innerHTML = `<div style="text-align:center;padding:28px 16px;color:#94a3b8;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;"><i class="fa-solid fa-clock-rotate-left" style="font-size:24px;margin-bottom:8px;display:block;"></i>Tidak ada riwayat mutasi stok.</div>`;
     } else {
-      cardList.innerHTML = filteredMovementList.slice(0, 100).map(m => {
+      cardList.innerHTML = pageMovements.map(m => {
         const isPositive = num(m.delta ?? m.quantity) > 0;
         const deltaStr = isPositive ? `+${formatNumber(m.delta ?? m.quantity)}` : `${formatNumber(m.delta ?? m.quantity)}`;
         const accentClass = isPositive ? "card-success" : "card-danger";
@@ -541,6 +575,20 @@ function renderMovementTable() {
       });
     }
   });
+
+  // Update info pagination movements
+  const infoText = total > 0
+    ? `Menampilkan ${pageMovements.length} dari ${total} mutasi (Halaman ${currentMovementsPage} dari ${totalPages})`
+    : `Tidak ada data mutasi`;
+
+  const infoEls = [ $("movement-page-info"), $("goods-in-page-info") ].filter(Boolean);
+  infoEls.forEach(el => el.textContent = infoText);
+
+  const prevBtns = [ $("movement-prev-page"), $("goods-in-prev-page") ].filter(Boolean);
+  prevBtns.forEach(btn => btn.disabled = currentMovementsPage <= 1);
+
+  const nextBtns = [ $("movement-next-page"), $("goods-in-next-page") ].filter(Boolean);
+  nextBtns.forEach(btn => btn.disabled = currentMovementsPage >= totalPages);
 }
 
 /**
@@ -585,6 +633,8 @@ export function installStockHistoryModal() {
 
 let activeStockCardProduct = null;
 let activeStockCardMovements = [];
+let activeStockCardPage = 1;
+const STOCK_CARD_PAGE_SIZE = 10;
 
 export function openStockHistoryModal(productCode) {
   installStockHistoryModal();
@@ -609,11 +659,24 @@ export function openStockHistoryModal(productCode) {
 
   activeStockCardProduct = prod || { code: productCode, name: prodName, unit, stock: curStock };
   activeStockCardMovements = prodMovs;
+  activeStockCardPage = 1;
+
+  renderStockCardContent();
+  modal.hidden = false;
+}
+
+function renderStockCardContent() {
+  const bodyEl = $("stock-hist-body");
+  if (!bodyEl) return;
+
+  const prod = activeStockCardProduct;
+  const prodMovs = activeStockCardMovements;
+  const unit = prod?.unit || "Item";
+  const curStock = prod?.stock ?? 0;
 
   const totalIn = prodMovs.filter(m => num(m.delta ?? m.quantity) > 0).reduce((sum, m) => sum + num(m.delta ?? m.quantity), 0);
   const totalOut = prodMovs.filter(m => num(m.delta ?? m.quantity) < 0).reduce((sum, m) => sum + Math.abs(num(m.delta ?? m.quantity)), 0);
 
-  const bodyEl = $("stock-hist-body");
   if (!prodMovs.length) {
     bodyEl.innerHTML = `
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap;">
@@ -626,107 +689,143 @@ export function openStockHistoryModal(productCode) {
         Belum ada riwayat mutasi / lalu lintas stok yang tercatat untuk produk ini.
       </p>
     `;
-  } else {
-    bodyEl.innerHTML = `
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
-        <div>
-          <small style="color:#64748b;display:block;font-size:11px;text-transform:uppercase;font-weight:700;">Saldo Stok Saat Ini</small>
-          <strong style="font-size:16px;color:#0f2a43;">${formatNumber(curStock)}</strong> <small style="color:#64748b;">${escapeHtml(unit)}</small>
-        </div>
-        <div style="border-left:1px solid #cbd5e1;height:28px;"></div>
-        <div>
-          <small style="color:#64748b;display:block;font-size:11px;text-transform:uppercase;font-weight:700;">Total Barang Masuk</small>
-          <strong style="font-size:16px;color:#059669;">+${formatNumber(totalIn)}</strong> <small style="color:#64748b;">${escapeHtml(unit)}</small>
-        </div>
-        <div style="border-left:1px solid #cbd5e1;height:28px;"></div>
-        <div>
-          <small style="color:#64748b;display:block;font-size:11px;text-transform:uppercase;font-weight:700;">Total Barang Keluar</small>
-          <strong style="font-size:16px;color:#dc2626;">-${formatNumber(totalOut)}</strong> <small style="color:#64748b;">${escapeHtml(unit)}</small>
-        </div>
-        <div style="border-left:1px solid #cbd5e1;height:28px;"></div>
-        <div>
-          <small style="color:#64748b;display:block;font-size:11px;text-transform:uppercase;font-weight:700;">Total Transaksi Mutasi</small>
-          <strong style="font-size:16px;color:#0284c7;">${formatNumber(prodMovs.length)}</strong> <small style="color:#64748b;">kali</small>
-        </div>
-      </div>
-
-      <div class="table-wrapper" style="max-height:360px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;">
-        <table class="data-table" style="font-size:12.5px;">
-          <thead style="position:sticky;top:0;background:#f1f5f9;z-index:2;">
-            <tr>
-              <th style="padding:8px 10px;">Waktu & Jam</th>
-              <th style="padding:8px 10px;">Jenis Mutasi</th>
-              <th style="padding:8px 10px;">No. Referensi</th>
-              <th style="padding:8px 10px;text-align:right;">Perubahan</th>
-              <th style="padding:8px 10px;text-align:right;">Saldo Setelah</th>
-              <th style="padding:8px 10px;">Sumber / User</th>
-              <th style="padding:8px 10px;">Batch / EXP / Info</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${prodMovs.map(m => {
-              const deltaVal = num(m.delta ?? m.quantity);
-              const isPositive = deltaVal > 0;
-              const deltaStr = isPositive ? `+${formatNumber(deltaVal)}` : `${formatNumber(deltaVal)}`;
-              const timeDisplay = formatDateTime(m.createdAt || m.date || m.at);
-
-              let badgeBg = "#f1f5f9";
-              let badgeColor = "#475569";
-              const typeStr = norm(m.type);
-              if (typeStr.includes("faktur") || typeStr.includes("masuk")) {
-                badgeBg = "#dcfce7"; badgeColor = "#15803d";
-              } else if (typeStr.includes("penjualan") || typeStr.includes("sale")) {
-                badgeBg = "#fee2e2"; badgeColor = "#b91c1c";
-              } else if (typeStr.includes("opname")) {
-                badgeBg = "#fef3c7"; badgeColor = "#b45309";
-              } else if (typeStr.includes("retur") || typeStr.includes("pembatalan")) {
-                badgeBg = "#f3e8ff"; badgeColor = "#7e22ce";
-              }
-
-              return `
-                <tr>
-                  <td style="white-space:nowrap;color:#0f172a;font-weight:600;">${timeDisplay}</td>
-                  <td>
-                    <span class="badge" style="background:${badgeBg};color:${badgeColor};font-weight:700;font-size:11px;padding:3px 7px;border-radius:5px;">
-                      ${escapeHtml(m.type || 'Mutasi')}
-                    </span>
-                  </td>
-                  <td>
-                    <span style="font-weight:700;color:#0284c7;">${escapeHtml(m.reference || '—')}</span>
-                    ${m.supplier ? `<small style="display:block;color:#64748b;font-size:11px;">${escapeHtml(m.supplier)}</small>` : ''}
-                  </td>
-                  <td style="text-align:right;font-weight:800;color:${isPositive ? '#059669' : '#dc2626'};">
-                    ${deltaStr}
-                  </td>
-                  <td style="text-align:right;font-weight:700;color:#0f172a;">
-                    ${m.stockAfter !== undefined ? formatNumber(m.stockAfter) : '—'}
-                  </td>
-                  <td>
-                    <small style="color:#334155;font-weight:600;display:block;">${escapeHtml(m.source || 'Sistem')}</small>
-                    <small style="color:#64748b;font-size:11px;">Oleh: ${escapeHtml(m.user || '—')}</small>
-                  </td>
-                  <td>
-                    ${m.batch ? `<span style="font-weight:600;color:#0f172a;">Batch: ${escapeHtml(m.batch)}</span>` : ''}
-                    ${m.expiryDate ? `<small style="display:block;color:#64748b;font-size:11px;">EXP: ${escapeHtml(m.expiryDate)}</small>` : ''}
-                    ${m.note || m.notes ? `<small style="display:block;color:#64748b;font-size:11px;font-style:italic;">${escapeHtml(m.note || m.notes)}</small>` : ''}
-                    ${!m.batch && !m.expiryDate && !m.note && !m.notes ? '<span style="color:#94a3b8;">—</span>' : ''}
-                  </td>
-                </tr>
-              `;
-            }).join("")}
-          </tbody>
-        </table>
-      </div>
-      <p style="margin-top:10px;font-size:11.5px;color:#64748b;display:flex;align-items:center;gap:6px;">
-        <i class="fa-solid fa-circle-info" style="color:#0284c7;"></i> 
-        Setiap entri memuat saldo sebelum & sesudah, nomor bukti faktur/struk, dan petugas penanggung jawab secara transparan.
-      </p>
-    `;
+    return;
   }
+
+  const total = prodMovs.length;
+  const totalPages = Math.ceil(total / STOCK_CARD_PAGE_SIZE) || 1;
+  if (activeStockCardPage > totalPages) activeStockCardPage = totalPages;
+  if (activeStockCardPage < 1) activeStockCardPage = 1;
+
+  const startIndex = (activeStockCardPage - 1) * STOCK_CARD_PAGE_SIZE;
+  const pageItems = prodMovs.slice(startIndex, startIndex + STOCK_CARD_PAGE_SIZE);
+
+  bodyEl.innerHTML = `
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;gap:20px;flex-wrap:wrap;align-items:center;">
+      <div>
+        <small style="color:#64748b;display:block;font-size:11px;text-transform:uppercase;font-weight:700;">Saldo Stok Saat Ini</small>
+        <strong style="font-size:16px;color:#0f2a43;">${formatNumber(curStock)}</strong> <small style="color:#64748b;">${escapeHtml(unit)}</small>
+      </div>
+      <div style="border-left:1px solid #cbd5e1;height:28px;"></div>
+      <div>
+        <small style="color:#64748b;display:block;font-size:11px;text-transform:uppercase;font-weight:700;">Total Barang Masuk</small>
+        <strong style="font-size:16px;color:#059669;">+${formatNumber(totalIn)}</strong> <small style="color:#64748b;">${escapeHtml(unit)}</small>
+      </div>
+      <div style="border-left:1px solid #cbd5e1;height:28px;"></div>
+      <div>
+        <small style="color:#64748b;display:block;font-size:11px;text-transform:uppercase;font-weight:700;">Total Barang Keluar</small>
+        <strong style="font-size:16px;color:#dc2626;">-${formatNumber(totalOut)}</strong> <small style="color:#64748b;">${escapeHtml(unit)}</small>
+      </div>
+      <div style="border-left:1px solid #cbd5e1;height:28px;"></div>
+      <div>
+        <small style="color:#64748b;display:block;font-size:11px;text-transform:uppercase;font-weight:700;">Total Transaksi Mutasi</small>
+        <strong style="font-size:16px;color:#0284c7;">${formatNumber(total)}</strong> <small style="color:#64748b;">kali</small>
+      </div>
+    </div>
+
+    <div class="table-wrapper" style="max-height:360px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;">
+      <table class="data-table" style="font-size:12.5px;">
+        <thead style="position:sticky;top:0;background:#f1f5f9;z-index:2;">
+          <tr>
+            <th style="padding:8px 10px;">Waktu & Jam</th>
+            <th style="padding:8px 10px;">Jenis Mutasi</th>
+            <th style="padding:8px 10px;">No. Referensi</th>
+            <th style="padding:8px 10px;text-align:right;">Perubahan</th>
+            <th style="padding:8px 10px;text-align:right;">Saldo Setelah</th>
+            <th style="padding:8px 10px;">Sumber / User</th>
+            <th style="padding:8px 10px;">Batch / EXP / Info</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${pageItems.map(m => {
+            const deltaVal = num(m.delta ?? m.quantity);
+            const isPositive = deltaVal > 0;
+            const deltaStr = isPositive ? `+${formatNumber(deltaVal)}` : `${formatNumber(deltaVal)}`;
+            const timeDisplay = formatDateTime(m.createdAt || m.date || m.at);
+
+            let badgeBg = "#f1f5f9";
+            let badgeColor = "#475569";
+            const typeStr = norm(m.type);
+            if (typeStr.includes("faktur") || typeStr.includes("masuk")) {
+              badgeBg = "#dcfce7"; badgeColor = "#15803d";
+            } else if (typeStr.includes("penjualan") || typeStr.includes("sale")) {
+              badgeBg = "#fee2e2"; badgeColor = "#b91c1c";
+            } else if (typeStr.includes("opname")) {
+              badgeBg = "#fef3c7"; badgeColor = "#b45309";
+            } else if (typeStr.includes("retur") || typeStr.includes("pembatalan")) {
+              badgeBg = "#f3e8ff"; badgeColor = "#7e22ce";
+            }
+
+            return `
+              <tr>
+                <td style="white-space:nowrap;color:#0f172a;font-weight:600;">${timeDisplay}</td>
+                <td>
+                  <span class="badge" style="background:${badgeBg};color:${badgeColor};font-weight:700;font-size:11px;padding:3px 7px;border-radius:5px;">
+                    ${escapeHtml(m.type || 'Mutasi')}
+                  </span>
+                </td>
+                <td>
+                  <span style="font-weight:700;color:#0284c7;">${escapeHtml(m.reference || '—')}</span>
+                  ${m.supplier ? `<small style="display:block;color:#64748b;font-size:11px;">${escapeHtml(m.supplier)}</small>` : ''}
+                </td>
+                <td style="text-align:right;font-weight:800;color:${isPositive ? '#059669' : '#dc2626'};">
+                  ${deltaStr}
+                </td>
+                <td style="text-align:right;font-weight:700;color:#0f172a;">
+                  ${m.stockAfter !== undefined ? formatNumber(m.stockAfter) : '—'}
+                </td>
+                <td>
+                  <small style="color:#334155;font-weight:600;display:block;">${escapeHtml(m.source || 'Sistem')}</small>
+                  <small style="color:#64748b;font-size:11px;">Oleh: ${escapeHtml(m.user || '—')}</small>
+                </td>
+                <td>
+                  ${m.batch ? `<span style="font-weight:600;color:#0f172a;">Batch: ${escapeHtml(m.batch)}</span>` : ''}
+                  ${m.expiryDate ? `<small style="display:block;color:#64748b;font-size:11px;">EXP: ${escapeHtml(m.expiryDate)}</small>` : ''}
+                  ${m.note || m.notes ? `<small style="display:block;color:#64748b;font-size:11px;font-style:italic;">${escapeHtml(m.note || m.notes)}</small>` : ''}
+                  ${!m.batch && !m.expiryDate && !m.note && !m.notes ? '<span style="color:#94a3b8;">—</span>' : ''}
+                </td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid #e2e8f0;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:12px;color:#64748b;">
+        Menampilkan ${pageItems.length} dari ${total} catatan mutasi (Halaman ${activeStockCardPage} dari ${totalPages})
+      </span>
+      <div style="display:flex;gap:6px;">
+        <button type="button" id="stock-card-prev" class="button button-small button-secondary" ${activeStockCardPage <= 1 ? 'disabled' : ''} style="padding:3px 10px;font-size:12px;">
+          <i class="fa-solid fa-chevron-left"></i> Sebelumnya
+        </button>
+        <button type="button" id="stock-card-next" class="button button-small button-secondary" ${activeStockCardPage >= totalPages ? 'disabled' : ''} style="padding:3px 10px;font-size:12px;">
+          Berikutnya <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Bind pagination buttons in modal
+  $("stock-card-prev")?.addEventListener("click", () => {
+    if (activeStockCardPage > 1) {
+      activeStockCardPage--;
+      renderStockCardContent();
+    }
+  });
+
+  $("stock-card-next")?.addEventListener("click", () => {
+    const totalP = Math.ceil(activeStockCardMovements.length / STOCK_CARD_PAGE_SIZE) || 1;
+    if (activeStockCardPage < totalP) {
+      activeStockCardPage++;
+      renderStockCardContent();
+    }
+  });
 
   // Setup tombol Cetak PDF
   const printBtn = $("btn-print-stock-card");
   if (printBtn) {
+    const settings = readStore(STORE_KEYS.settings, {});
     printBtn.onclick = () => {
       try {
         generateStockCardPdf(activeStockCardProduct, activeStockCardMovements, settings, "Administrator");
@@ -735,6 +834,4 @@ export function openStockHistoryModal(productCode) {
       }
     };
   }
-
-  modal.hidden = false;
 }

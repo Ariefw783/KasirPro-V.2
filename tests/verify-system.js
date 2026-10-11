@@ -1928,6 +1928,14 @@ assert(
   posCoreJs.includes("source:\"Transaksi Kasir (POS)\"") && posCoreJs.includes("user:session.name"),
   "POS Kasir: Record Mutasi Penjualan Melampirkan User Kasir dan Sumber Transaksi secara Akurat"
 );
+assert(
+  mgmtHtml.includes("id=\"movement-page-info\"") && mgmtHtml.includes("id=\"movement-prev-page\"") && mgmtHtml.includes("id=\"movement-next-page\""),
+  "Paginasi Mutasi: Kontainer & Tombol Paginasi Terpasang pada Panel Riwayat Mutasi"
+);
+assert(
+  mgmtStockJs.includes("STOCK_CARD_PAGE_SIZE") && mgmtStockJs.includes("id=\"stock-card-prev\"") && mgmtStockJs.includes("id=\"stock-card-next\""),
+  "Paginasi Kartu Stok: Navigasi Halaman Catatan Mutasi Terpasang pada Modal Kartu Stok"
+);
 
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
