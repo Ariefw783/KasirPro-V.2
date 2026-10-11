@@ -33,7 +33,7 @@ async function bootManagement() {
 
   // 2. Setup Navigasi Sidebar & Layout
   setupSidebarNavigation();
-  setupMobileSidebar();
+  setupSidebarToggle();
   setupLogout();
 
   // 3. Inisialisasi Seluruh Domain Controller secara aman & terisolasi (Instan 0ms)
@@ -271,22 +271,43 @@ export function switchView(targetView) {
   closeMobileSidebar();
 }
 
-function setupMobileSidebar() {
+function setupSidebarToggle() {
   const toggleBtn = $("sidebar-toggle");
   const sidebar = $("sidebar");
   const overlay = $("sidebar-overlay");
 
+  // Pulihkan preferensi collapse desktop jika disimpan sebelumnya
+  try {
+    const isDesktop = window.innerWidth > 820;
+    const isCollapsedSaved = localStorage.getItem("kp_sidebar_collapsed") === "true";
+    if (isDesktop && isCollapsedSaved) {
+      document.body.classList.add("sidebar-collapsed");
+    }
+  } catch (_) {}
+
   toggleBtn?.addEventListener("click", () => {
-    sidebar?.classList.toggle("open");
-    overlay?.classList.toggle("show");
+    const isDesktop = window.innerWidth > 820;
+    if (isDesktop) {
+      // Toggle di PC / Desktop / Tablet lebar
+      const isCollapsed = document.body.classList.toggle("sidebar-collapsed");
+      try {
+        localStorage.setItem("kp_sidebar_collapsed", String(isCollapsed));
+      } catch (_) {}
+    } else {
+      // Toggle di Layar Ponsel / Layar Sempit
+      sidebar?.classList.toggle("open");
+      overlay?.classList.toggle("show");
+    }
   });
 
   overlay?.addEventListener("click", closeMobileSidebar);
 }
 
 function closeMobileSidebar() {
-  $("sidebar")?.classList.remove("open");
-  $("sidebar-overlay")?.classList.remove("show");
+  if (window.innerWidth <= 820) {
+    $("sidebar")?.classList.remove("open");
+    $("sidebar-overlay")?.classList.remove("show");
+  }
 }
 
 function setupLogout() {

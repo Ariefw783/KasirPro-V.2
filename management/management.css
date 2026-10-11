@@ -729,100 +729,149 @@
    Nuansa Modern Glassmorphism, Micro-Interactions & Executive Health Aesthetic
    ============================================================================== */
 
-/* 1. TOPBAR HEADER ELEGAN DENGAN FROSTED GLASS & PULSE GLOW */
+/* 1. TOPBAR HEADER ELEGAN DENGAN GRADASI MEDIS HIJAU-BIRU (MEDICAL TEAL TO SKY BLUE) */
 .topbar {
-    background: rgba(255, 255, 255, 0.88) !important;
-    backdrop-filter: blur(14px) saturate(160%) !important;
-    -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.85) !important;
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03) !important;
+    background: linear-gradient(135deg, #0d9488 0%, #0284c7 100%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.22) !important;
+    box-shadow: 0 4px 20px rgba(13, 148, 136, 0.25) !important;
     transition: all 0.25s ease !important;
+}
+
+.topbar-icon-button {
+    display: inline-flex !important;
+    background: rgba(255, 255, 255, 0.18) !important;
+    border: 1px solid rgba(255, 255, 255, 0.35) !important;
+    color: #ffffff !important;
+    border-radius: 9px !important;
+    cursor: pointer !important;
+    transition: background 0.18s ease, transform 0.18s ease !important;
+}
+
+.topbar-icon-button:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+    transform: scale(1.04) !important;
 }
 
 .page-heading h1 {
     font-size: 1.12rem !important;
     font-weight: 850 !important;
-    letter-spacing: -0.02em !important;
-    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.015em !important;
+    color: #ffffff !important;
+    background: none !important;
+    -webkit-text-fill-color: #ffffff !important;
+    text-shadow: 0 1px 3px rgba(10, 20, 30, 0.2) !important;
 }
 
 .page-heading p {
     font-size: 0.72rem !important;
-    font-weight: 550 !important;
-    color: #64748b !important;
+    font-weight: 600 !important;
+    color: #e0f2fe !important;
+    opacity: 0.92 !important;
 }
 
-/* Indikator Online Berkedip Halus (Pulsing Glow Dot) */
+/* Indikator Online Berkedip Halus (Pulsing Glow Dot) di Atas Header Biru-Hijau */
 .connection-status {
     display: inline-flex !important;
     align-items: center !important;
     gap: 7px !important;
     padding: 5px 12px !important;
-    background: #f0fdf4 !important;
-    border: 1px solid #bbf7d0 !important;
+    background: rgba(255, 255, 255, 0.18) !important;
+    border: 1px solid rgba(255, 255, 255, 0.35) !important;
     border-radius: 999px !important;
     font-size: 0.68rem !important;
     font-weight: 750 !important;
-    color: #15803d !important;
+    color: #ffffff !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
 }
 
 .connection-status .status-dot {
     width: 7px !important;
     height: 7px !important;
-    background: #22c55e !important;
+    background: #4ade80 !important;
     border-radius: 50% !important;
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6) !important;
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7) !important;
     animation: kp-pulse-dot 2s infinite !important;
 }
 
 @keyframes kp-pulse-dot {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-    70% { transform: scale(1.15); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.8); }
+    70% { transform: scale(1.15); box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
 }
 
 /* Tombol Buka POS di Header */
 .topbar-pos-link {
-    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
-    color: #ffffff !important;
-    border: none !important;
+    background: #ffffff !important;
+    color: #0f766e !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
     border-radius: 10px !important;
-    font-weight: 750 !important;
+    font-weight: 800 !important;
     font-size: 0.76rem !important;
     padding: 7px 14px !important;
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15) !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .topbar-pos-link:hover {
+    background: #f0fdfa !important;
+    color: #0d9488 !important;
     transform: translateY(-1.5px) !important;
-    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35) !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Tombol Laporkan Bug */
+.kp-report-trigger-btn {
+    background: rgba(255, 255, 255, 0.18) !important;
+    border: 1px solid rgba(255, 255, 255, 0.35) !important;
+    color: #ffffff !important;
+}
+.kp-report-trigger-btn:hover {
+    background: rgba(255, 255, 255, 0.28) !important;
 }
 
 /* Badge Profil Admin di Header */
 .admin-profile {
     padding: 4px 10px 4px 6px !important;
-    background: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
+    background: rgba(255, 255, 255, 0.18) !important;
+    border: 1px solid rgba(255, 255, 255, 0.35) !important;
     border-radius: 12px !important;
     transition: all 0.2s ease !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+}
+
+.admin-profile .admin-info strong {
+    color: #ffffff !important;
+}
+.admin-profile .admin-info span {
+    color: #ccfbf1 !important;
 }
 
 .admin-profile:hover {
-    background: #ffffff !important;
-    border-color: #cbd5e1 !important;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05) !important;
+    background: rgba(255, 255, 255, 0.28) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
 }
 
 .admin-avatar {
     width: 32px !important;
     height: 32px !important;
     border-radius: 9px !important;
-    background: linear-gradient(135deg, #3b82f6, #1e40af) !important;
-    color: #ffffff !important;
-    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3) !important;
+    background: #ffffff !important;
+    color: #0284c7 !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Dukungan Universal Collapsible Sidebar (PC, Tablet, Desktop) */
+body.sidebar-collapsed .sidebar {
+    transform: translateX(-100%) !important;
+}
+body.sidebar-collapsed .main-area {
+    margin-left: 0 !important;
+}
+.sidebar,
+.main-area {
+    transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), margin-left 0.26s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 /* 2. DASHBOARD TOOLBAR (FILTER PERIODE MODERN) */
