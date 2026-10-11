@@ -1,14 +1,15 @@
 {
-  "version": "2.2.76",
-  "build": "20261011.23",
-  "releaseDate": "11 Oktober 2026",
-  "title": "Universal Chained 3-Tier Unit Conversion on Grid Mode Point 2",
-  "description": "Implementasi penuh arsitektur 2 tahap konversi satuan (Form 1 Satuan Kemasan & Form 2 Relasi Isi Berantai Dinamis) pada modul Input Faktur Manual Grid Mode Poin 2.",
+  "version": "2.2.77",
+  "build": "20261012.01",
+  "releaseDate": "12 Oktober 2026",
+  "title": "Clean & Streamlined Mobile Layout for Invoice Grid & Product Master",
+  "description": "Perapian dan penyederhanaan tata letak responsif ponsel pada modul Faktur Grid Mode & Master Produk, serta otomasi stok minimum 3 read-only.",
   "changelog": [
-    "Penerapan struktur 2 tahap (Form 1 & Form 2) pada kartu obat modul Input Faktur Manual Grid Mode Poin 2",
-    "Sinkronisasi real-time live preview relasi kemasan berantai dinamis (1 Kemasan Supplier = X Sedang, 1 Sedang = Y Terkecil, Total = X * Y)",
-    "Dukungan input baseQty (isi kemasan terkecil per kemasan sedang) dan kalkulasi otomatis total konversi pada setiap kartu faktur",
-    "Auto-select pada seluruh input satuan dan angka saat fokus/klik untuk kemudahan pengisian cepat",
-    "Pembaruan Service Worker (v117) dan cache busting untuk pembaruan instan pada browser"
+    "Perapian tata letak Form 1 & Form 2 pada kartu modul Input Faktur Manual Grid Mode agar tampil bersih dan proporsional di layar ponsel",
+    "Pemberian 3 kolom seimbang (1fr 1fr 1fr) untuk nama satuan kemasan tanpa pembungkusan canggung di layar ponsel",
+    "Penyederhanaan baris relasi Form 2 menjadi format ringkas (1 Kemasan = X Kemasan, Total = Y)",
+    "Penghapusan fitur Bagian 3 (Harga & Stok Minimum) pada modal Tambah Master Produk Baru",
+    "Penerapan stok minimum otomatis bernilai 3 (read-only) pada Master Produk Baru",
+    "Pembaruan Service Worker (v118) untuk pembaruan cache aplikasi"
   ]
 }

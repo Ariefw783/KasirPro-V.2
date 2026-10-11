@@ -1994,62 +1994,58 @@ function renderManualInvoiceItems() {
           <input type="date" class="row-exp" data-index="${idx}" value="${escapeHtml(item.expiryDate || '')}" style="font-size:11.5px;">
         </td>
         <td class="col-chained-conversion-wrapper" colspan="4" style="grid-column: 1 / -1 !important; width: 100%; padding: 0 !important; border: none !important;">
-          <div class="card-chained-conversion-box" style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;padding:12px;margin:4px 0 8px 0;display:flex;flex-direction:column;gap:10px;box-sizing:border-box;">
+          <div class="card-chained-conversion-box" style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:10px;margin:3px 0 6px 0;display:flex;flex-direction:column;gap:8px;box-sizing:border-box;">
             
             <!-- Form 1: Masukkan 3 Jenis Satuan Kemasan -->
             <div class="chained-form-1-block">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-                <span style="font-size:11.5px;font-weight:700;color:#0284c7;display:inline-flex;align-items:center;gap:5px;">
+              <div style="margin-bottom:5px;">
+                <span style="font-size:11px;font-weight:700;color:#0284c7;display:inline-flex;align-items:center;gap:5px;">
                   <i class="fa-solid fa-boxes-stacked"></i> Form 1: Masukkan 3 Jenis Satuan Kemasan
                 </span>
-                <small style="font-size:10px;color:#64748b;">(Tentukan urutan kemasan terbesar ke terkecil)</small>
               </div>
-              <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:8px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
                 <div class="col-unit-buy" data-mobile-label="Kemasan Supplier">
-                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">1. Kemasan Supplier</label>
-                  <input type="text" class="row-purchase-unit" data-index="${idx}" value="${escapeHtml(item.purchaseUnit || '')}" placeholder="BOX / BOTOL" style="font-weight:700;background:#fff;" title="Satuan Kemasan Beli Supplier">
+                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">1. Supplier</label>
+                  <input type="text" class="row-purchase-unit" data-index="${idx}" value="${escapeHtml(item.purchaseUnit || '')}" placeholder="BOX" style="font-weight:700;background:#fff;text-align:center;padding:4px 4px;font-size:12px;min-height:32px;" title="Satuan Kemasan Beli Supplier">
                 </div>
                 <div class="col-unit-mid" data-mobile-label="Kemasan Sedang">
-                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">2. Kemasan Sedang</label>
-                  <input type="text" class="row-mid-unit" data-index="${idx}" value="${escapeHtml(item.intermediateUnit || '')}" placeholder="STRIP / BLISTER / DLL" style="background:#fff;" title="Satuan Kemasan Sedang">
+                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">2. Sedang</label>
+                  <input type="text" class="row-mid-unit" data-index="${idx}" value="${escapeHtml(item.intermediateUnit || '')}" placeholder="STRIP" style="background:#fff;text-align:center;padding:4px 4px;font-size:12px;min-height:32px;" title="Satuan Kemasan Sedang">
                 </div>
                 <div class="col-unit-base" data-mobile-label="Kemasan Terkecil">
-                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">3. Kemasan Terkecil</label>
-                  <input type="text" class="row-base-unit" data-index="${idx}" value="${escapeHtml(item.baseUnit || '')}" placeholder="TABLET / KAPLET / PCS" style="background:#fff;" title="Satuan Kemasan Terkecil Apotek">
+                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">3. Terkecil</label>
+                  <input type="text" class="row-base-unit" data-index="${idx}" value="${escapeHtml(item.baseUnit || '')}" placeholder="TABLET" style="background:#fff;text-align:center;padding:4px 4px;font-size:12px;min-height:32px;" title="Satuan Kemasan Terkecil Apotek">
                 </div>
               </div>
             </div>
 
             <!-- Form 2: Hubungan Isi Kemasan Berantai (Dinamis Live) -->
-            <div class="chained-form-2-block" style="background:#fff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span style="font-size:11.5px;font-weight:700;color:#0369a1;display:inline-flex;align-items:center;gap:5px;">
-                  <i class="fa-solid fa-link"></i> Form 2: Hubungan Isi Kemasan Berantai (Dinamis)
-                </span>
-                <span style="font-size:10px;font-weight:600;background:#e0f2fe;color:#0284c7;padding:2px 7px;border-radius:4px;">
-                  Dinamis Otomatis
+            <div class="chained-form-2-block" style="background:#fff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 10px;">
+              <div style="margin-bottom:6px;">
+                <span style="font-size:11px;font-weight:700;color:#0369a1;display:inline-flex;align-items:center;gap:5px;">
+                  <i class="fa-solid fa-link"></i> Form 2: Hubungan Isi Kemasan Berantai
                 </span>
               </div>
-              <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:#1e293b;">
-                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#f8fafc;padding:6px 10px;border-radius:6px;border:1px solid #e2e8f0;">
-                  <span style="min-width:18px;font-weight:700;color:#64748b;">1.</span>
-                  <span>1 <strong class="row-dyn-buy-lbl" style="color:#0369a1;">${buyU}</strong> Berisi</span>
-                  <input type="number" inputmode="numeric" class="row-mid-qty" data-index="${idx}" min="1" step="1" value="${midQ}" style="width:65px;font-weight:700;text-align:center;color:#0f172a;background:#fff;border:1px solid #cbd5e1;padding:4px 6px;border-radius:6px;" title="Isi Kemasan Sedang per Kemasan Supplier">
+              <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:#1e293b;">
+                <div style="display:flex;align-items:center;gap:6px;background:#f8fafc;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;">
+                  <span style="min-width:14px;font-weight:700;color:#64748b;">1.</span>
+                  <span>1 <strong class="row-dyn-buy-lbl" style="color:#0369a1;">${buyU}</strong> =</span>
+                  <input type="number" inputmode="numeric" class="row-mid-qty" data-index="${idx}" min="1" step="1" value="${midQ}" style="width:52px;min-height:28px;font-weight:700;text-align:center;color:#0f172a;background:#fff;border:1px solid #cbd5e1;padding:2px 4px;border-radius:6px;" title="Isi Kemasan Sedang per Kemasan Supplier">
                   <strong class="row-dyn-mid-lbl" style="color:#0369a1;">${midU}</strong>
                 </div>
-                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#f8fafc;padding:6px 10px;border-radius:6px;border:1px solid #e2e8f0;">
-                  <span style="min-width:18px;font-weight:700;color:#64748b;">2.</span>
-                  <span>1 <strong class="row-dyn-mid-lbl-2" style="color:#0369a1;">${midU}</strong> Berisi</span>
-                  <input type="number" inputmode="numeric" class="row-base-qty" data-index="${idx}" min="1" step="1" value="${baseQ}" style="width:65px;font-weight:700;text-align:center;color:#0f172a;background:#fff;border:1px solid #cbd5e1;padding:4px 6px;border-radius:6px;" title="Isi Kemasan Terkecil per Kemasan Sedang">
+                <div style="display:flex;align-items:center;gap:6px;background:#f8fafc;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;">
+                  <span style="min-width:14px;font-weight:700;color:#64748b;">2.</span>
+                  <span>1 <strong class="row-dyn-mid-lbl-2" style="color:#0369a1;">${midU}</strong> =</span>
+                  <input type="number" inputmode="numeric" class="row-base-qty" data-index="${idx}" min="1" step="1" value="${baseQ}" style="width:52px;min-height:28px;font-weight:700;text-align:center;color:#0f172a;background:#fff;border:1px solid #cbd5e1;padding:2px 4px;border-radius:6px;" title="Isi Kemasan Terkecil per Kemasan Sedang">
                   <strong class="row-dyn-base-lbl" style="color:#0369a1;">${baseU}</strong>
                 </div>
-                <div class="col-conv" data-mobile-label="Total Konversi" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#eff6ff;padding:8px 10px;border-radius:6px;border:1px solid #bfdbfe;font-weight:700;color:#0369a1;">
-                  <span style="min-width:18px;font-weight:800;color:#0284c7;">3.</span>
-                  <span>Total isi 1 <span class="row-dyn-buy-lbl-2">${buyU}</span> =</span>
-                  <input type="number" inputmode="numeric" class="row-conversion" data-index="${idx}" min="1" step="1" value="${convTotal}" readonly style="width:75px;font-weight:800;text-align:center;color:#0284c7;background:#fff;border:1.5px solid #0284c7;border-radius:6px;padding:4px 6px;" title="Total Konversi Kemasan Terkecil">
+                <div class="col-conv" data-mobile-label="Total Konversi" style="display:flex;align-items:center;gap:6px;background:#eff6ff;padding:5px 8px;border-radius:6px;border:1px solid #bfdbfe;font-weight:700;color:#0369a1;">
+                  <span style="min-width:14px;font-weight:800;color:#0284c7;">3.</span>
+                  <span>Total 1 <span class="row-dyn-buy-lbl-2">${buyU}</span> =</span>
+                  <input type="number" inputmode="numeric" class="row-conversion" data-index="${idx}" min="1" step="1" value="${convTotal}" readonly style="width:56px;min-height:28px;font-weight:800;text-align:center;color:#0284c7;background:#fff;border:1.5px solid #0284c7;border-radius:6px;padding:2px 4px;" title="Total Konversi Kemasan Terkecil">
                   <span class="row-dyn-base-lbl-2">${baseU}</span>
                   <span class="row-dyn-calc-hint" style="font-size:11px;font-weight:600;color:#0284c7;margin-left:auto;">
-                    (Otomatis: ${midQ} × ${baseQ} = ${convTotal})
+                    (${midQ} × ${baseQ})
                   </span>
                 </div>
               </div>

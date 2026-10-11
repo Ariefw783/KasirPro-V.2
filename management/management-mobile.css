@@ -807,5 +807,27 @@
     font-size: 11.5px !important;
     padding: 5px 11px !important;
   }
+
+  /* Modal Tambah Master Produk Baru di Mobile */
+  #modal-product-form .kp-dialog-v4__card {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 8px auto !important;
+    border-radius: 12px !important;
+  }
+
+  #modal-product-form header {
+    padding: 12px 14px !important;
+  }
+
+  #product-form-inner {
+    padding: 10px 12px !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  #modal-product-form footer {
+    padding: 10px 14px !important;
+  }
 }
 
