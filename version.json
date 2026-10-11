@@ -1,13 +1,13 @@
 {
-  "version": "2.2.65",
-  "build": "20261011.09",
+  "version": "2.2.66",
+  "build": "20261011.12",
   "releaseDate": "11 Oktober 2026",
-  "title": "Motif Background Batik Kawung Nusantara & Evaluasi UI Management",
-  "description": "Memperbarui motif latar belakang halaman management dengan ornamen Batik Kawung Nusantara yang elegan, harmonis, dan seamless watermark, serta menjaga kenyamanan visual data.",
+  "title": "Frosted Satin Glass Cards & POS Sync Loading Modal",
+  "description": "Menyempurnakan estetika visual kartu konten dengan gaya Frosted Satin Glass dan Soft Ambient Depth, serta menambahkan modal pop-up loading pada inisialisasi awal POS sampai database Firestore siap digunakan.",
   "changelog": [
-    "Apply authentic Batik Kawung pattern",
-    "Add vector motif asset cache",
-    "Maintain high contrast medical cards",
-    "Verify system tests without regression"
+    "Apply frosted satin card styling",
+    "Add soft ambient elevation depth",
+    "Display startup loading modal POS",
+    "Synchronize Firestore database ready lifecycle"
   ]
 }

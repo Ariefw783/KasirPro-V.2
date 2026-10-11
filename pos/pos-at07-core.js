@@ -971,21 +971,36 @@ async function startPos(){
         setAppLoading(true);
         await databaseInitialization;
         init();
+        console.log("[POS] startPos inisialisasi awal selesai, menunggu database ready...");
     }catch(error){
         console.error("POS tidak dapat membuka database:",error);
         window.KasirProDialog?.error("Koneksi Database", "Database Firebase belum dapat dibuka. Silakan login kembali dan periksa koneksi internet.");
         sessionStorage.removeItem(SESSION_KEY);
         location.replace("../index.html");
-    }finally{
-        setAppLoading(false);
     }
 }
+
+let isPosReadyDismissed = false;
 
 function setAppLoading(state, message = "") {
     const loading = document.getElementById("app-loading");
     if (!loading) return;
-    loading.hidden = !state;
-    const messageElement = loading.querySelector("[data-app-loading-message]") || loading.querySelector("p");
+    if (state) {
+        isPosReadyDismissed = false;
+        loading.classList.remove("fade-out");
+        loading.hidden = false;
+        loading.style.display = "grid";
+        loading.style.pointerEvents = "auto";
+    } else {
+        isPosReadyDismissed = true;
+        loading.classList.add("fade-out");
+        setTimeout(() => {
+            loading.hidden = true;
+            loading.style.display = "none";
+            loading.style.pointerEvents = "none";
+        }, 280);
+    }
+    const messageElement = loading.querySelector("[data-app-loading-message]") || loading.querySelector("span");
     if (message && messageElement) messageElement.textContent = message;
 }
 
@@ -994,7 +1009,9 @@ window.addEventListener("kasirpro:database-preload-start", (event) => {
 });
 
 window.addEventListener("kasirpro:database-loading", (event) => setAppLoading(true, event.detail?.message || "Mengambil data dari Firebase…"));
-window.addEventListener("kasirpro:database-idle", () => setAppLoading(false));
+window.addEventListener("kasirpro:database-idle", () => {
+    if (isPosReadyDismissed) setAppLoading(false);
+});
 window.addEventListener("kasirpro:database-sync-start", (event) => setAppLoading(true, event.detail?.message || "Menyinkronkan data ke Firebase…"));
 window.addEventListener("kasirpro:database-sync-progress", (event) => {
     const detail = event.detail || {};
@@ -1009,8 +1026,19 @@ window.addEventListener("kasirpro:database-synced", () => {
     if (storeNode) storeNode.textContent = text(st["Nama Toko"] || st["Nama Apotek"] || "Apotek Doa Ibu").replace(/\s+v\.?\s*2(?:\.0)?$/i,"").trim() || "Apotek Doa Ibu";
 });
 window.addEventListener("kasirpro:database-ready", () => {
+    console.log("[POS] Event kasirpro:database-ready diterima, halaman POS siap digunakan!");
     refreshPosProductCache(master()?.produk);
+    setAppLoading(false);
 });
+
+// Fallback keselamatan: jika database-ready terlambat atau offline, tetap buka POS setelah 2.5s
+setTimeout(() => {
+    if (!isPosReadyDismissed) {
+        console.log("[POS] Fallback timeout tercapai, membuka akses POS.");
+        setAppLoading(false);
+    }
+}, 2500);
+
 window.addEventListener("kasirpro:database-error", () => setAppLoading(false));
 
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",startPos,{once:true});

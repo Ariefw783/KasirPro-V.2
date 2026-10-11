@@ -296,8 +296,12 @@
     </section>
 </div>
 
-<div id="app-loading" class="app-loading" role="status" aria-live="polite" hidden style="display:none;">
-    <div class="app-loading-card"><i class="fa-solid fa-spinner"></i><strong>Memuat data KasirPro</strong><span>Mohon tunggu, data sedang disinkronkan.</span></div>
+<div id="app-loading" class="app-loading" role="status" aria-live="polite">
+    <div class="app-loading-card">
+        <i class="fa-solid fa-spinner"></i>
+        <strong data-app-loading-title>Memuat KasirPro POS</strong>
+        <span data-app-loading-message>Menyiapkan koneksi Firestore & katalog kasir...</span>
+    </div>
 </div>
 
 <script src="../pwa.js?v=20261007.05" defer></script>

@@ -132,6 +132,93 @@
 }
 
 /* =========================================================
+   FROSTED SATIN GLASS & SOFT AMBIENT DEPTH CARD STYLING
+   Mewah, harmonis dengan Batik Kawung, elevasi bertingkat, dan interaktif
+   ========================================================= */
+.dashboard-card,
+.summary-card {
+    position: relative;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 250, 252, 0.88) 100%) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(226, 232, 240, 0.85) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease !important;
+}
+
+.dashboard-card:hover,
+.summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+/* Kartu KPI Berwarna dengan Soft Ambient Tinting */
+.dashboard-card-primary {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(240, 249, 255, 0.88) 100%) !important;
+    border-color: rgba(186, 230, 253, 0.9) !important;
+}
+.dashboard-card-primary:hover {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 10px 25px -4px rgba(14, 165, 233, 0.15), inset 0 1px 0 #fff !important;
+}
+
+.dashboard-card-success {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(240, 253, 244, 0.88) 100%) !important;
+    border-color: rgba(187, 247, 208, 0.9) !important;
+}
+.dashboard-card-success:hover {
+    border-color: #4ade80 !important;
+    box-shadow: 0 10px 25px -4px rgba(34, 197, 94, 0.15), inset 0 1px 0 #fff !important;
+}
+
+.dashboard-card-violet {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(250, 245, 255, 0.88) 100%) !important;
+    border-color: rgba(233, 213, 255, 0.9) !important;
+}
+.dashboard-card-violet:hover {
+    border-color: #c084fc !important;
+    box-shadow: 0 10px 25px -4px rgba(168, 85, 247, 0.15), inset 0 1px 0 #fff !important;
+}
+
+.dashboard-card-warning {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.96) 0%, rgba(254, 252, 232, 0.88) 100%) !important;
+    border-color: rgba(254, 240, 138, 0.9) !important;
+}
+.dashboard-card-warning:hover {
+    border-color: #facc15 !important;
+    box-shadow: 0 10px 25px -4px rgba(234, 179, 8, 0.15), inset 0 1px 0 #fff !important;
+}
+
+/* Wadah Konten Utama: Toolbar, Review, Panel, Table Wrapper */
+.dashboard-toolbar,
+.dashboard-review,
+.import-panel,
+.content-placeholder,
+.stage-placeholder,
+.welcome-card,
+.table-wrapper {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border: 1px solid rgba(226, 232, 240, 0.88) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 6px 20px -3px rgba(15, 23, 42, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+.dashboard-review-item {
+    background: rgba(248, 250, 252, 0.75) !important;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    border-radius: 11px !important;
+    transition: background 0.18s ease, transform 0.18s ease !important;
+}
+.dashboard-review-item:hover {
+    background: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04) !important;
+}
+
+/* =========================================================
    MANUAL INVOICE GRID & AUTOCOMPLETE STYLES
    ========================================================= */
 .manual-grid-table input,
