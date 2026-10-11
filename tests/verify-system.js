@@ -1501,7 +1501,7 @@ assert(htmlContent.includes("exceljs@4.4.0"), "DOM Script: Pustaka ExcelJS CDN T
 assert(cssContent.includes(".pricing-excel-banner"), "CSS: Kelas .pricing-excel-banner Terdefinisi");
 assert(cssContent.includes("#btn-export-pricing-excel") && cssContent.includes("#btn-import-pricing-excel"), "CSS: Styling Tombol Export & Import Pricing Terdefinisi");
 
-// 2. Simulasi Pembangun Baris Excel 9 Kolom Berwarna (Rata Kiri, Format Tabel, Harga Kosong untuk Owner)
+// 2. Simulasi Pembangun Baris Excel 9 Kolom Berwarna (A = Terkecil, B = Sedang, C = Terbesar, Format / Satuan Faktur)
 function buildMockPricingRow9Col(p, idx) {
   const r = idx + 2;
   const baseUnit = String(p["Satuan Dasar"] || p["Satuan"] || "Pcs").trim();
@@ -1514,28 +1514,31 @@ function buildMockPricingRow9Col(p, idx) {
   const hasBuy = Boolean(buyUnit && buyUnit.toLowerCase() !== baseUnit.toLowerCase() && (!midUnit || buyUnit.toLowerCase() !== midUnit.toLowerCase()) && conversion > 1);
 
   const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
+  const safeBuyUnit = (buyUnit || baseUnit || "PCS").replace(/"/g, "").toUpperCase();
 
   return {
     code: p["Kode Produk"],
     name: p["Nama Produk"],
     buyPrice,
-    unitA: hasBuy ? `${buyUnit} (${conversion} ${baseUnit})` : buyUnit,
+    formatBuyPrice: `Rp ${buyPrice.toLocaleString("id-ID")} / ${safeBuyUnit}`,
+    unitA: baseUnit, // SATUAN TERKECIL / ECERAN UTAMA
     cellPriceA: {
       value: null, // Dibiarkan kosong/blank agar diisi owner
-      isYellow: true,
+      isYellow: false,
       alignment: "left",
       numFmt: '"Rp "#,##0'
     },
-    unitB: hasMid ? `${midUnit} (${midQty} ${baseUnit})` : "-",
+    unitB: hasMid ? `${midUnit} (${midQty} ${baseUnit})` : "-", // SATUAN SEDANG
     cellPriceB: {
       value: hasMid ? null : "-",
       isDisabledDark: !hasMid,
       alignment: "left",
       numFmt: '"Rp "#,##0'
     },
-    unitC: baseUnit,
+    unitC: hasBuy ? `${buyUnit} (${conversion} ${baseUnit})` : buyUnit, // SATUAN TERBESAR
     cellPriceC: {
       value: null, // Dibiarkan kosong/blank agar diisi owner
+      isYellow: true, // KUNING SOFT: GROSIR OPSIONAL
       alignment: "left",
       numFmt: '"Rp "#,##0'
     },
@@ -1559,11 +1562,15 @@ const mock3UnitProd = {
 
 const rowOut3Unit = buildMockPricingRow9Col(mock3UnitProd, 0);
 assert(rowOut3Unit.buyPrice === 50000, "Ekspor 9 Kolom: Modal Beli Faktur Tertera Utuh Rp 50.000");
-assert(rowOut3Unit.cellPriceC.value === null, "Ekspor 9 Kolom: Harga Kemasan C Dikosongkan agar Diisi Mandiri oleh Owner");
-assert(rowOut3Unit.cellPriceC.alignment === "left", "Rata Kiri: Seluruh Sel Data Termasuk Harga Dibuat Rata Kiri");
-assert(rowOut3Unit.cellPriceB.value === null, "Ekspor 9 Kolom: Harga Kemasan B Dikosongkan jika Satuan Antara Ada");
+assert(rowOut3Unit.formatBuyPrice === "Rp 50.000 / BOX", "Ekspor 9 Kolom: Format Harga Beli Faktur Menyertakan Satuan Asli 'Rp 50.000 / BOX'");
+assert(rowOut3Unit.unitA === "KAPLET", "Ekspor 9 Kolom: Kemasan A Adalah Satuan Terkecil (KAPLET)");
 assert(rowOut3Unit.cellPriceA.value === null, "Ekspor 9 Kolom: Harga Kemasan A Dikosongkan agar Diisi Mandiri oleh Owner");
-assert(rowOut3Unit.cellPriceA.isYellow === true, "Warna Excel: Kemasan A Diberi Latar Kuning Soft (Opsional)");
+assert(rowOut3Unit.cellPriceA.alignment === "left", "Rata Kiri: Seluruh Sel Data Termasuk Harga Dibuat Rata Kiri");
+assert(rowOut3Unit.unitB === "STRIP (10 KAPLET)", "Ekspor 9 Kolom: Kemasan B Adalah Satuan Sedang STRIP (10 KAPLET)");
+assert(rowOut3Unit.cellPriceB.value === null, "Ekspor 9 Kolom: Harga Kemasan B Dikosongkan jika Satuan Antara Ada");
+assert(rowOut3Unit.unitC === "BOX (100 KAPLET)", "Ekspor 9 Kolom: Kemasan C Adalah Satuan Terbesar BOX (100 KAPLET)");
+assert(rowOut3Unit.cellPriceC.value === null, "Ekspor 9 Kolom: Harga Kemasan C Dikosongkan agar Diisi Mandiri oleh Owner");
+assert(rowOut3Unit.cellPriceC.isYellow === true, "Warna Excel: Kemasan C Diberi Latar Kuning Soft (Opsional Grosir)");
 assert(rowOut3Unit.cellPriceB.isDisabledDark === false, "Warna Excel: Obat 3 Tingkat Memiliki Satuan B Aktif (Tidak Diblok)");
 
 // Kasus 2: Obat 1 Satuan (Sirup Batuk 60ml: Botol Tunggal, Modal 15.000)
@@ -1580,9 +1587,11 @@ const mock1UnitProd = {
 
 const rowOut1Unit = buildMockPricingRow9Col(mock1UnitProd, 1);
 assert(rowOut1Unit.buyPrice === 15000, "Ekspor 9 Kolom: Modal Beli Faktur Botol Rp 15.000");
+assert(rowOut1Unit.formatBuyPrice === "Rp 15.000 / BOTOL", "Ekspor 9 Kolom: Format Modal Beli Faktur Botol 'Rp 15.000 / BOTOL'");
+assert(rowOut1Unit.unitA === "BOTOL", "Ekspor 9 Kolom: Kemasan A Botol Tunggal Adalah BOTOL");
 assert(rowOut1Unit.cellPriceB.value === "-", "Ekspor 9 Kolom: Satuan B Ditandai '-' untuk Botol Tunggal");
 assert(rowOut1Unit.cellPriceB.isDisabledDark === true, "Warna Excel: Kolom B Diarsir Abu Gelap/Charcoal (#334155) untuk Botol Tunggal");
-assert(rowOut1Unit.cellPriceC.value === null, "Ekspor 9 Kolom: Harga Kemasan C Botol Dikosongkan untuk Owner");
+assert(rowOut1Unit.cellPriceA.value === null, "Ekspor 9 Kolom: Harga Kemasan A Botol Dikosongkan untuk Owner");
 
 // Kasus 3: Obat 2 Satuan (Minyak Kayu Putih: Karton isi 24 Botol, Modal 240.000)
 const mock2UnitProd = {
@@ -1598,10 +1607,12 @@ const mock2UnitProd = {
 
 const rowOut2Unit = buildMockPricingRow9Col(mock2UnitProd, 2);
 assert(rowOut2Unit.cellPriceB.isDisabledDark === true, "Warna Excel: Kolom B Diarsir Abu Gelap untuk Produk Tanpa Satuan Antara");
-assert(rowOut2Unit.cellPriceA.value === null, "Ekspor 9 Kolom: Harga Kemasan A Karton Dikosongkan untuk Owner");
-assert(rowOut2Unit.cellPriceA.isYellow === true, "Warna Excel: Kemasan A Karton Kuning Soft (Opsional)");
+assert(rowOut2Unit.unitA === "BOTOL", "Ekspor 9 Kolom: Kemasan A Adalah Satuan Terkecil BOTOL");
+assert(rowOut2Unit.unitC === "KARTON (24 BOTOL)", "Ekspor 9 Kolom: Kemasan C Adalah Satuan Terbesar KARTON (24 BOTOL)");
+assert(rowOut2Unit.cellPriceC.value === null, "Ekspor 9 Kolom: Harga Kemasan C Karton Dikosongkan untuk Owner");
+assert(rowOut2Unit.cellPriceC.isYellow === true, "Warna Excel: Kemasan C Karton Kuning Soft (Opsional Grosir)");
 
-// 3. Simulasi Parsing Impor 9 Kolom Baru dari Excel Owner (Header Baru: Jenis & Harga Kemasan A/B/C)
+// 3. Simulasi Parsing Impor 9 Kolom Baru dari Excel Owner (Header Baru: A=Terkecil/Eceran, B=Sedang, C=Terbesar/Grosir)
 function simulateParsePricingRows9Col(rows, masterProducts) {
   const prodByCode = new Map(masterProducts.map(p => [String(p["Kode Produk"] || p.id).toLowerCase(), p]));
   const updated = [];
@@ -1611,25 +1622,34 @@ function simulateParsePricingRows9Col(rows, masterProducts) {
     const target = prodByCode.get(code);
     if (!target) continue;
 
-    let priceBase = num(
-      row["Harga Kemasan C"] ??
-      row["Harga Jual C [Eceran]"] ?? 
-      row["Harga Jual C"] ?? 
-      row["Harga Jual Eceran"] ?? 
-      row["Harga Jual"]
-    );
-    let priceMid = num(
-      row["Harga Kemasan B"] ??
-      row["Harga Jual B [Sedang]"] ?? 
-      row["Harga Jual B"] ?? 
-      row["Harga Jual Sedang"]
-    );
-    let priceBuy = num(
-      row["Harga Kemasan A"] ??
-      row["Harga Jual A [Opsional]"] ?? 
-      row["Harga Jual A"] ?? 
-      row["Harga Jual Kemasan Beli"]
-    );
+    let priceBase = 0;
+    let priceMid = 0;
+    let priceBuy = 0;
+
+    if (row["Harga Kemasan A"] !== undefined || row["Jenis Kemasan A"] !== undefined) {
+      priceBase = num(row["Harga Kemasan A"]);
+      priceMid = num(row["Harga Kemasan B"]);
+      priceBuy = num(row["Harga Kemasan C"]);
+    } else {
+      priceBase = num(
+        row["Harga Kemasan C"] ??
+        row["Harga Jual C [Eceran]"] ?? 
+        row["Harga Jual C"] ?? 
+        row["Harga Jual Eceran"] ?? 
+        row["Harga Jual"]
+      );
+      priceMid = num(
+        row["Harga Kemasan B"] ??
+        row["Harga Jual B [Sedang]"] ?? 
+        row["Harga Jual B"] ?? 
+        row["Harga Jual Sedang"]
+      );
+      priceBuy = num(
+        row["Harga Jual A [Opsional]"] ?? 
+        row["Harga Jual A"] ?? 
+        row["Harga Jual Kemasan Beli"]
+      );
+    }
 
     const baseUnit = String(target["Satuan Dasar"] || target["Satuan"] || "Pcs").trim();
     const midUnit = String(target["Satuan Antara"] || "").trim();
@@ -1677,23 +1697,23 @@ function simulateParsePricingRows9Col(rows, masterProducts) {
   return updated;
 }
 
-// Uji Impor: Data Excel 9 Kolom dengan Nama Kolom Baru Yang Diisi Owner
+// Uji Impor: Data Excel 9 Kolom dengan Nama Kolom Baru Yang Diisi Owner (A=Terkecil/Eceran, B=Sedang, C=Terbesar/Grosir)
 const incomingExcelRows9Col = [
   {
     "Kode Produk": "RNA-NEW-001",
     "Nama Produk": "AMOXICILLIN 500MG KAPLET",
-    "Harga Beli Faktur": 50000,
-    "Jenis Kemasan A": "BOX (100 KAPLET)",
-    "Harga Kemasan A": 68000, // Diskon grosir Box dari owner
+    "Harga Beli Faktur": "Rp 50.000 / BOX",
+    "Jenis Kemasan A": "KAPLET",
+    "Harga Kemasan A": 700, // Harga eceran utama dari owner
     "Jenis Kemasan B": "STRIP (10 KAPLET)",
     "Harga Kemasan B": 7000,
-    "Jenis Kemasan C": "KAPLET",
-    "Harga Kemasan C": 700
+    "Jenis Kemasan C": "BOX (100 KAPLET)",
+    "Harga Kemasan C": 68000 // Diskon grosir Box dari owner
   },
   {
     "Kode Produk": "RNA-NEW-002",
     "Nama Produk": "OBAT BATUK SIRUP 60ML",
-    "Harga Beli Faktur": 15000,
+    "Harga Beli Faktur": "Rp 15.000 / BOTOL",
     "Jenis Kemasan A": "BOTOL",
     "Harga Kemasan A": 20000,
     "Jenis Kemasan B": "-",
@@ -1704,13 +1724,13 @@ const incomingExcelRows9Col = [
   {
     "Kode Produk": "RNA-NEW-003",
     "Nama Produk": "MINYAK KAYU PUTIH 60ML",
-    "Harga Beli Faktur": 240000,
-    "Jenis Kemasan A": "KARTON (24 BOTOL)",
-    "Harga Kemasan A": 300000,
+    "Harga Beli Faktur": "Rp 240.000 / KARTON",
+    "Jenis Kemasan A": "BOTOL",
+    "Harga Kemasan A": 13000,
     "Jenis Kemasan B": "-",
     "Harga Kemasan B": "-",
-    "Jenis Kemasan C": "BOTOL",
-    "Harga Kemasan C": 13000
+    "Jenis Kemasan C": "KARTON (24 BOTOL)",
+    "Harga Kemasan C": 300000
   }
 ];
 

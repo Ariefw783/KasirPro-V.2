@@ -1,13 +1,13 @@
 {
-  "version": "2.2.61",
-  "build": "20261011.03",
+  "version": "2.2.62",
+  "build": "20261011.04",
   "releaseDate": "11 Oktober 2026",
-  "title": "Table-Styled Left-Aligned Pricing Excel",
-  "description": "Format tabel Excel rata kiri dengan harga kosong untuk diinput owner dan nama kolom kemasan A/B/C.",
+  "title": "Ascending Unit Hierarchy Pricing Excel",
+  "description": "Format Excel urutan kemasan A terkecil ke C terbesar, modal beli berformat satuan faktur asli, dan kuning soft pada kemasan C.",
   "changelog": [
-    "Align excel cells left",
-    "Add table border styling",
-    "Leave pricing cells blank",
-    "Rename packaging pricing columns"
+    "Order units ascending A to C",
+    "Format invoice unit price string",
+    "Move soft yellow to C",
+    "Support flexible currency string parsing"
   ]
 }

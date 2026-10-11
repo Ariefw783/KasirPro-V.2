@@ -15,9 +15,15 @@ export function norm(val) {
 
 export function num(val) {
   if (typeof val === "number") return Number.isFinite(val) ? val : 0;
-  const s = String(val ?? 0).trim();
+  let s = String(val ?? 0).trim();
   if (!s) return 0;
-  // Jika format ribuan Indonesia dengan pemisah titik (misal: "39.048", "1.240.099")
+  // Hilangkan prefix mata uang seperti "Rp", "IDR"
+  s = s.replace(/^(rp|idr)\.?\s*/i, "").trim();
+  // Jika format ribuan Indonesia dengan pemisah titik (misal: "39.048", "1.240.099", "15.000 / BOX")
+  const idThousandMatch = s.match(/^-?\d{1,3}(\.\d{3})+(?=\s*(\/|[a-zA-Z]|$))/);
+  if (idThousandMatch) {
+    return Number(idThousandMatch[0].replace(/\./g, "")) || 0;
+  }
   if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) {
     return Number(s.replace(/\./g, "")) || 0;
   }
