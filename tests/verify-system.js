@@ -1867,10 +1867,10 @@ assert(page1.length === 5, "Paginasi Faktur: Halaman 1 Maksimal Menampilkan Tepa
 assert(page2.length === 5, "Paginasi Faktur: Halaman 2 Menampilkan Tepat 5 Faktur");
 assert(page3.length === 2, "Paginasi Faktur: Halaman 3 Menampilkan Sisa 2 Faktur");
 
-// 4. Uji Sidebar Logo KasirPro Berlatar Gelap (Original Dark Theme) & Background Sidebar Tetap Putih
+// 4. Uji Sidebar Navigasi Gradasi Gelap Executive (Deep Midnight Navy) & Logo Original
 assert(
-  mgmtCss.includes(".sidebar-brand") && mgmtCss.includes("background: #ffffff !important;"),
-  "Sidebar Header: Background Sidebar Brand Tetap Putih (#ffffff)"
+  mgmtCss.includes(".sidebar") && mgmtCss.includes("linear-gradient(180deg, #090e1a 0%, #0f172a 100%)"),
+  "Sidebar Navigasi: Menggunakan Gradasi Gelap Elegan Deep Midnight Navy (#090e1a / #0f172a)"
 );
 assert(
   mgmtCss.includes(".brand-logo") && mgmtCss.includes("#0f2a43"),
