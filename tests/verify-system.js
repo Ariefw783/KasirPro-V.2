@@ -2195,6 +2195,23 @@ assert(
   mgmtInvoicesJs.includes("updateRowChainedUnitLabelsAndTotal"),
   "Poin 2 Faktur Grid Mode: Live Label Dinamis, Input baseQty, dan Fungsi Sinkronisasi Terhubung Penuh"
 );
+assert(
+  mgmtInvoicesJs.includes("row-chain-multi-wrap") &&
+  mgmtInvoicesJs.includes("row-chain-mode-badge") &&
+  mgmtInvoicesJs.includes("Konversi Langsung") &&
+  mgmtInvoicesJs.includes("3 Tingkat Berantai"),
+  "Poin 2 Faktur Grid Mode: Auto-Collapse Cerdas & Tampilan Ringkas Responsif Mobile Terpasang"
+);
+
+// Uji Logika Deteksi Satuan Sedang Cerdas (hasDistinctMid / isDistinctMid)
+function checkIsDistinctMid(buyU, midU, baseU) {
+  const normU = (s) => (s || "").trim().toLowerCase();
+  return !!(midU && normU(midU) !== normU(buyU) && normU(midU) !== normU(baseU));
+}
+assert(checkIsDistinctMid("BOX", "STRIP", "TABLET") === true, "Deteksi 3-Tingkat: BOX -> STRIP -> TABLET terdeteksi 3 Tingkat Berantai");
+assert(checkIsDistinctMid("BOX", "BOX", "TABLET") === false, "Deteksi 2-Tingkat Redundan: BOX -> BOX -> TABLET otomatis kolaps ke Konversi Langsung");
+assert(checkIsDistinctMid("BOX", "", "TABLET") === false, "Deteksi 2-Tingkat Kosong: BOX -> (kosong) -> TABLET otomatis kolaps ke Konversi Langsung");
+assert(checkIsDistinctMid("BOTOL", "BOTOL", "BOTOL") === false, "Deteksi 1-Tingkat Tunggal: BOTOL -> BOTOL -> BOTOL otomatis kolaps ke Konversi Langsung");
 
 console.log("\n🔍 BAGIAN 28: PENGUJIAN SMART FUZZY SUGGESTIONS & PRESERVASI SATUAN TSV TANPA OVERWRITE PCS");
 

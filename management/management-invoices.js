@@ -2065,31 +2065,45 @@ function renderManualInvoiceItems() {
     const qNum = num(item.qty) || 0;
 
     const buyU = item.purchaseUnit || "BOX";
-    const midU = item.intermediateUnit || buyU;
+    const rawMidU = item.intermediateUnit || "";
     const baseU = item.baseUnit || "TABLET";
+
+    // Deteksi cerdas: hanya aktifkan mode 3-tingkat jika satuan sedang terisi dan berbeda dari satuan beli & satuan terkecil
+    const hasDistinctMid = !!(rawMidU && norm(rawMidU) !== norm(buyU) && norm(rawMidU) !== norm(baseU));
+    const midU = hasDistinctMid ? rawMidU : "";
 
     let midQ = (item.intermediateQty !== undefined && item.intermediateQty !== null && item.intermediateQty !== "") ? num(item.intermediateQty) : 1;
     let baseQ = (item.baseQty !== undefined && item.baseQty !== null && item.baseQty !== "") ? num(item.baseQty) : 0;
     let convTotal = num(item.conversionRatio) || 0;
 
-    if (!baseQ && convTotal) {
-      if (midQ > 1 && convTotal % midQ === 0) {
-        if (convTotal === 30 && midQ === 10) {
-          baseQ = 10;
-          midQ = 3;
+    if (hasDistinctMid) {
+      if (!baseQ && convTotal) {
+        if (midQ > 1 && convTotal % midQ === 0) {
+          if (convTotal === 30 && midQ === 10) {
+            baseQ = 10;
+            midQ = 3;
+          } else {
+            baseQ = Math.max(1, Math.round(convTotal / midQ));
+          }
         } else {
-          baseQ = Math.max(1, Math.round(convTotal / midQ));
+          baseQ = convTotal;
+          midQ = 1;
         }
-      } else {
-        baseQ = convTotal;
-        midQ = 1;
+      } else if (!baseQ && !convTotal) {
+        baseQ = 1;
+        convTotal = midQ * baseQ;
       }
-    } else if (!baseQ && !convTotal) {
-      baseQ = 1;
-      convTotal = midQ * baseQ;
+      if (!convTotal) convTotal = midQ * baseQ;
+    } else {
+      midQ = 1;
+      if (!convTotal && baseQ) convTotal = baseQ;
+      if (!baseQ && convTotal) baseQ = convTotal;
+      if (!baseQ && !convTotal) {
+        baseQ = 1;
+        convTotal = 1;
+      }
     }
 
-    if (!convTotal) convTotal = midQ * baseQ;
     item.purchaseUnit = buyU;
     item.intermediateUnit = midU;
     item.intermediateQty = midQ;
@@ -2212,60 +2226,59 @@ function renderManualInvoiceItems() {
           <input type="date" class="row-exp" data-index="${idx}" value="${escapeHtml(item.expiryDate || '')}" style="font-size:11.5px;">
         </td>
         <td class="col-chained-conversion-wrapper" colspan="4" style="grid-column: 1 / -1 !important; width: 100%; padding: 0 !important; border: none !important;">
-          <div class="card-chained-conversion-box" style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:10px;margin:3px 0 6px 0;display:flex;flex-direction:column;gap:8px;box-sizing:border-box;">
+          <div class="card-chained-conversion-box" style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:8px 10px;margin:3px 0 6px 0;display:flex;flex-direction:column;gap:6px;box-sizing:border-box;">
             
             <!-- Form 1: Masukkan 3 Jenis Satuan Kemasan -->
             <div class="chained-form-1-block">
-              <div style="margin-bottom:5px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
                 <span style="font-size:11px;font-weight:700;color:#0284c7;display:inline-flex;align-items:center;gap:5px;">
-                  <i class="fa-solid fa-boxes-stacked"></i> Form 1: Masukkan 3 Jenis Satuan Kemasan
+                  <i class="fa-solid fa-boxes-stacked"></i> Konversi Kemasan
+                </span>
+                <span class="row-chain-mode-badge" style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;${hasDistinctMid ? 'background:#e0f2fe;color:#0369a1;' : 'background:#f1f5f9;color:#64748b;'}">
+                  ${hasDistinctMid ? '3 Tingkat Berantai' : 'Konversi Langsung'}
                 </span>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
                 <div class="col-unit-buy" data-mobile-label="Kemasan Supplier">
-                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">1. Supplier</label>
-                  <input type="text" class="row-purchase-unit" data-index="${idx}" value="${escapeHtml(item.purchaseUnit || '')}" placeholder="BOX" style="font-weight:700;background:#fff;text-align:center;padding:4px 4px;font-size:12px;min-height:32px;" title="Satuan Kemasan Beli Supplier">
+                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">1. Beli / Supplier</label>
+                  <input type="text" class="row-purchase-unit" data-index="${idx}" value="${escapeHtml(item.purchaseUnit || '')}" placeholder="BOX" style="font-weight:700;background:#fff;text-align:center;padding:4px 4px;font-size:12px;min-height:30px;" title="Satuan Kemasan Beli Supplier">
                 </div>
                 <div class="col-unit-mid" data-mobile-label="Kemasan Sedang">
-                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">2. Sedang</label>
-                  <input type="text" class="row-mid-unit" data-index="${idx}" value="${escapeHtml(item.intermediateUnit || '')}" placeholder="STRIP" style="background:#fff;text-align:center;padding:4px 4px;font-size:12px;min-height:32px;" title="Satuan Kemasan Sedang">
+                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">2. Sedang (Opsional)</label>
+                  <input type="text" class="row-mid-unit" data-index="${idx}" value="${escapeHtml(item.intermediateUnit || '')}" placeholder="STRIP (Opsional)" style="background:#fff;text-align:center;padding:4px 4px;font-size:12px;min-height:30px;" title="Satuan Kemasan Sedang (Kosongkan jika konversi langsung)">
                 </div>
                 <div class="col-unit-base" data-mobile-label="Kemasan Terkecil">
-                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">3. Terkecil</label>
-                  <input type="text" class="row-base-unit" data-index="${idx}" value="${escapeHtml(item.baseUnit || '')}" placeholder="TABLET" style="background:#fff;text-align:center;padding:4px 4px;font-size:12px;min-height:32px;" title="Satuan Kemasan Terkecil Apotek">
+                  <label style="font-size:10px;font-weight:700;color:#475569;display:block;margin-bottom:2px;">3. Terkecil / Eceran</label>
+                  <input type="text" class="row-base-unit" data-index="${idx}" value="${escapeHtml(item.baseUnit || '')}" placeholder="TABLET" style="background:#fff;text-align:center;padding:4px 4px;font-size:12px;min-height:30px;" title="Satuan Kemasan Terkecil Apotek">
                 </div>
               </div>
             </div>
 
-            <!-- Form 2: Hubungan Isi Kemasan Berantai (Dinamis Live) -->
-            <div class="chained-form-2-block" style="background:#fff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 10px;">
-              <div style="margin-bottom:6px;">
-                <span style="font-size:11px;font-weight:700;color:#0369a1;display:inline-flex;align-items:center;gap:5px;">
-                  <i class="fa-solid fa-link"></i> Form 2: Hubungan Isi Kemasan Berantai
-                </span>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:#1e293b;">
-                <div style="display:flex;align-items:center;gap:6px;background:#f8fafc;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;">
+            <!-- Form 2: Hubungan Isi Kemasan Berantai -->
+            <div class="chained-form-2-block" style="background:#fff;border:1px solid #bfdbfe;border-radius:8px;padding:6px 10px;">
+              <div class="row-chain-multi-wrap" style="display:${hasDistinctMid ? 'flex' : 'none'};flex-direction:column;gap:5px;margin-bottom:${hasDistinctMid ? '5px' : '0'};">
+                <div class="row-chain-step-1" style="display:flex;align-items:center;gap:6px;background:#f8fafc;padding:4px 8px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;">
                   <span style="min-width:14px;font-weight:700;color:#64748b;">1.</span>
                   <span>1 <strong class="row-dyn-buy-lbl" style="color:#0369a1;">${buyU}</strong> =</span>
-                  <input type="number" inputmode="numeric" class="row-mid-qty" data-index="${idx}" min="1" step="1" value="${midQ}" style="width:52px;min-height:28px;font-weight:700;text-align:center;color:#0f172a;background:#fff;border:1px solid #cbd5e1;padding:2px 4px;border-radius:6px;" title="Isi Kemasan Sedang per Kemasan Supplier">
-                  <strong class="row-dyn-mid-lbl" style="color:#0369a1;">${midU}</strong>
+                  <input type="number" inputmode="numeric" class="row-mid-qty" data-index="${idx}" min="1" step="1" value="${midQ}" style="width:52px;min-height:26px;font-weight:700;text-align:center;color:#0f172a;background:#fff;border:1px solid #cbd5e1;padding:2px 4px;border-radius:6px;" title="Isi Kemasan Sedang per Kemasan Supplier">
+                  <strong class="row-dyn-mid-lbl" style="color:#0369a1;">${midU || buyU}</strong>
                 </div>
-                <div style="display:flex;align-items:center;gap:6px;background:#f8fafc;padding:5px 8px;border-radius:6px;border:1px solid #e2e8f0;">
+                <div class="row-chain-step-2" style="display:flex;align-items:center;gap:6px;background:#f8fafc;padding:4px 8px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;">
                   <span style="min-width:14px;font-weight:700;color:#64748b;">2.</span>
-                  <span>1 <strong class="row-dyn-mid-lbl-2" style="color:#0369a1;">${midU}</strong> =</span>
-                  <input type="number" inputmode="numeric" class="row-base-qty" data-index="${idx}" min="1" step="1" value="${baseQ}" style="width:52px;min-height:28px;font-weight:700;text-align:center;color:#0f172a;background:#fff;border:1px solid #cbd5e1;padding:2px 4px;border-radius:6px;" title="Isi Kemasan Terkecil per Kemasan Sedang">
+                  <span>1 <strong class="row-dyn-mid-lbl-2" style="color:#0369a1;">${midU || buyU}</strong> =</span>
+                  <input type="number" inputmode="numeric" class="row-base-qty" data-index="${idx}" min="1" step="1" value="${baseQ}" style="width:52px;min-height:26px;font-weight:700;text-align:center;color:#0f172a;background:#fff;border:1px solid #cbd5e1;padding:2px 4px;border-radius:6px;" title="Isi Kemasan Terkecil per Kemasan Sedang">
                   <strong class="row-dyn-base-lbl" style="color:#0369a1;">${baseU}</strong>
                 </div>
-                <div class="col-conv" data-mobile-label="Total Konversi" style="display:flex;align-items:center;gap:6px;background:#eff6ff;padding:5px 8px;border-radius:6px;border:1px solid #bfdbfe;font-weight:700;color:#0369a1;">
-                  <span style="min-width:14px;font-weight:800;color:#0284c7;">3.</span>
-                  <span>Total 1 <span class="row-dyn-buy-lbl-2">${buyU}</span> =</span>
-                  <input type="number" inputmode="numeric" class="row-conversion" data-index="${idx}" min="1" step="1" value="${convTotal}" readonly style="width:56px;min-height:28px;font-weight:800;text-align:center;color:#0284c7;background:#fff;border:1.5px solid #0284c7;border-radius:6px;padding:2px 4px;" title="Total Konversi Kemasan Terkecil">
-                  <span class="row-dyn-base-lbl-2">${baseU}</span>
-                  <span class="row-dyn-calc-hint" style="font-size:11px;font-weight:600;color:#0284c7;margin-left:auto;">
-                    (${midQ} × ${baseQ})
-                  </span>
-                </div>
+              </div>
+              <div class="col-conv" data-mobile-label="Total Konversi" style="display:flex;align-items:center;gap:6px;background:#eff6ff;padding:5px 8px;border-radius:6px;border:1px solid #bfdbfe;font-weight:700;color:#0369a1;font-size:12px;">
+                <span class="row-chain-total-prefix" style="font-weight:700;color:#0284c7;">
+                  ${hasDistinctMid ? '<span style="min-width:14px;font-weight:800;color:#0284c7;display:inline-block;">3.</span> Total 1' : '1'} <span class="row-dyn-buy-lbl-2">${buyU}</span> =
+                </span>
+                <input type="number" inputmode="numeric" class="row-conversion" data-index="${idx}" min="1" step="1" value="${convTotal}" ${hasDistinctMid ? 'readonly' : ''} style="width:58px;min-height:28px;font-weight:800;text-align:center;color:#0284c7;background:#fff;border:1.5px solid #0284c7;border-radius:6px;padding:2px 4px;" title="Total Konversi Kemasan Terkecil">
+                <span class="row-dyn-base-lbl-2">${baseU}</span>
+                <span class="row-dyn-calc-hint" style="font-size:11px;font-weight:600;color:#0284c7;margin-left:auto;">
+                  ${hasDistinctMid ? `(${midQ} × ${baseQ})` : '(Langsung)'}
+                </span>
               </div>
             </div>
           </div>
@@ -2407,16 +2420,66 @@ function updateRowChainedUnitLabelsAndTotal(idx) {
   if (!row) return;
 
   const buyVal = text(row.querySelector(".row-purchase-unit")?.value) || "BOX";
-  const midVal = text(row.querySelector(".row-mid-unit")?.value);
+  const midValRaw = text(row.querySelector(".row-mid-unit")?.value);
   const baseVal = text(row.querySelector(".row-base-unit")?.value) || "TABLET";
 
-  const midQty = num(row.querySelector(".row-mid-qty")?.value) || 1;
-  const baseQty = num(row.querySelector(".row-base-qty")?.value) || 1;
-  const totalConv = Math.max(1, midQty * baseQty);
+  const isDistinctMid = !!(midValRaw && norm(midValRaw) !== norm(buyVal) && norm(midValRaw) !== norm(baseVal));
+  const midVal = isDistinctMid ? midValRaw : "";
+
+  const multiWrap = row.querySelector(".row-chain-multi-wrap");
+  const modeBadge = row.querySelector(".row-chain-mode-badge");
+  const convInp = row.querySelector(".row-conversion");
+  const prefixEl = row.querySelector(".row-chain-total-prefix");
+  const hintEl = row.querySelector(".row-dyn-calc-hint");
+  const midQtyInp = row.querySelector(".row-mid-qty");
+  const baseQtyInp = row.querySelector(".row-base-qty");
+
+  let midQty = num(midQtyInp?.value) || 1;
+  let baseQty = num(baseQtyInp?.value) || 1;
+  let totalConv = 1;
+
+  if (isDistinctMid) {
+    if (multiWrap) {
+      multiWrap.style.display = "flex";
+      multiWrap.style.marginBottom = "5px";
+    }
+    if (modeBadge) {
+      modeBadge.textContent = "3 Tingkat Berantai";
+      modeBadge.style.background = "#e0f2fe";
+      modeBadge.style.color = "#0369a1";
+    }
+    if (convInp) convInp.readOnly = true;
+    if (prefixEl) prefixEl.innerHTML = `<span style="min-width:14px;font-weight:800;color:#0284c7;display:inline-block;">3.</span> Total 1 <span class="row-dyn-buy-lbl-2">${buyVal}</span> =`;
+
+    totalConv = Math.max(1, midQty * baseQty);
+    if (hintEl) hintEl.textContent = `(${midQty} × ${baseQty})`;
+    if (convInp) convInp.value = totalConv;
+  } else {
+    if (multiWrap) {
+      multiWrap.style.display = "none";
+      multiWrap.style.marginBottom = "0";
+    }
+    if (modeBadge) {
+      modeBadge.textContent = "Konversi Langsung";
+      modeBadge.style.background = "#f1f5f9";
+      modeBadge.style.color = "#64748b";
+    }
+    if (convInp) convInp.readOnly = false;
+    if (prefixEl) prefixEl.innerHTML = `1 <span class="row-dyn-buy-lbl-2">${buyVal}</span> =`;
+
+    const directConv = num(convInp?.value) || num(item.conversionRatio) || baseQty || 1;
+    totalConv = Math.max(1, directConv);
+    midQty = 1;
+    baseQty = totalConv;
+    if (midQtyInp) midQtyInp.value = 1;
+    if (baseQtyInp) baseQtyInp.value = baseQty;
+    if (convInp) convInp.value = totalConv;
+    if (hintEl) hintEl.textContent = `(Langsung)`;
+  }
 
   item.purchaseUnit = buyVal;
   item.intermediateUnit = midVal;
-  item.intermediateQty = midVal ? midQty : 1;
+  item.intermediateQty = midQty;
   item.baseUnit = baseVal;
   item.baseQty = baseQty;
   item.conversionRatio = totalConv;
@@ -2427,12 +2490,6 @@ function updateRowChainedUnitLabelsAndTotal(idx) {
   row.querySelectorAll(".row-dyn-buy-lbl, .row-dyn-buy-lbl-2").forEach(el => el.textContent = buyVal);
   row.querySelectorAll(".row-dyn-mid-lbl, .row-dyn-mid-lbl-2").forEach(el => el.textContent = displayMid);
   row.querySelectorAll(".row-dyn-base-lbl, .row-dyn-base-lbl-2").forEach(el => el.textContent = baseVal);
-
-  const convInp = row.querySelector(".row-conversion");
-  if (convInp) convInp.value = totalConv;
-
-  const hintEl = row.querySelector(".row-dyn-calc-hint");
-  if (hintEl) hintEl.textContent = `(Otomatis: ${midQty} × ${baseQty} = ${totalConv})`;
 
   recalculateRow(idx, false);
 }
@@ -2498,10 +2555,12 @@ function bindManualItemRowEvents() {
           const baseEl = row.querySelector(".row-base-unit");
           const midQtyEl = row.querySelector(".row-mid-qty");
           const baseQtyEl = row.querySelector(".row-base-qty");
-          if (midEl && (!midEl.value || midEl.value.toLowerCase() === "strip")) midEl.value = val;
+          const convEl = row.querySelector(".row-conversion");
+          if (midEl) midEl.value = "";
           if (baseEl && (!baseEl.value || baseEl.value.toLowerCase() === "pcs" || baseEl.value.toLowerCase() === "tablet")) baseEl.value = val;
           if (midQtyEl) midQtyEl.value = 1;
           if (baseQtyEl) baseQtyEl.value = 1;
+          if (convEl) convEl.value = 1;
           updateRowChainedUnitLabelsAndTotal(idx);
         }
       }
@@ -2539,16 +2598,20 @@ function bindManualItemRowEvents() {
   tbody.querySelectorAll(".row-conversion").forEach(el => {
     el.addEventListener("input", (e) => {
       const idx = parseInt(e.target.dataset.index, 10);
-      const c = num(e.target.value) || 1;
+      const c = Math.max(1, num(e.target.value) || 1);
       manualInvoiceItems[idx].conversionRatio = c;
-      const m = num(manualInvoiceItems[idx].intermediateQty) || 1;
+      const isDistinct = !!(manualInvoiceItems[idx].intermediateUnit && norm(manualInvoiceItems[idx].intermediateUnit) !== norm(manualInvoiceItems[idx].purchaseUnit));
+      const m = isDistinct ? (num(manualInvoiceItems[idx].intermediateQty) || 1) : 1;
+      manualInvoiceItems[idx].intermediateQty = m;
       manualInvoiceItems[idx].baseQty = Math.max(1, Math.round(c / m));
       const row = tbody.querySelector(`tr[data-index="${idx}"]`);
       if (row) {
         const bInp = row.querySelector(".row-base-qty");
         if (bInp) bInp.value = manualInvoiceItems[idx].baseQty;
         const hintEl = row.querySelector(".row-dyn-calc-hint");
-        if (hintEl) hintEl.textContent = `(Otomatis: ${m} × ${manualInvoiceItems[idx].baseQty} = ${c})`;
+        if (hintEl) {
+          hintEl.textContent = isDistinct ? `(${m} × ${manualInvoiceItems[idx].baseQty})` : `(Langsung)`;
+        }
       }
       recalculateRow(idx, false);
     });
