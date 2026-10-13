@@ -1760,6 +1760,42 @@ assert(resMinyak["Harga Jual Satuan Besar"] === 300000, "Impor 9 Kolom: Harga Gr
 assert(resMinyak["Opsi Jual"] === "1", "Impor 9 Kolom: Opsi Jual Minyak Menjadi '1' (Single Unit Transaksi: Botol, Karton Arsip)");
 assert(JSON.stringify(resMinyak["Satuan Dijual"]) === JSON.stringify(["base"]), "Impor 9 Kolom: Satuan Dijual Aktif ['base']");
 
+// Uji Impor: Data Excel 7 Kolom Ramping (Tanpa Kemasan C, Fokus Sedang & Terkecil)
+const incomingExcelRows7Col = [
+  {
+    "Kode Produk": "RNA-NEW-001",
+    "Nama Produk": "AMOXICILLIN 500MG KAPLET",
+    "Harga Beli Faktur": "Rp 50.000 / BOX",
+    "Jenis Kemasan A": "KAPLET",
+    "Harga Kemasan A": 750,
+    "Jenis Kemasan B": "STRIP (10 KAPLET)",
+    "Harga Kemasan B": 7500
+  },
+  {
+    "Kode Produk": "RNA-NEW-002",
+    "Nama Produk": "OBAT BATUK SIRUP 60ML",
+    "Harga Beli Faktur": "Rp 15.000 / BOTOL",
+    "Jenis Kemasan A": "BOTOL",
+    "Harga Kemasan A": 22000,
+    "Jenis Kemasan B": "-",
+    "Harga Kemasan B": "-"
+  }
+];
+
+const imported7ColResults = simulateParsePricingRows9Col(incomingExcelRows7Col, masterMockCatalog);
+assert(imported7ColResults.length === 2, "Impor 7 Kolom: 2 Produk Berhasil Diproses Tanpa Kolom Kemasan C");
+
+const resAmox7 = imported7ColResults.find(p => p["Kode Produk"] === "RNA-NEW-001");
+assert(resAmox7["Harga Jual"] === 750, "Impor 7 Kolom: Harga Jual Eceran Rp 750 Berhasil Disimpan");
+assert(resAmox7["Harga Jual Satuan Sedang"] === 7500, "Impor 7 Kolom: Harga Jual Strip Rp 7.500 Berhasil Disimpan");
+assert(resAmox7["Opsi Jual"] === "2", "Impor 7 Kolom: Opsi Jual Otomatis '2' (Sedang & Eceran)");
+assert(JSON.stringify(resAmox7["Satuan Dijual"]) === JSON.stringify(["mid", "base"]), "Impor 7 Kolom: Satuan Dijual Aktif ['mid', 'base']");
+
+const resSirup7 = imported7ColResults.find(p => p["Kode Produk"] === "RNA-NEW-002");
+assert(resSirup7["Harga Jual"] === 22000, "Impor 7 Kolom: Harga Jual Sirup Botol Rp 22.000 Berhasil Disimpan");
+assert(resSirup7["Opsi Jual"] === "1", "Impor 7 Kolom: Opsi Jual Single Unit '1'");
+assert(JSON.stringify(resSirup7["Satuan Dijual"]) === JSON.stringify(["base"]), "Impor 7 Kolom: Satuan Dijual Aktif ['base']");
+
 // Verifikasi Filter Ekspor: Abaikan Produk Nonaktif dari Excel Perlu Harga Jual
 const mockDeactivatedProd = {
   "Kode Produk": "MIP-00099",
@@ -2379,8 +2415,20 @@ assert(
 );
 
 assert(
-  excelServiceContent.includes("Penjualan 1 box di kasir POS dilayani via kelipatan kemasan sedang + fitur diskon POS"),
+  excelServiceContent.includes("Penjualan 1 box utuh di kasir POS dilayani via kelipatan kemasan sedang"),
   "Excel Service: Panduan Owner Menyampaikan Instruksi Transaksi 1 Box via Kelipatan Sedang + Diskon POS"
+);
+
+assert(
+  excelServiceContent.includes("Konfigurasi 7 Kolom Baku") &&
+  excelServiceContent.includes("to: `G${items.length + 1}`"),
+  "Excel Service: Template Ekspor Dikonfigurasi 7 Kolom Baku Tanpa Kemasan C (Filter A1:G)"
+);
+
+assert(
+  !excelServiceContent.includes('{ header: "Jenis Kemasan C"') &&
+  !excelServiceContent.includes('{ header: "Harga Kemasan C"'),
+  "Excel Service: Kolom Jenis Kemasan C & Harga Kemasan C Resmi Dihapus dari Template Ekspor"
 );
 
 // 4. Verifikasi Sinkronisasi Pelunasan Faktur & Persistensi Cloud

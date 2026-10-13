@@ -362,7 +362,7 @@ async function exportPricingWithExcelJS(items, fileName) {
     views: [{ showGridLines: true }]
   });
 
-  // Konfigurasi 9 Kolom Baku (Sesuai Permintaan: Jenis Kemasan A, Harga Kemasan A, dst)
+  // Konfigurasi 7 Kolom Baku (Sesuai Arsitektur 2 Satuan Transaksi Aktif: Kemasan A = Eceran, Kemasan B = Sedang)
   ws.columns = [
     { header: "Kode Produk", key: "code", width: 18 },
     { header: "Nama Produk", key: "name", width: 38 },
@@ -370,15 +370,13 @@ async function exportPricingWithExcelJS(items, fileName) {
     { header: "Jenis Kemasan A", key: "unitA", width: 20 },
     { header: "Harga Kemasan A", key: "priceA", width: 22 },
     { header: "Jenis Kemasan B", key: "unitB", width: 20 },
-    { header: "Harga Kemasan B", key: "priceB", width: 22 },
-    { header: "Jenis Kemasan C", key: "unitC", width: 20 },
-    { header: "Harga Kemasan C", key: "priceC", width: 22 }
+    { header: "Harga Kemasan B", key: "priceB", width: 22 }
   ];
 
-  // Aktifkan Filter Otomatis Tabel Excel (Filter ListObject A1:I)
+  // Aktifkan Filter Otomatis Tabel Excel (Filter ListObject A1:G)
   ws.autoFilter = {
     from: "A1",
-    to: `I${items.length + 1}`
+    to: `G${items.length + 1}`
   };
 
   // Styling Header (Baris 1) - RATA KIRI SEMUANYA
@@ -402,13 +400,6 @@ async function exportPricingWithExcelJS(items, fileName) {
         pattern: "solid",
         fgColor: { argb: "FF334155" }
       };
-    } else if (colNumber === 8 || colNumber === 9) {
-      // Kelompok Kemasan C (Amber / Kuning Tebal - Satuan Terbesar / Grosir Opsional)
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFB45309" }
-      };
     } else {
       // Info Produk & Faktur (Teal Medical)
       cell.fill = {
@@ -431,13 +422,6 @@ async function exportPricingWithExcelJS(items, fileName) {
     bottom: { style: "thin", color: { argb: "FFCBD5E1" } },
     left: { style: "thin", color: { argb: "FFCBD5E1" } },
     right: { style: "thin", color: { argb: "FFCBD5E1" } }
-  };
-
-  // Warna Kuning Soft untuk Kemasan C (Grosir / Terbesar Opsional)
-  const yellowFill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FFFEF9C3" } // Pastel Yellow
   };
 
   // Warna Abu Gelap / Charcoal untuk Sel Satuan B Non-Aktif
@@ -467,7 +451,7 @@ async function exportPricingWithExcelJS(items, fileName) {
     color: { argb: "FF0F172A" }
   };
 
-  // Isi Baris Data (A = Satuan Terkecil, B = Satuan Sedang, C = Satuan Terbesar)
+  // Isi Baris Data (A = Satuan Terkecil / Eceran, B = Satuan Sedang)
   items.forEach((p, idx) => {
     const code = p["Kode Produk"] || p["Kode Produk Internal"] || p.id || "";
     const name = p["Nama Produk"] || p.name || "";
@@ -476,10 +460,8 @@ async function exportPricingWithExcelJS(items, fileName) {
     const midUnit = String(p["Satuan Antara"] || "").trim();
     const midQty = num(p["Isi Satuan Antara"] || 1);
     const buyUnit = String(p["Kemasan Beli"] || p["Satuan Pembelian"] || baseUnit).trim();
-    const conversion = Math.max(1, num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1));
 
     const hasMid = Boolean(midUnit && norm(midUnit) !== norm(baseUnit) && midQty > 1);
-    const hasBuy = Boolean(buyUnit && norm(buyUnit) !== norm(baseUnit) && (!midUnit || norm(buyUnit) !== norm(midUnit)) && conversion > 1);
 
     const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
     const safeBuyUnit = (buyUnit || baseUnit || "PCS").replace(/"/g, "").toUpperCase();
@@ -491,9 +473,7 @@ async function exportPricingWithExcelJS(items, fileName) {
       unitA: baseUnit, // KEMASAN A: SATUAN TERKECIL / ECERAN UTAMA
       priceA: null, // HARGA JUAL KOSONG (UNTUK DIISI OWNER)
       unitB: hasMid ? `${midUnit} (${midQty} ${baseUnit})` : "-",
-      priceB: hasMid ? null : "-", // JIKA TIDAK ADA SATUAN B: "-"
-      unitC: hasBuy ? `${buyUnit} (${conversion} ${baseUnit})` : buyUnit, // KEMASAN C: SATUAN TERBESAR
-      priceC: null // HARGA JUAL KOSONG (KUNING SOFT - GROSIR OPSIONAL)
+      priceB: hasMid ? null : "-" // JIKA TIDAK ADA SATUAN B: "-"
     });
 
     row.height = 24;
@@ -554,20 +534,6 @@ async function exportPricingWithExcelJS(items, fileName) {
       c7.border = dataBorder;
       c7.alignment = { vertical: "middle", horizontal: "left" };
     }
-
-    // Kolom 8 & 9: Jenis Kemasan C & Harga Kemasan C (KUNING SOFT - GROSIR TERBESAR OPSIONAL - RATA KIRI + FORMAT RP)
-    const c8 = row.getCell(8);
-    c8.font = standardFont;
-    c8.fill = yellowFill;
-    c8.border = dataBorder;
-    c8.alignment = { vertical: "middle", horizontal: "left" };
-
-    const c9 = row.getCell(9);
-    c9.font = boldFont;
-    c9.fill = yellowFill;
-    c9.border = dataBorder;
-    c9.numFmt = '"Rp "#,##0';
-    c9.alignment = { vertical: "middle", horizontal: "left" };
   });
 
   // 2. Sheet PANDUAN_OWNER
@@ -592,9 +558,9 @@ async function exportPricingWithExcelJS(items, fileName) {
   const guideItems = [
     { no: 1, section: "Kolom E (Harga Kemasan A - Eceran Utama)", desc: "Ketikkan harga jual satuan terkecil / eceran utama (Kaplet / Botol / Tablet / Pcs) yang Anda inginkan (misal: 800, 1500, 20000). Kolom ini adalah harga pokok toko/apotek." },
     { no: 2, section: "Kolom G (Harga Kemasan B - Sedang)", desc: "Ketikkan harga jual per kemasan sedang (misal Strip / Blister / Sachet). Jika dikosongkan, sistem otomatis menghitung kelipatan dari eceran. Ini adalah kemasan transaksi utama di kasir POS." },
-    { no: 3, section: "Kolom I (Harga Kemasan C - Arsip / Grosir Opsional)", desc: "Kolom ini adalah harga referensi/grosir kemasan beli PBF (Box / Dus / Karton) sebagai arsip & patokan HPP. Penjualan 1 box di kasir POS dilayani via kelipatan kemasan sedang + fitur diskon POS." },
-    { no: 4, section: "Kolom C (Harga Beli Faktur)", desc: "Menampilkan harga modal beli asli dari faktur beserta satuan aslinya (misal: Rp 15.000 / BOX) sebagai patokan margin Anda." },
-    { no: 5, section: "Kolom A (Kode Produk)", desc: "JANGAN mengubah atau menghapus isi Kode Produk. Kolom ini adalah kunci pencocokan otomatis sistem KasirPro." },
+    { no: 3, section: "Kolom C (Harga Beli Faktur)", desc: "Menampilkan harga modal beli asli dari faktur beserta satuan aslinya (misal: Rp 15.000 / BOX) sebagai patokan margin Anda." },
+    { no: 4, section: "Kolom A (Kode Produk)", desc: "JANGAN mengubah atau menghapus isi Kode Produk. Kolom ini adalah kunci pencocokan otomatis sistem KasirPro." },
+    { no: 5, section: "Transaksi 1 Box di Kasir", desc: "Penjualan 1 box utuh di kasir POS dilayani via kelipatan kemasan sedang (misal 10 Strip) dan memanfaatkan fitur diskon POS yang sudah ada." },
     { no: 6, section: "Cara Simpan & Upload", desc: "Setelah selesai, simpan berkas ini (Ctrl+S). Buka menu Master Produk di KasirPro, lalu klik tombol 'Upload & Terapkan Harga Jual'. Produk akan langsung AKTIF dan bisa ditransaksikan di kasir POS!" }
   ];
 
@@ -635,9 +601,7 @@ function exportPricingWithSheetJS(items, fileName) {
     "Jenis Kemasan A",
     "Harga Kemasan A",
     "Jenis Kemasan B",
-    "Harga Kemasan B",
-    "Jenis Kemasan C",
-    "Harga Kemasan C"
+    "Harga Kemasan B"
   ];
 
   const rows = [headers];
@@ -650,10 +614,8 @@ function exportPricingWithSheetJS(items, fileName) {
     const midUnit = String(p["Satuan Antara"] || "").trim();
     const midQty = num(p["Isi Satuan Antara"] || 1);
     const buyUnit = String(p["Kemasan Beli"] || p["Satuan Pembelian"] || baseUnit).trim();
-    const conversion = Math.max(1, num(p["Konversi"] ?? p["Isi Kemasan"] ?? 1));
 
     const hasMid = Boolean(midUnit && norm(midUnit) !== norm(baseUnit) && midQty > 1);
-    const hasBuy = Boolean(buyUnit && norm(buyUnit) !== norm(baseUnit) && (!midUnit || norm(buyUnit) !== norm(midUnit)) && conversion > 1);
 
     const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
     const safeBuyUnit = (buyUnit || baseUnit || "PCS").replace(/"/g, "").toUpperCase();
@@ -666,17 +628,14 @@ function exportPricingWithSheetJS(items, fileName) {
       baseUnit, // Jenis Kemasan A (Terkecil)
       "", // Harga Kemasan A (Kosong untuk Owner)
       hasMid ? `${midUnit} (${midQty} ${baseUnit})` : "-", // Jenis Kemasan B (Sedang)
-      hasMid ? "" : "-", // Harga Kemasan B (Kosong jika ada sedang, "-" jika tidak)
-      hasBuy ? `${buyUnit} (${conversion} ${baseUnit})` : buyUnit, // Jenis Kemasan C (Terbesar)
-      "" // Harga Kemasan C (Kosong untuk Owner)
+      hasMid ? "" : "-" // Harga Kemasan B (Kosong jika ada sedang, "-" jika tidak)
     ]);
   });
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws["!cols"] = [
     { wch: 18 }, { wch: 38 }, { wch: 22 },
-    { wch: 20 }, { wch: 22 }, { wch: 20 },
-    { wch: 22 }, { wch: 20 }, { wch: 22 }
+    { wch: 20 }, { wch: 22 }, { wch: 20 }, { wch: 22 }
   ];
   XLSX.utils.book_append_sheet(wb, ws, "DAFTAR_HARGA");
 
@@ -684,9 +643,9 @@ function exportPricingWithSheetJS(items, fileName) {
     ["NO", "BAGIAN", "PETUNJUK LENGKAP UNTUK OWNER / PEMILIK APOTEK"],
     [1, "Kolom E (Harga Kemasan A - Eceran)", "Ketikkan harga jual satuan terkecil / eceran utama (Kaplet / Botol / Tablet / Pcs) yang Anda inginkan."],
     [2, "Kolom G (Harga Kemasan B - Sedang)", "Ketikkan harga jual per kemasan sedang (misal Strip). Jika dikosongkan, sistem otomatis menghitung kelipatan. Menjadi default transaksi POS."],
-    [3, "Kolom I (Harga Kemasan C - Arsip/Grosir)", "Opsional untuk arsip/acuan HPP kemasan Box/Karton. Transaksi 1 box di kasir POS dilayani via kelipatan strip + diskon."],
-    [4, "Kolom C (Harga Beli Faktur)", "Menampilkan modal beli asli dari faktur beserta satuannya (misal: Rp 15.000 / BOX)."],
-    [5, "Kolom A (Kode Produk)", "JANGAN mengubah kode produk sebagai kunci pencocokan sistem."],
+    [3, "Kolom C (Harga Beli Faktur)", "Menampilkan modal beli asli dari faktur beserta satuannya (misal: Rp 15.000 / BOX)."],
+    [4, "Kolom A (Kode Produk)", "JANGAN mengubah kode produk sebagai kunci pencocokan sistem."],
+    [5, "Transaksi 1 Box di Kasir", "Penjualan 1 box utuh di kasir POS dilayani via kelipatan kemasan sedang (misal 10 Strip) dan memanfaatkan fitur diskon POS."],
     [6, "Simpan & Upload", "Simpan lalu upload kembali di KasirPro agar obat langsung AKTIF di kasir POS."]
   ];
   const wsGuide = XLSX.utils.aoa_to_sheet(guideRows);
