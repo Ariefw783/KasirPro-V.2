@@ -508,13 +508,23 @@ async function syncFromFirestore(force = false) {
       fetchCollection("storeSettings")
     ]);
 
-    // Helper untuk merge array berdasarkan ID
+    // Helper untuk merge array berdasarkan ID dengan preservasi status pelunasan lokal
     const mergeEntities = (existing = [], incoming = [], idExtractor) => {
       if (!incoming.length) return existing;
       const map = new Map(existing.map(x => [String(idExtractor(x)), x]));
       incoming.forEach(x => {
         const key = String(idExtractor(x));
-        map.set(key, { ...(map.get(key) || {}), ...x });
+        const prev = map.get(key);
+        if (prev) {
+          // Proteksi pelunasan faktur: Jika lokal sudah lunas tapi incoming remote belum memiliki paidAt
+          const prevPaid = norm(prev.paymentStatus) === "lunas" || Boolean(prev.paidAt);
+          const incPaid = norm(x.paymentStatus) === "lunas" || Boolean(x.paidAt);
+          if (prevPaid && !incPaid) {
+            map.set(key, { ...prev, ...x, paymentStatus: prev.paymentStatus, paidAt: prev.paidAt, paidBy: prev.paidBy });
+            return;
+          }
+        }
+        map.set(key, { ...(prev || {}), ...x });
       });
       return Array.from(map.values());
     };
@@ -700,8 +710,10 @@ async function syncFromFirestore(force = false) {
         await indexedDBStore.putMany(STORES.OPNAMES, firestoreOpnames);
       }
     } else {
-      // Pada Full Initial Sync, Cloud Firestore adalah Source of Truth untuk transaksi operasional
-      inMemory.set(STORE_KEYS.invoices, firestoreInvoices);
+      // Pada Full Initial Sync, Cloud Firestore digabung dengan proteksi data lokal yang sudah lunas
+      const localInvs = inMemory.get(STORE_KEYS.invoices) || [];
+      const mergedInvs = mergeEntities(localInvs, firestoreInvoices, i => i.id || i.invoiceNumber);
+      inMemory.set(STORE_KEYS.invoices, mergedInvs);
       inMemory.set(STORE_KEYS.sales, firestoreSales);
       inMemory.set(STORE_KEYS.movements, firestoreMovements);
       inMemory.set(STORE_KEYS.opnames, firestoreOpnames);
@@ -733,7 +745,8 @@ async function syncFromFirestore(force = false) {
     if (firestoreSuppliers.length) await indexedDBStore.putMany(STORES.SUPPLIERS, firestoreSuppliers);
     if (firestoreCategories.length) await indexedDBStore.putMany(STORES.CATEGORIES, firestoreCategories);
     if (!isIncremental) {
-      if (firestoreInvoices.length) await indexedDBStore.putMany(STORES.INVOICES, firestoreInvoices);
+      const invsToStore = inMemory.get(STORE_KEYS.invoices) || firestoreInvoices;
+      if (invsToStore.length) await indexedDBStore.putMany(STORES.INVOICES, invsToStore);
       if (firestoreSales.length) await indexedDBStore.putMany(STORES.SALES, firestoreSales);
       if (firestoreMovements.length) await indexedDBStore.putMany(STORES.MOVEMENTS, firestoreMovements);
       if (firestoreOpnames.length) await indexedDBStore.putMany(STORES.OPNAMES, firestoreOpnames);
@@ -1630,8 +1643,8 @@ export async function writeStockTransaction(entries = []) {
     const curInvs = inMemory.get(STORE_KEYS.invoices) || [];
     const nextInvs = [...curInvs];
     invoices.forEach(inv => {
-      const idx = nextInvs.findIndex(x => x.id === inv.id);
-      if (idx >= 0) nextInvs[idx] = inv;
+      const idx = nextInvs.findIndex(x => (x.id && x.id === inv.id) || (x.invoiceNumber && x.invoiceNumber === inv.invoiceNumber));
+      if (idx >= 0) nextInvs[idx] = { ...nextInvs[idx], ...inv };
       else nextInvs.push(inv);
     });
     inMemory.set(STORE_KEYS.invoices, nextInvs);

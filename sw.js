@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v120-header-tsv-icon-btn";
+const CACHE_VERSION = "kasirpro-pwa-v121-two-pos-units-invoice-sync";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

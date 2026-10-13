@@ -2383,6 +2383,30 @@ assert(
   "Excel Service: Panduan Owner Menyampaikan Instruksi Transaksi 1 Box via Kelipatan Sedang + Diskon POS"
 );
 
+// 4. Verifikasi Sinkronisasi Pelunasan Faktur & Persistensi Cloud
+const mgmtInvoicesContent = fs.readFileSync(path.join(rootDir, "management/management-invoices.js"), "utf8");
+const dbStoreContent = fs.readFileSync(path.join(rootDir, "modules/database/database-store.js"), "utf8");
+
+assert(
+  mgmtInvoicesContent.includes("toggleMarkInvoicePaid") &&
+  mgmtInvoicesContent.includes("writeStockTransaction") &&
+  mgmtInvoicesContent.includes("Sinkronisasi cloud pembayaran faktur"),
+  "Faktur Sync: Pelunasan Faktur (Sudah Bayar) Tersinkronisasi Atomik ke Cloud Firestore"
+);
+
+assert(
+  dbStoreContent.includes("Proteksi pelunasan faktur") &&
+  dbStoreContent.includes("prevPaid && !incPaid"),
+  "Database Sync: Status Lunas Faktur Lokal Terlindungi dari Penimpaan Data Stale Cloud"
+);
+
+// 5. Verifikasi Versioning & Cache PWA
+const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
+const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
+
+assert(versionJson.version === "2.2.80", "Versioning: Versi Sistem Tepat v2.2.80");
+assert(swJsContent.includes("v121"), "Service Worker: Cache PWA Terbarui ke v121");
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

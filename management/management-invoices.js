@@ -398,6 +398,13 @@ export async function toggleMarkInvoicePaid(invId, markAsPaid = true) {
     existingInvoices[idx] = updatedInv;
     await writeStore(STORE_KEYS.invoices, existingInvoices);
     currentInvoices = existingInvoices;
+    try {
+      await writeStockTransaction([
+        { key: STORE_KEYS.invoices, records: [updatedInv] }
+      ]);
+    } catch (syncErr) {
+      console.warn("[Invoice] Sinkronisasi cloud pembayaran faktur:", syncErr?.message || syncErr);
+    }
     renderInvoices();
     if (activeDetailInvoice && (activeDetailInvoice.id === invId || activeDetailInvoice.invoiceNumber === invId)) {
       openInvoiceDetailModal(updatedInv);
@@ -421,6 +428,13 @@ export async function toggleMarkInvoicePaid(invId, markAsPaid = true) {
     existingInvoices[idx] = updatedInv;
     await writeStore(STORE_KEYS.invoices, existingInvoices);
     currentInvoices = existingInvoices;
+    try {
+      await writeStockTransaction([
+        { key: STORE_KEYS.invoices, records: [updatedInv] }
+      ]);
+    } catch (syncErr) {
+      console.warn("[Invoice] Sinkronisasi cloud pembatalan pelunasan:", syncErr?.message || syncErr);
+    }
     renderInvoices();
     if (activeDetailInvoice && (activeDetailInvoice.id === invId || activeDetailInvoice.invoiceNumber === invId)) {
       openInvoiceDetailModal(updatedInv);
@@ -3788,6 +3802,13 @@ async function handleSaveInvoiceCorrection() {
     }
 
     await writeStore(STORE_KEYS.invoices, currentInvoices);
+    try {
+      await writeStockTransaction([
+        { key: STORE_KEYS.invoices, records: [inv] }
+      ]);
+    } catch (syncErr) {
+      console.warn("[Invoice] Sinkronisasi cloud koreksi faktur:", syncErr?.message || syncErr);
+    }
     closeInvoiceCorrectionModal();
     closeInvoiceDetailModal();
     renderInvoices();

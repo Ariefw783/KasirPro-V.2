@@ -1,14 +1,14 @@
 {
-  "version": "2.2.79",
-  "build": "20261013.02",
+  "version": "2.2.80",
+  "build": "20261013.03",
   "releaseDate": "13 Oktober 2026",
-  "title": "Header TSV Paste & Icon-Only Minimalist Toolbar",
-  "description": "Fitur impor cepat TSV untuk header faktur fisik dan pembaruan tombol tempel TSV minimalis berbasis ikon.",
+  "title": "2 Active POS Transaction Units Architecture & Invoice Payment Sync Fix",
+  "description": "Penyederhanaan 2 satuan transaksi aktif POS (Sedang & Eceran) dengan satuan besar sebagai arsip pembelian, serta perbaikan sinkronisasi cloud status pelunasan faktur.",
   "changelog": [
-    "Added header TSV paste feature",
-    "Minimalist icon-only clipboard buttons",
-    "Automatic invoice header fields parsing",
-    "Integrated supplier auto-match and register",
-    "Updated PWA cache to v120"
+    "2 Satuan Transaksi Aktif POS (Sedang & Terkecil) dengan Sedang sebagai unit default",
+    "Satuan Besar (Box/Karton) dialihkan murni sebagai data arsip pembelian & acuan HPP",
+    "Sinkronisasi Cloud Firestore status pelunasan faktur (Sudah Bayar & Batalkan)",
+    "Proteksi pelunasan faktur lokal dari overwriting data remote saat initial sync",
+    "Pembaruan PWA Cache ke v121"
   ]
 }
