@@ -1,14 +1,14 @@
 {
-  "version": "2.2.78",
-  "build": "20261013.01",
+  "version": "2.2.79",
+  "build": "20261013.02",
   "releaseDate": "13 Oktober 2026",
-  "title": "Smart Fuzzy Suggestions & Protected TSV Units in Invoice Grid",
-  "description": "Peningkatan pencocokan fuzzy pada dropdown faktur dan proteksi satuan faktur TSV tanpa overwrite default Pcs.",
+  "title": "Header TSV Paste & Icon-Only Minimalist Toolbar",
+  "description": "Fitur impor cepat TSV untuk header faktur fisik dan pembaruan tombol tempel TSV minimalis berbasis ikon.",
   "changelog": [
-    "Smart fuzzy product autocomplete suggestions",
-    "Interactive one-click fuzzy match linking",
-    "Protected physical invoice unit values",
-    "Prevented unwanted default Pcs injection",
-    "Updated PWA cache to v119"
+    "Added header TSV paste feature",
+    "Minimalist icon-only clipboard buttons",
+    "Automatic invoice header fields parsing",
+    "Integrated supplier auto-match and register",
+    "Updated PWA cache to v120"
   ]
 }

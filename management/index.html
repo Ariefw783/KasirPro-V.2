@@ -2455,8 +2455,11 @@
                             <div class="manual-invoice-card" style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e2e8f0;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
                                 <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
                                     <span><i class="fa-solid fa-building-columns text-primary"></i> 1. Informasi Supplier &amp; Faktur Fisik</span>
-                                    <div style="display:flex;align-items:center;gap:10px;">
+                                    <div style="display:flex;align-items:center;gap:8px;">
                                         <span style="font-size:11px;font-weight:500;color:#64748b;">* Wajib mencocokkan total fisik di kertas faktur</span>
+                                        <button type="button" id="btn-paste-tsv-header" class="button button-small button-secondary" style="font-size:11px;padding:3px 8px;display:inline-flex;align-items:center;background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;" title="Tempel Header Faktur dari TSV (Supplier, No Faktur, Tanggal, Jatuh Tempo, Metode Bayar, Total Tercetak)">
+                                            <i class="fa-solid fa-clipboard text-primary"></i>
+                                        </button>
                                         <button type="button" id="btn-toggle-inv-header" class="button button-small button-secondary" style="font-size:11px;padding:3px 8px;display:inline-flex;align-items:center;gap:5px;background:#f8fafc;border:1px solid #cbd5e1;" title="Lipat / Buka Detail Header">
                                             <i class="fa-solid fa-chevron-up" id="icon-toggle-inv-header"></i> <span id="label-toggle-inv-header">Ciutkan</span>
                                         </button>
@@ -2544,8 +2547,8 @@
                                         <button type="button" id="btn-manual-add-row" class="button button-small button-primary" style="padding:6px 14px;">
                                             <i class="fa-solid fa-plus"></i> Tambah Baris Obat
                                         </button>
-                                        <button type="button" id="btn-paste-tsv-inv" class="button button-small button-secondary" style="padding:6px 14px;background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;" title="Tempel data tabel dari Excel / TSV (Ctrl + V)">
-                                            <i class="fa-solid fa-clipboard text-primary"></i> Tempel TSV
+                                        <button type="button" id="btn-paste-tsv-inv" class="button button-small button-secondary" style="padding:6px 10px;background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;" title="Tempel data tabel dari Excel / TSV (Ctrl + V)">
+                                            <i class="fa-solid fa-clipboard text-primary"></i>
                                         </button>
                                         <button type="button" id="btn-toggle-all-inv-rows" class="button button-small button-secondary" style="padding:6px 12px;background:#f8fafc;border:1px solid #cbd5e1;color:#0f172a;" title="Lipat / Buka Semua Kartu Obat">
                                             <i class="fa-solid fa-chevron-up" id="icon-toggle-all-inv-rows"></i> <span id="label-toggle-all-inv-rows">Ciutkan Semua</span>

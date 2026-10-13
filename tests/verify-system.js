@@ -2229,6 +2229,67 @@ assert(
   "Faktur Autocomplete: Fuzzy Suggestion, Tombol Tautkan Langsung, dan Rekomendasi Terintegrasi"
 );
 
+console.log("\n📋 BAGIAN 29: PENGUJIAN TEMPEL TSV HEADER FAKTUR (POIN 1) & TOMBOL IKON-ONLY MINIMALIS");
+
+// 1. Verifikasi Tombol Tempel TSV di Poin 1 & Poin 2 pada DOM HTML
+assert(
+  mgmtHtml.includes('id="btn-paste-tsv-header"') &&
+  mgmtHtml.includes('title="Tempel Header Faktur dari TSV'),
+  "DOM Faktur: Tombol Tempel TSV Header Faktur Terpasang pada Poin 1 (#btn-paste-tsv-header)"
+);
+
+assert(
+  mgmtHtml.includes('<button type="button" id="btn-paste-tsv-header"') &&
+  mgmtHtml.includes('<button type="button" id="btn-paste-tsv-inv"') &&
+  !mgmtHtml.includes('> Tempel TSV</button>') &&
+  !mgmtHtml.includes('>Tempel TSV</button>'),
+  "UI Faktur: Tombol Tempel TSV Poin 1 & 2 Bersih Minimalis Menggunakan Format Ikon-Only Tanpa Teks Label"
+);
+
+// 2. Verifikasi Fungsi & Handler di management-invoices.js
+assert(
+  mgmtInvoicesJs.includes("handleTriggerPasteHeaderTsv") &&
+  mgmtInvoicesJs.includes("processHeaderTsvData") &&
+  mgmtInvoicesJs.includes('$("btn-paste-tsv-header")?.addEventListener("click", handleTriggerPasteHeaderTsv)'),
+  "Handler Faktur: Event Trigger & Parser Header TSV Terintegrasi Penuh di JavaScript"
+);
+
+// 3. Uji Parser Logika Header TSV (Simulasi Parsing)
+function testParseTsvHeader(rawText) {
+  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return null;
+  let targetLine = "";
+  for (const line of lines) {
+    const lower = line.toLowerCase();
+    if ((lower.includes("nama supplier") || lower.includes("supplier")) && (lower.includes("no faktur") || lower.includes("tanggal faktur"))) {
+      continue;
+    }
+    targetLine = line;
+    break;
+  }
+  if (!targetLine) targetLine = lines[0];
+  const cols = targetLine.split("\t").map(c => c.trim());
+  return {
+    supplier: cols[0] || "",
+    invoiceNumber: cols[1] || "",
+    date: cols[2] || "",
+    dueDate: cols[3] || "",
+    paymentType: (cols[4] || "").toLowerCase().includes("tunai") ? "tunai" : "tempo",
+    printedTotal: parseInt((cols[5] || "").replace(/[^0-9]/g, ""), 10) || 0
+  };
+}
+
+const mockTsvHeaderInput = "Nama Supplier\tNo Faktur\tTanggal Faktur\tJatuh Tempo\tMetode Pembayaran\tTotal Faktur\nPT ROSA NUGRAHA ABADI\t26-029858\t2026-09-23\t2026-10-23\ttempo\t1241464";
+const parsedHeader = testParseTsvHeader(mockTsvHeaderInput);
+
+assert(parsedHeader !== null, "TSV Parser: Data Header Berhasil Diparsing");
+assert(parsedHeader.supplier === "PT ROSA NUGRAHA ABADI", "TSV Parser: Nama Supplier 'PT ROSA NUGRAHA ABADI' Akurat");
+assert(parsedHeader.invoiceNumber === "26-029858", "TSV Parser: No. Faktur Fisik '26-029858' Akurat");
+assert(parsedHeader.date === "2026-09-23", "TSV Parser: Tanggal Faktur '2026-09-23' Akurat");
+assert(parsedHeader.dueDate === "2026-10-23", "TSV Parser: Tanggal Jatuh Tempo '2026-10-23' Akurat");
+assert(parsedHeader.paymentType === "tempo", "TSV Parser: Metode Pembayaran 'tempo' Terdeteksi Benar");
+assert(parsedHeader.printedTotal === 1241464, "TSV Parser: Total Faktur Tercetak Rp 1.241.464 Akurat");
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

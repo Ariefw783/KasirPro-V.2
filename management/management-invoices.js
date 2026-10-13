@@ -47,6 +47,7 @@ function bindEvents() {
   $("close-manual-invoice-modal")?.addEventListener("click", closeManualInvoiceModal);
   $("btn-cancel-manual-inv")?.addEventListener("click", closeManualInvoiceModal);
   $("btn-manual-add-row")?.addEventListener("click", () => addManualInvoiceRow());
+  $("btn-paste-tsv-header")?.addEventListener("click", handleTriggerPasteHeaderTsv);
   $("btn-paste-tsv-inv")?.addEventListener("click", handleTriggerPasteTsv);
   $("btn-toggle-all-inv-rows")?.addEventListener("click", toggleAllManualInvoiceRows);
   $("btn-close-paste-tsv-modal")?.addEventListener("click", (e) => {
@@ -77,7 +78,11 @@ function bindEvents() {
     const textVal = $("tsv-paste-textarea")?.value;
     closePasteTsvModal();
     if (textVal) {
-      processTsvData(textVal);
+      if (pasteTsvTarget === "header") {
+        processHeaderTsvData(textVal);
+      } else {
+        processTsvData(textVal);
+      }
     }
   });
 
@@ -1404,6 +1409,43 @@ function handlePpnRateChange() {
   calculateManualInvoiceTotals();
 }
 
+let pasteTsvTarget = "items";
+
+function parseTsvIsoDate(str) {
+  if (!str) return "";
+  const s = str.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const parts = s.split(/[\/\-\.]/);
+  if (parts.length === 3) {
+    // DD/MM/YYYY or DD-MM-YYYY
+    if (parts[0].length <= 2 && parts[2].length === 4) {
+      return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+    }
+    // YYYY/MM/DD or YYYY-MM-DD
+    if (parts[0].length === 4 && parts[1].length <= 2 && parts[2].length <= 2) {
+      return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`;
+    }
+  }
+  return s;
+}
+
+async function handleTriggerPasteHeaderTsv() {
+  let clipText = "";
+  try {
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      clipText = await navigator.clipboard.readText();
+    }
+  } catch (err) {
+    console.warn("[Invoice Header] Gagal membaca clipboard otomatis:", err);
+  }
+
+  if (clipText && (clipText.includes("\t") || clipText.includes("\n"))) {
+    processHeaderTsvData(clipText);
+  } else {
+    openPasteTsvModal(clipText, "header");
+  }
+}
+
 async function handleTriggerPasteTsv() {
   let clipText = "";
   try {
@@ -1419,14 +1461,38 @@ async function handleTriggerPasteTsv() {
     processTsvData(clipText);
   } else {
     // Tampilkan modal fallback input textarea
-    openPasteTsvModal(clipText);
+    openPasteTsvModal(clipText, "items");
   }
 }
 
-function openPasteTsvModal(prefill = "") {
+function openPasteTsvModal(prefill = "", target = "items") {
+  pasteTsvTarget = target;
   const modal = $("modal-paste-tsv");
   if (!modal) return;
+  const titleEl = $("paste-tsv-title");
+  const helperBox = modal.querySelector(".product-detail-body > div");
   const ta = $("tsv-paste-textarea");
+
+  if (target === "header") {
+    if (titleEl) titleEl.textContent = "Tempel Data Header Faktur Fisik";
+    if (helperBox) {
+      helperBox.innerHTML = `
+        <i class="fa-solid fa-circle-info text-primary"></i> <strong>Urutan Kolom TSV Header (6 Kolom):</strong><br>
+        <small style="color:#64748b;">Nama Supplier &bull; No Faktur &bull; Tgl Faktur (YYYY-MM-DD) &bull; Jatuh Tempo (YYYY-MM-DD) &bull; Metode Bayar (tempo/tunai) &bull; Total Tercetak Faktur (Rp)</small>
+      `;
+    }
+    if (ta) ta.placeholder = "PT ROSA NUGRAHA ABADI\t26-029858\t2026-09-23\t2026-10-23\ttempo\t1241464";
+  } else {
+    if (titleEl) titleEl.textContent = "Tempel Data TSV Faktur";
+    if (helperBox) {
+      helperBox.innerHTML = `
+        <i class="fa-solid fa-circle-info text-primary"></i> <strong>Urutan Kolom TSV (14 Kolom):</strong><br>
+        <small style="color:#64748b;">Nama Produk &bull; No Batch &bull; Exp Date &bull; Kemasan Supplier &bull; Kemasan Sedang &bull; Isi Kemasan Sedang &bull; Kemasan Terkecil &bull; Total Konversi &bull; Qty Beli &bull; Total Masuk &bull; Harga Beli &bull; Disc% &bull; Disc Rp &bull; Subtotal</small>
+      `;
+    }
+    if (ta) ta.placeholder = "Klik di sini lalu tekan Ctrl + V (atau tempel teks berformat tab-separated)...";
+  }
+
   if (ta) {
     ta.value = prefill || "";
     setTimeout(() => ta.focus(), 60);
@@ -1441,6 +1507,144 @@ function closePasteTsvModal() {
     modal.hidden = true;
     modal.style.display = "none";
   }
+}
+
+/**
+ * TSV Parser untuk Header Faktur Fisik (Poin 1):
+ * Membaca 6 kolom baku:
+ * [0] Nama Supplier
+ * [1] No. Faktur Fisik
+ * [2] Tanggal Faktur (YYYY-MM-DD)
+ * [3] Jatuh Tempo (YYYY-MM-DD)
+ * [4] Metode Pembayaran (tempo / tunai)
+ * [5] Total Akhir Tercetak di Kertas (Rp)
+ */
+function processHeaderTsvData(rawText) {
+  if (!rawText || typeof rawText !== "string") {
+    window.KasirProDialog?.warning("Format Kosong", "Tidak ada teks header faktur yang dapat dibaca.");
+    return;
+  }
+
+  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length) {
+    window.KasirProDialog?.warning("Data Kosong", "Teks yang ditempel tidak memuat baris data.");
+    return;
+  }
+
+  // Lewati baris judul kolom jika memuat kata kunci header
+  let targetLine = "";
+  for (const line of lines) {
+    const lower = line.toLowerCase();
+    if ((lower.includes("nama supplier") || lower.includes("supplier")) && (lower.includes("no faktur") || lower.includes("tanggal faktur"))) {
+      continue;
+    }
+    targetLine = line;
+    break;
+  }
+
+  if (!targetLine) {
+    targetLine = lines[0];
+  }
+
+  const cols = targetLine.split("\t").map(c => c.trim());
+  if (cols.length < 2) {
+    window.KasirProDialog?.warning(
+      "Format TSV Header Tidak Sesuai",
+      "Data harus memuat minimal kolom Supplier dan No Faktur yang dipisahkan oleh tombol Tab.\n\nContoh:\nPT ROSA NUGRAHA ABADI\t26-029858\t2026-09-23\t2026-10-23\ttempo\t1241464"
+    );
+    return;
+  }
+
+  const supNameRaw = cols[0] || "";
+  const invNumber = cols[1] || "";
+  const invDateRaw = cols[2] || "";
+  const dueDateRaw = cols[3] || "";
+  const payTypeRaw = cols[4] || "";
+  const totalRaw = cols[5] || "";
+
+  // 1. Supplier: Cocokkan ke dropdown, atau buat baru jika belum terdaftar
+  if (supNameRaw) {
+    const select = $("manual-inv-supplier");
+    if (select) {
+      let matchedVal = null;
+      for (let i = 0; i < select.options.length; i++) {
+        const optVal = select.options[i].value;
+        if (optVal && isSameSupplierName(optVal, supNameRaw)) {
+          matchedVal = optVal;
+          break;
+        }
+      }
+
+      if (matchedVal) {
+        select.value = matchedVal;
+      } else {
+        const opt = document.createElement("option");
+        opt.value = supNameRaw;
+        opt.textContent = supNameRaw;
+        select.appendChild(opt);
+        select.value = supNameRaw;
+
+        const newSup = {
+          id: `SUP-${Date.now()}`,
+          "Nama Perusahaan": supNameRaw,
+          "Supplier": supNameRaw,
+          "Status": "Aktif",
+          "status": "Aktif"
+        };
+        writeMasterDelta({ supplier: [newSup] }).catch(() => {});
+      }
+      handleSupplierChange();
+    }
+  }
+
+  // 2. No. Faktur Fisik
+  if (invNumber && $("manual-inv-number")) {
+    $("manual-inv-number").value = invNumber;
+  }
+
+  // 3. Tanggal Faktur
+  if (invDateRaw && $("manual-inv-date")) {
+    const formattedDate = parseTsvIsoDate(invDateRaw);
+    if (formattedDate) {
+      $("manual-inv-date").value = formattedDate;
+    }
+  }
+
+  // 4. Metode Pembayaran
+  if (payTypeRaw && $("manual-inv-payment-type")) {
+    const lowerPay = payTypeRaw.toLowerCase();
+    if (lowerPay.includes("tunai") || lowerPay.includes("cash") || lowerPay.includes("lunas")) {
+      $("manual-inv-payment-type").value = "tunai";
+    } else {
+      $("manual-inv-payment-type").value = "tempo";
+    }
+    handlePaymentTypeChange();
+  }
+
+  // 5. Jatuh Tempo
+  if (dueDateRaw && $("manual-inv-due-date") && $("manual-inv-payment-type")?.value !== "tunai") {
+    const formattedDueDate = parseTsvIsoDate(dueDateRaw);
+    if (formattedDueDate) {
+      $("manual-inv-due-date").value = formattedDueDate;
+    }
+  }
+
+  // 6. Total Akhir Tercetak di Kertas (Rp)
+  if (totalRaw && $("manual-inv-printed-total")) {
+    const digits = totalRaw.replace(/[^0-9]/g, "");
+    const valNum = parseInt(digits, 10) || 0;
+    if (valNum > 0) {
+      $("manual-inv-printed-total").value = formatNumber(valNum);
+    }
+  }
+
+  updateManualInvoiceHeaderSummary();
+  calculateManualInvoiceTotals();
+
+  window.KasirProDialog?.success(
+    "Header Faktur Berhasil Ditempel",
+    `Informasi faktur fisik berhasil diterapkan:\n\n• Supplier: ${supNameRaw || "-"}\n• No. Faktur: ${invNumber || "-"}\n• Total Tercetak: ${$("manual-inv-printed-total")?.value || "-"}`
+  );
 }
 
 /**

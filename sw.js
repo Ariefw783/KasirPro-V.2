@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v119-fuzzy-matching-fix";
+const CACHE_VERSION = "kasirpro-pwa-v120-header-tsv-icon-btn";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
