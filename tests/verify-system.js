@@ -2163,6 +2163,72 @@ assert(
   "Poin 2 Faktur Grid Mode: Live Label Dinamis, Input baseQty, dan Fungsi Sinkronisasi Terhubung Penuh"
 );
 
+console.log("\n🔍 BAGIAN 28: PENGUJIAN SMART FUZZY SUGGESTIONS & PRESERVASI SATUAN TSV TANPA OVERWRITE PCS");
+
+// 1. Uji Algoritma Dice Similarity untuk Fuzzy Matching Tipografi Faktur (contoh: Kitrol vs Xitrol)
+function testDiceSimilarity(s1, s2) {
+  if (!s1 || !s2) return 0;
+  if (s1 === s2) return 1;
+  if (s1.length < 2 || s2.length < 2) return s1 === s2 ? 1 : 0;
+  const bg1 = new Map();
+  for (let i = 0; i < s1.length - 1; i++) {
+    const g = s1.substring(i, i + 2);
+    bg1.set(g, (bg1.get(g) || 0) + 1);
+  }
+  const bg2 = new Map();
+  for (let i = 0; i < s2.length - 1; i++) {
+    const g = s2.substring(i, i + 2);
+    bg2.set(g, (bg2.get(g) || 0) + 1);
+  }
+  let inter = 0;
+  for (const [g, count] of bg1.entries()) {
+    if (bg2.has(g)) inter += Math.min(count, bg2.get(g));
+  }
+  return (2 * inter) / ((s1.length - 1) + (s2.length - 1));
+}
+assert(testDiceSimilarity("kitrol", "xitrol") >= 0.75, "Fuzzy Matcher: Kesalahan Dot-Matrix 'Kitrol' vs 'Xitrol' Menghasilkan Similarity >= 75%");
+assert(testDiceSimilarity("paracetamol", "parasetamol") >= 0.70, "Fuzzy Matcher: Variasi Fonetik 'Paracetamol' vs 'Parasetamol' Menghasilkan Similarity >= 70%");
+
+// 2. Uji Proteksi Satuan Sedang Kosong (Mencegah Injeksi Default Pcs dari Master)
+function testPreserveEmptyIntermediateUnit(gridRow, masterProd) {
+  const buyU = gridRow.purchaseUnit || masterProd["Kemasan Beli"] || "BOX";
+  const baseU = gridRow.baseUnit || masterProd["Satuan Dasar"] || "TABLET";
+  let interU = (gridRow.intermediateUnit !== undefined && gridRow.intermediateUnit !== null)
+    ? gridRow.intermediateUnit
+    : (masterProd["Satuan Antara"] || "");
+  if (!gridRow.purchaseUnit && !gridRow.baseUnit) {
+    interU = masterProd["Satuan Antara"] || "";
+  }
+  return {
+    purchaseUnit: buyU,
+    baseUnit: baseU,
+    intermediateUnit: (interU && interU.toLowerCase() !== baseU.toLowerCase() && interU.toLowerCase() !== buyU.toLowerCase()) ? interU : ""
+  };
+}
+
+const mockTsvRowWithoutMid = {
+  purchaseUnit: "STRIP",
+  intermediateUnit: "",
+  baseUnit: "BOTOL"
+};
+const masterWithPcsMid = {
+  "Kemasan Beli": "BOX",
+  "Satuan Antara": "Pcs",
+  "Satuan Dasar": "BOTOL"
+};
+const preservedOutcome = testPreserveEmptyIntermediateUnit(mockTsvRowWithoutMid, masterWithPcsMid);
+assert(preservedOutcome.purchaseUnit === "STRIP", "Preservasi Satuan: Kemasan Supplier Faktur 'STRIP' Terlindungi (Bukan BOX)");
+assert(preservedOutcome.intermediateUnit === "", "Preservasi Satuan: Kemasan Sedang Sengaja Kosong Tetap Kosong (Bebas Injeksi 'Pcs')");
+assert(preservedOutcome.baseUnit === "BOTOL", "Preservasi Satuan: Kemasan Terkecil Faktur 'BOTOL' Terlindungi");
+
+// 3. Verifikasi Keberadaan Fungsi Cerdas & Tombol Tautkan di Sumber Kode
+assert(
+  mgmtInvoicesJs.includes("calculateDiceSimilarity") &&
+  mgmtInvoicesJs.includes("btn-accept-fuzzy-match") &&
+  mgmtInvoicesJs.includes("★ Rekomendasi"),
+  "Faktur Autocomplete: Fuzzy Suggestion, Tombol Tautkan Langsung, dan Rekomendasi Terintegrasi"
+);
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);

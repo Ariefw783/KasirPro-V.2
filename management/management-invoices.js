@@ -1701,7 +1701,7 @@ function processTsvData(rawText) {
       if (!pUnit) pUnit = match.product["Kemasan Beli"] || match.product["Satuan Pembelian"] || "Box";
       if (!bUnit) bUnit = match.product["Satuan Dasar"] || match.product["Satuan"] || "Pcs";
       if (!convRatio) convRatio = num(match.product["Konversi"] ?? match.product["Isi Kemasan"] ?? 1) || 1;
-      if (!mUnit && match.product["Satuan Antara"]) {
+      if (!mUnit && !is14ColFormat && match.product["Satuan Antara"]) {
         mUnit = match.product["Satuan Antara"];
         mQty = num(match.product["Isi Satuan Antara"]) || 1;
       } else if (rawMidQty) {
@@ -1718,7 +1718,7 @@ function processTsvData(rawText) {
       if (!pUnit) pUnit = match.product["Kemasan Beli"] || match.product["Satuan Pembelian"] || "Box";
       if (!bUnit) bUnit = match.product["Satuan Dasar"] || match.product["Satuan"] || "Pcs";
       if (!convRatio) convRatio = num(match.product["Konversi"] ?? match.product["Isi Kemasan"] ?? 1) || 1;
-      if (!mUnit && match.product["Satuan Antara"]) {
+      if (!mUnit && !is14ColFormat && match.product["Satuan Antara"]) {
         mUnit = match.product["Satuan Antara"];
         mQty = num(match.product["Isi Satuan Antara"]) || 1;
       } else if (rawMidQty) {
@@ -1909,9 +1909,9 @@ function renderManualInvoiceItems() {
       headerBadgeHtml = `<span class="header-status-pill" style="font-size:10px;font-weight:700;background:#fffbeb;color:#d97706;border:1px solid #fde68a;padding:1px 6px;border-radius:4px;">Mirip (${item.matchScore || 85}%)</span>`;
       matchBadgeHtml = `
         <div style="margin-top:2px;">
-          <span style="font-size:10px;font-weight:700;background:#fffbeb;color:#d97706;border:1px solid #fde68a;padding:1px 6px;border-radius:4px;" title="Mirip (${item.matchScore}%). Klik/ketik untuk mengganti jika perlu.">
-            Mirip: ${escapeHtml(matchName)} (${item.matchScore}%)
-          </span>
+          <button type="button" class="btn-accept-fuzzy-match button button-small" data-index="${idx}" style="font-size:10px;font-weight:700;background:#fffbeb;color:#b45309;border:1px solid #fde68a;padding:2px 7px;border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="Klik untuk langsung menautkan obat ini ke master produk resmi">
+            <i class="fa-solid fa-link"></i> Mirip: ${escapeHtml(matchName)} (${item.matchScore}%)
+          </button>
         </div>
       `;
     } else if (item.name && (item.matchStatus === "new" || !item.productCode)) {
@@ -2189,7 +2189,7 @@ function updateRowChainedUnitLabelsAndTotal(idx) {
   if (!row) return;
 
   const buyVal = text(row.querySelector(".row-purchase-unit")?.value) || "BOX";
-  const midVal = text(row.querySelector(".row-mid-unit")?.value) || buyVal;
+  const midVal = text(row.querySelector(".row-mid-unit")?.value);
   const baseVal = text(row.querySelector(".row-base-unit")?.value) || "TABLET";
 
   const midQty = num(row.querySelector(".row-mid-qty")?.value) || 1;
@@ -2198,14 +2198,16 @@ function updateRowChainedUnitLabelsAndTotal(idx) {
 
   item.purchaseUnit = buyVal;
   item.intermediateUnit = midVal;
-  item.intermediateQty = midQty;
+  item.intermediateQty = midVal ? midQty : 1;
   item.baseUnit = baseVal;
   item.baseQty = baseQty;
   item.conversionRatio = totalConv;
 
+  const displayMid = midVal || buyVal;
+
   // Sinkronisasi live label di Form 2
   row.querySelectorAll(".row-dyn-buy-lbl, .row-dyn-buy-lbl-2").forEach(el => el.textContent = buyVal);
-  row.querySelectorAll(".row-dyn-mid-lbl, .row-dyn-mid-lbl-2").forEach(el => el.textContent = midVal);
+  row.querySelectorAll(".row-dyn-mid-lbl, .row-dyn-mid-lbl-2").forEach(el => el.textContent = displayMid);
   row.querySelectorAll(".row-dyn-base-lbl, .row-dyn-base-lbl-2").forEach(el => el.textContent = baseVal);
 
   const convInp = row.querySelector(".row-conversion");
@@ -2448,6 +2450,40 @@ function bindManualItemRowEvents() {
       }
     });
   });
+
+  // Tombol Tautkan Produk Mirip Langsung dari Baris Tabel
+  tbody.querySelectorAll(".btn-accept-fuzzy-match").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.index, 10);
+      const curItem = manualInvoiceItems[idx];
+      if (curItem && curItem.matchedProduct) {
+        selectProductForRow(idx, curItem.matchedProduct);
+      }
+    });
+  });
+}
+
+function calculateDiceSimilarity(s1, s2) {
+  if (!s1 || !s2) return 0;
+  if (s1 === s2) return 1;
+  if (s1.length < 2 || s2.length < 2) return s1 === s2 ? 1 : 0;
+  const bg1 = new Map();
+  for (let i = 0; i < s1.length - 1; i++) {
+    const g = s1.substring(i, i + 2);
+    bg1.set(g, (bg1.get(g) || 0) + 1);
+  }
+  const bg2 = new Map();
+  for (let i = 0; i < s2.length - 1; i++) {
+    const g = s2.substring(i, i + 2);
+    bg2.set(g, (bg2.get(g) || 0) + 1);
+  }
+  let inter = 0;
+  for (const [g, count] of bg1.entries()) {
+    if (bg2.has(g)) inter += Math.min(count, bg2.get(g));
+  }
+  return (2 * inter) / ((s1.length - 1) + (s2.length - 1));
 }
 
 function showProductSuggestions(inputEl, idx, query) {
@@ -2462,33 +2498,111 @@ function showProductSuggestions(inputEl, idx, query) {
     return;
   }
 
-  const q = (query || "").trim().toLowerCase();
+  const rawQ = (query || "").trim();
+  const q = rawQ.toLowerCase();
   const prods = cachedMasterProducts || (readStore(STORE_KEYS.master, {})?.produk || []);
+  const curRowItem = manualInvoiceItems[idx] || {};
 
-  const supMatches = [];
-
+  // Kandidat dari supplier terpilih
+  const supProds = [];
   for (const p of prods) {
     if (p._isDeleted || norm(p["Status"] || p["Status Produk"]) === "nonaktif") continue;
 
     // Blokir produk acuan yang bukan berasal dari supplier terpilih pada poin 1
     if (!isSameSupplierName(currentSup, p["Supplier"] || p["Produsen"] || p.supplier)) continue;
+    supProds.push(p);
+  }
 
-    const name = (p["Nama Produk"] || p.name || "").toLowerCase();
-    const code = (p["Kode Produk"] || p["Kode Produk Internal"] || "").toLowerCase();
-    const barcode = (p["Barcode"] || "").toLowerCase();
+  const qTokens = q ? q.split(/\s+/).filter(Boolean) : [];
+  const scoredMatches = [];
+  const seenCodes = new Set();
 
-    const matchesQuery = !q || name.includes(q) || code.includes(q) || barcode.includes(q);
-
-    if (matchesQuery) {
-      supMatches.push(p);
+  // 1. Jika baris ini sudah memiliki produk rekomendasi dari TSV (curRowItem.matchedProduct), utamakan paling atas
+  if (curRowItem.matchedProduct) {
+    const recP = curRowItem.matchedProduct;
+    const recCode = norm(recP["Kode Produk"] || recP["Kode Produk Internal"] || "");
+    if (recCode) {
+      seenCodes.add(recCode);
+      scoredMatches.push({
+        product: recP,
+        score: 999,
+        matchType: "recommended",
+        badgeText: `★ Rekomendasi (${curRowItem.matchScore || 94}%)`
+      });
     }
   }
 
-  const combined = supMatches.slice(0, 15);
+  // 2. Evaluasi seluruh produk supplier terpilih (Exact, Substring, dan Multi-Token Fuzzy)
+  for (const p of supProds) {
+    const pCode = norm(p["Kode Produk"] || p["Kode Produk Internal"] || "");
+    if (seenCodes.has(pCode)) continue;
+
+    const pBarcode = norm(p["Barcode"] || "");
+    const pName = (p["Nama Produk"] || p.name || "").toLowerCase();
+    const pNormName = normalizeProductName(pName);
+
+    let score = 0;
+    let matchType = "none";
+    let badgeText = "";
+
+    if (!q) {
+      score = 0.5;
+      matchType = "all";
+    } else if (pBarcode === q || pCode === q || pName === q || pNormName === normalizeProductName(q)) {
+      score = 100;
+      matchType = "exact";
+      badgeText = "Tepat 100%";
+    } else if (pName.startsWith(q) || pCode.startsWith(q)) {
+      score = 80;
+      matchType = "prefix";
+    } else if (pName.includes(q) || pCode.includes(q) || pBarcode.includes(q)) {
+      score = 60;
+      matchType = "substring";
+    } else if (qTokens.length > 0) {
+      // Fuzzy Token Matching (Word overlap & Dice similarity)
+      const pTokens = pNormName.split(/\s+/).filter(Boolean);
+      let matchedTokenCount = 0;
+
+      for (const qt of qTokens) {
+        if (pTokens.some(pt => pt === qt)) {
+          matchedTokenCount += 1.0;
+        } else if (pTokens.some(pt => pt.includes(qt) || qt.includes(pt))) {
+          matchedTokenCount += 0.8;
+        } else {
+          let bestWordSim = 0;
+          for (const pt of pTokens) {
+            if (Math.abs(pt.length - qt.length) <= 3) {
+              const sim = calculateDiceSimilarity(qt, pt);
+              if (sim > bestWordSim) bestWordSim = sim;
+            }
+          }
+          if (bestWordSim >= 0.5) {
+            matchedTokenCount += bestWordSim;
+          }
+        }
+      }
+
+      const tokenScore = (2 * matchedTokenCount) / (qTokens.length + pTokens.length);
+      if (tokenScore >= 0.3) {
+        score = 20 + Math.round(tokenScore * 50); // 35 - 70
+        matchType = "fuzzy";
+        badgeText = `Mirip (${Math.min(99, Math.round(tokenScore * 100))}%)`;
+      }
+    }
+
+    if (score > 0) {
+      scoredMatches.push({ product: p, score, matchType, badgeText });
+      seenCodes.add(pCode);
+    }
+  }
+
+  scoredMatches.sort((a, b) => b.score - a.score);
+  const combined = scoredMatches.slice(0, 15);
 
   let html = "";
   if (combined.length > 0) {
-    html = combined.map(p => {
+    html = combined.map(itemMatch => {
+      const p = itemMatch.product;
       const name = p["Nama Produk"] || p.name || "";
       const code = p["Kode Produk"] || p["Kode Produk Internal"] || "";
       const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
@@ -2497,11 +2611,17 @@ function showProductSuggestions(inputEl, idx, query) {
       const baseUnit = p["Satuan Dasar"] || p["Satuan"] || "Pcs";
       const pSup = p["Supplier"] || p["Produsen"] || "";
       const isCurrentSup = norm(pSup) === norm(currentSup);
+      const badgeHtml = itemMatch.badgeText
+        ? `<span style="font-size:10px;font-weight:700;background:${itemMatch.matchType === 'recommended' ? '#fef3c7' : '#fffbeb'};color:${itemMatch.matchType === 'recommended' ? '#b45309' : '#d97706'};border:1px solid ${itemMatch.matchType === 'recommended' ? '#fcd34d' : '#fde68a'};padding:1px 6px;border-radius:4px;margin-left:6px;">${escapeHtml(itemMatch.badgeText)}</span>`
+        : "";
 
       return `
-        <div class="inv-prod-opt" data-index="${idx}" data-code="${escapeHtml(code)}" style="border-left:${isCurrentSup ? '4px solid #0284c7' : '4px solid #e2e8f0'};padding:8px 12px;cursor:pointer;">
+        <div class="inv-prod-opt" data-index="${idx}" data-code="${escapeHtml(code)}" style="border-left:${itemMatch.matchType === 'recommended' ? '4px solid #f59e0b' : (isCurrentSup ? '4px solid #0284c7' : '4px solid #e2e8f0')};padding:8px 12px;cursor:pointer;background:${itemMatch.matchType === 'recommended' ? '#fffdf5' : '#fff'};">
           <div style="flex:1;min-width:0;padding-right:8px;">
-            <div style="font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(name)}</div>
+            <div style="font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;">
+              <span>${escapeHtml(name)}</span>
+              ${badgeHtml}
+            </div>
             <div style="color:#64748b;font-size:11px;display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;">
               <span>Kode: <strong>${escapeHtml(code)}</strong></span>
               <span>•</span>
@@ -2605,12 +2725,32 @@ function selectProductForRow(idx, prod) {
   }
 
   // 2. Sinkronisasi 3 Tingkat Satuan & Konversi Berantai
-  const buyU = prod["Kemasan Beli"] || prod["Satuan Pembelian"] || item.purchaseUnit || "BOX";
-  const baseU = prod["Satuan Dasar"] || prod["Satuan"] || item.baseUnit || "TABLET";
-  const interU = prod["Satuan Antara"] || item.intermediateUnit || "";
-  const conv = num(prod["Konversi"] ?? prod["Isi Kemasan"] ?? item.conversionRatio) || 1;
-  let interQty = num(prod["Isi Satuan Antara"]) || 0;
-  let baseQty = num(prod["Isi Satuan Dasar"]) || 0;
+  // PROTEKSI NILAI FAKTUR FISIK / TSV:
+  // Jika baris faktur sudah memiliki satuan atau konversi faktur, JANGAN TIMPA dengan master!
+  const buyU = item.purchaseUnit || prod["Kemasan Beli"] || prod["Satuan Pembelian"] || "BOX";
+  const baseU = item.baseUnit || prod["Satuan Dasar"] || prod["Satuan"] || "TABLET";
+
+  // Satuan Antara: jika baris faktur sudah ada nilainya (termasuk sengaja dikosongkan), pertahankan!
+  let interU = (item.intermediateUnit !== undefined && item.intermediateUnit !== null)
+    ? item.intermediateUnit
+    : (prod["Satuan Antara"] || "");
+
+  // Hanya jika item baru yang belum diisi satuan sama sekali, ambil dari master
+  if (!item.purchaseUnit && !item.baseUnit) {
+    interU = prod["Satuan Antara"] || "";
+  }
+
+  const conv = (num(item.conversionRatio) > 0)
+    ? num(item.conversionRatio)
+    : (num(prod["Konversi"] ?? prod["Isi Kemasan"]) || 1);
+
+  let interQty = (item.intermediateQty !== undefined && item.intermediateQty !== null && item.intermediateQty !== "")
+    ? num(item.intermediateQty)
+    : (num(prod["Isi Satuan Antara"]) || 0);
+
+  let baseQty = (item.baseQty !== undefined && item.baseQty !== null && item.baseQty !== "")
+    ? num(item.baseQty)
+    : (num(prod["Isi Satuan Dasar"]) || 0);
 
   if (interQty && baseQty && (interQty * baseQty === conv)) {
     // Format berantai lengkap
@@ -2630,10 +2770,11 @@ function selectProductForRow(idx, prod) {
 
   item.purchaseUnit = buyU;
   item.baseUnit = baseU;
-  item.intermediateUnit = (interU && norm(interU) !== norm(baseU)) ? interU : buyU;
-  item.intermediateQty = interQty || 1;
-  item.baseQty = baseQty || 1;
-  item.conversionRatio = Math.max(1, (interQty || 1) * (baseQty || 1));
+  // Jika interU kosong atau sama dengan baseU / buyU, kosongkan agar tidak memunculkan default "Pcs"
+  item.intermediateUnit = (interU && norm(interU) !== norm(baseU) && norm(interU) !== norm(buyU)) ? interU : "";
+  item.intermediateQty = item.intermediateUnit ? (interQty || 1) : 1;
+  item.baseQty = baseQty || conv;
+  item.conversionRatio = Math.max(1, (item.intermediateQty || 1) * (item.baseQty || 1));
 
   // HARGA BELI FAKTUR: HANYA ISI JIKA DI BARIS FAKTUR FISIK MASIH KOSONG / 0
   const masterBuyPrice = num(prod["Harga Beli Terakhir"] ?? prod["Harga Beli"] ?? 0);

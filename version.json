@@ -1,15 +1,14 @@
 {
-  "version": "2.2.77",
-  "build": "20261012.01",
-  "releaseDate": "12 Oktober 2026",
-  "title": "Clean & Streamlined Mobile Layout for Invoice Grid & Product Master",
-  "description": "Perapian dan penyederhanaan tata letak responsif ponsel pada modul Faktur Grid Mode & Master Produk, serta otomasi stok minimum 3 read-only.",
+  "version": "2.2.78",
+  "build": "20261013.01",
+  "releaseDate": "13 Oktober 2026",
+  "title": "Smart Fuzzy Suggestions & Protected TSV Units in Invoice Grid",
+  "description": "Peningkatan pencocokan fuzzy pada dropdown faktur dan proteksi satuan faktur TSV tanpa overwrite default Pcs.",
   "changelog": [
-    "Perapian tata letak Form 1 & Form 2 pada kartu modul Input Faktur Manual Grid Mode agar tampil bersih dan proporsional di layar ponsel",
-    "Pemberian 3 kolom seimbang (1fr 1fr 1fr) untuk nama satuan kemasan tanpa pembungkusan canggung di layar ponsel",
-    "Penyederhanaan baris relasi Form 2 menjadi format ringkas (1 Kemasan = X Kemasan, Total = Y)",
-    "Penghapusan fitur Bagian 3 (Harga & Stok Minimum) pada modal Tambah Master Produk Baru",
-    "Penerapan stok minimum otomatis bernilai 3 (read-only) pada Master Produk Baru",
-    "Pembaruan Service Worker (v118) untuk pembaruan cache aplikasi"
+    "Smart fuzzy product autocomplete suggestions",
+    "Interactive one-click fuzzy match linking",
+    "Protected physical invoice unit values",
+    "Prevented unwanted default Pcs injection",
+    "Updated PWA cache to v119"
   ]
 }
