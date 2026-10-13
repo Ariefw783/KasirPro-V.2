@@ -591,8 +591,8 @@ async function exportPricingWithExcelJS(items, fileName) {
 
   const guideItems = [
     { no: 1, section: "Kolom E (Harga Kemasan A - Eceran Utama)", desc: "Ketikkan harga jual satuan terkecil / eceran utama (Kaplet / Botol / Tablet / Pcs) yang Anda inginkan (misal: 800, 1500, 20000). Kolom ini adalah harga pokok toko/apotek." },
-    { no: 2, section: "Kolom G (Harga Kemasan B - Sedang)", desc: "Ketikkan harga jual per kemasan sedang (misal Strip / Blister). Jika dikosongkan, sistem otomatis menghitung kelipatan dari eceran. Jika produk tidak memiliki kemasan sedang, sel ini berwarna abu gelap dan tidak perlu diisi." },
-    { no: 3, section: "Kolom I (Harga Kemasan C - Kuning Soft)", desc: "Warna kuning menandakan kolom ini bersifat opsional untuk harga grosir kemasan terbesar (Box / Dus / Karton). Anda bisa mengetik harga promo/grosir, atau dikosongkan agar otomatis menghitung kelipatan dari eceran." },
+    { no: 2, section: "Kolom G (Harga Kemasan B - Sedang)", desc: "Ketikkan harga jual per kemasan sedang (misal Strip / Blister / Sachet). Jika dikosongkan, sistem otomatis menghitung kelipatan dari eceran. Ini adalah kemasan transaksi utama di kasir POS." },
+    { no: 3, section: "Kolom I (Harga Kemasan C - Arsip / Grosir Opsional)", desc: "Kolom ini adalah harga referensi/grosir kemasan beli PBF (Box / Dus / Karton) sebagai arsip & patokan HPP. Penjualan 1 box di kasir POS dilayani via kelipatan kemasan sedang + fitur diskon POS." },
     { no: 4, section: "Kolom C (Harga Beli Faktur)", desc: "Menampilkan harga modal beli asli dari faktur beserta satuan aslinya (misal: Rp 15.000 / BOX) sebagai patokan margin Anda." },
     { no: 5, section: "Kolom A (Kode Produk)", desc: "JANGAN mengubah atau menghapus isi Kode Produk. Kolom ini adalah kunci pencocokan otomatis sistem KasirPro." },
     { no: 6, section: "Cara Simpan & Upload", desc: "Setelah selesai, simpan berkas ini (Ctrl+S). Buka menu Master Produk di KasirPro, lalu klik tombol 'Upload & Terapkan Harga Jual'. Produk akan langsung AKTIF dan bisa ditransaksikan di kasir POS!" }
@@ -683,8 +683,8 @@ function exportPricingWithSheetJS(items, fileName) {
   const guideRows = [
     ["NO", "BAGIAN", "PETUNJUK LENGKAP UNTUK OWNER / PEMILIK APOTEK"],
     [1, "Kolom E (Harga Kemasan A - Eceran)", "Ketikkan harga jual satuan terkecil / eceran utama (Kaplet / Botol / Tablet / Pcs) yang Anda inginkan."],
-    [2, "Kolom G (Harga Kemasan B - Sedang)", "Ketikkan harga jual per kemasan sedang (misal Strip). Jika dikosongkan, sistem otomatis menghitung kelipatan."],
-    [3, "Kolom I (Harga Kemasan C - Kuning)", "Opsional untuk diskon grosir Box/Karton. Anda bisa mengetik harga promo/grosir, atau dikosongkan agar otomatis."],
+    [2, "Kolom G (Harga Kemasan B - Sedang)", "Ketikkan harga jual per kemasan sedang (misal Strip). Jika dikosongkan, sistem otomatis menghitung kelipatan. Menjadi default transaksi POS."],
+    [3, "Kolom I (Harga Kemasan C - Arsip/Grosir)", "Opsional untuk arsip/acuan HPP kemasan Box/Karton. Transaksi 1 box di kasir POS dilayani via kelipatan strip + diskon."],
     [4, "Kolom C (Harga Beli Faktur)", "Menampilkan modal beli asli dari faktur beserta satuannya (misal: Rp 15.000 / BOX)."],
     [5, "Kolom A (Kode Produk)", "JANGAN mengubah kode produk sebagai kunci pencocokan sistem."],
     [6, "Simpan & Upload", "Simpan lalu upload kembali di KasirPro agar obat langsung AKTIF di kasir POS."]
@@ -821,18 +821,15 @@ export async function parsePricingWorkbook(file, currentMaster = {}) {
     }
 
     // Tentukan opsi jual & satuan dijual yang aktif
+    // Berdasarkan Arsitektur 2 Satuan Transaksi Aktif (Sedang & Terkecil) + 1 Satuan Arsip Pembelian:
+    // Satuan Sedang diposisikan sebagai default transaksi POS, Satuan Terkecil sebagai eceran cadangan.
+    // Satuan Besar (buy) murni arsip data faktur/pembelian & acuan HPP (tidak dijadikan opsi transaksi kasir POS).
     let mode = "1";
     let allowedUnits = ["base"];
 
-    if (hasMid && hasBuy) {
-      mode = "3";
-      allowedUnits = ["base", "mid", "buy"];
-    } else if (hasBuy) {
+    if (hasMid) {
       mode = "2";
-      allowedUnits = ["base", "buy"];
-    } else if (hasMid) {
-      mode = "2";
-      allowedUnits = ["base", "mid"];
+      allowedUnits = ["mid", "base"];
     } else {
       mode = "1";
       allowedUnits = ["base"];
@@ -840,8 +837,8 @@ export async function parsePricingWorkbook(file, currentMaster = {}) {
 
     // Perbarui target produk
     target["Harga Jual"] = priceBase;
-    target["Harga Jual Satuan Sedang"] = priceMid > 0 ? priceMid : 0;
-    target["Harga Jual Satuan Besar"] = priceBuy > 0 ? priceBuy : 0;
+    target["Harga Jual Satuan Sedang"] = priceMid > 0 ? priceMid : (hasMid ? Math.round(priceBase * midQty) : 0);
+    target["Harga Jual Satuan Besar"] = priceBuy > 0 ? priceBuy : (hasBuy ? Math.round(priceBase * conversion) : 0);
     target["Opsi Jual"] = mode;
     target["Satuan Dijual"] = allowedUnits;
     target["Status"] = "Aktif";

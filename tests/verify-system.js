@@ -1673,15 +1673,12 @@ function simulateParsePricingRows9Col(rows, masterProducts) {
     let mode = "1";
     let allowedUnits = ["base"];
 
-    if (hasMid && hasBuy) {
-      mode = "3";
-      allowedUnits = ["base", "mid", "buy"];
-    } else if (hasBuy) {
+    if (hasMid) {
       mode = "2";
-      allowedUnits = ["base", "buy"];
-    } else if (hasMid) {
-      mode = "2";
-      allowedUnits = ["base", "mid"];
+      allowedUnits = ["mid", "base"];
+    } else {
+      mode = "1";
+      allowedUnits = ["base"];
     }
 
     target["Harga Jual"] = priceBase;
@@ -1747,8 +1744,8 @@ const resAmox = importedResults.find(p => p["Kode Produk"] === "RNA-NEW-001");
 assert(resAmox["Harga Jual"] === 700, "Impor 9 Kolom: Harga Jual Eceran Rp 700 Berhasil Disimpan");
 assert(resAmox["Harga Jual Satuan Sedang"] === 7000, "Impor 9 Kolom: Harga Jual Strip Rp 7.000 Berhasil Disimpan");
 assert(resAmox["Harga Jual Satuan Besar"] === 68000, "Impor 9 Kolom: Harga Grosir Box Rp 68.000 Terlindungi");
-assert(resAmox["Opsi Jual"] === "3", "Impor 9 Kolom: Opsi Jual Otomatis Menjadi '3' (3 Satuan)");
-assert(JSON.stringify(resAmox["Satuan Dijual"]) === JSON.stringify(["base", "mid", "buy"]), "Impor 9 Kolom: Satuan Dijual Aktif ['base', 'mid', 'buy']");
+assert(resAmox["Opsi Jual"] === "2", "Impor 9 Kolom: Opsi Jual Otomatis Menjadi '2' (Dual Unit: Sedang & Eceran)");
+assert(JSON.stringify(resAmox["Satuan Dijual"]) === JSON.stringify(["mid", "base"]), "Impor 9 Kolom: Satuan Dijual Aktif ['mid', 'base']");
 assert(resAmox["Status"] === "Aktif", "Impor 9 Kolom: Status Produk Berubah Menjadi 'Aktif'");
 
 const resSirup = importedResults.find(p => p["Kode Produk"] === "RNA-NEW-002");
@@ -1760,8 +1757,8 @@ assert(resSirup["Status"] === "Aktif", "Impor 9 Kolom: Status Sirup Berubah Menj
 const resMinyak = importedResults.find(p => p["Kode Produk"] === "RNA-NEW-003");
 assert(resMinyak["Harga Jual"] === 13000, "Impor 9 Kolom: Harga Eceran Botol Rp 13.000 Berhasil Disimpan");
 assert(resMinyak["Harga Jual Satuan Besar"] === 300000, "Impor 9 Kolom: Harga Grosir Karton Rp 300.000 Berhasil Disimpan");
-assert(resMinyak["Opsi Jual"] === "2", "Impor 9 Kolom: Opsi Jual Minyak Menjadi '2' (Dual Unit: Eceran & Karton)");
-assert(JSON.stringify(resMinyak["Satuan Dijual"]) === JSON.stringify(["base", "buy"]), "Impor 9 Kolom: Satuan Dijual Aktif ['base', 'buy']");
+assert(resMinyak["Opsi Jual"] === "1", "Impor 9 Kolom: Opsi Jual Minyak Menjadi '1' (Single Unit Transaksi: Botol, Karton Arsip)");
+assert(JSON.stringify(resMinyak["Satuan Dijual"]) === JSON.stringify(["base"]), "Impor 9 Kolom: Satuan Dijual Aktif ['base']");
 
 // Verifikasi Filter Ekspor: Abaikan Produk Nonaktif dari Excel Perlu Harga Jual
 const mockDeactivatedProd = {
@@ -2359,6 +2356,31 @@ assert(sirupUnits[0].level === "base" && sirupUnits[0].name === "BOTOL", "POS Si
 assert(
   posCoreFileContent.includes("displayUnitLabel") && posCoreFileContent.includes("search-result-price"),
   "POS Search: Hasil Pencarian Menampilkan Harga Disertai Label Kemasan Primer Transaksi"
+);
+
+// 3. Verifikasi Modul Ekspor & Impor Excel Harga Jual (modules/excel/excel-service.js)
+const excelServiceContent = fs.readFileSync(path.join(rootDir, "modules/excel/excel-service.js"), "utf8");
+
+assert(
+  !excelServiceContent.includes('mode = "3"') && !excelServiceContent.includes("mode = '3'"),
+  "Excel Service: Mode 3 (3 Satuan Jual) Dieliminasi Sepenuhnya dari Parser Harga"
+);
+
+assert(
+  !excelServiceContent.includes('allowedUnits = ["base", "mid", "buy"]') &&
+  !excelServiceContent.includes('allowedUnits = ["base", "buy"]'),
+  "Excel Service: Satuan Besar 'buy' Dieliminasi dari Satuan Jual Aktif Hasil Impor Excel"
+);
+
+assert(
+  excelServiceContent.includes('allowedUnits = ["mid", "base"]') &&
+  excelServiceContent.includes('allowedUnits = ["base"]'),
+  "Excel Service: Impor Excel Konsisten Menghasilkan Satuan Dijual ['mid', 'base'] atau ['base']"
+);
+
+assert(
+  excelServiceContent.includes("Penjualan 1 box di kasir POS dilayani via kelipatan kemasan sedang + fitur diskon POS"),
+  "Excel Service: Panduan Owner Menyampaikan Instruksi Transaksi 1 Box via Kelipatan Sedang + Diskon POS"
 );
 
 console.log("\n========================================================");
