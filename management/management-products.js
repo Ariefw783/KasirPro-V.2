@@ -1062,79 +1062,38 @@ function installEditPriceModal() {
   const modalHtml = `
     <div id="modal-edit-price" class="kp-dialog-v4" hidden>
       <div class="kp-dialog-v4__backdrop"></div>
-      <section class="kp-dialog-v4__card" style="width:min(96vw,540px);max-height:92vh;overflow-y:auto;" role="dialog">
-        <header style="padding:16px 20px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#0f172a;color:#fff;">
+      <section class="kp-dialog-v4__card" style="width:min(96vw,520px);max-height:92vh;overflow-y:auto;border-radius:14px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);" role="dialog">
+        <header style="padding:14px 18px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#0f172a;color:#fff;">
           <div>
-            <h2 style="font-size:16px;font-weight:800;margin:0;color:#f8fafc;"><i class="fa-solid fa-tags text-primary"></i> Atur Harga Jual &amp; Kemasan</h2>
-            <p style="font-size:11px;color:#94a3b8;margin:2px 0 0;">Tentukan satuan yang boleh ditransaksikan di kasir (POS)</p>
+            <h2 style="font-size:15.5px;font-weight:800;margin:0;color:#f8fafc;"><i class="fa-solid fa-tags text-primary"></i> Atur Harga Jual Produk</h2>
+            <p style="font-size:11px;color:#94a3b8;margin:2px 0 0;">Tentukan harga satuan transaksi yang dijual di kasir (POS)</p>
           </div>
           <button type="button" id="close-modal-price" class="button button-small button-secondary" style="padding:4px 8px;color:#cbd5e1;" title="Tutup"><i class="fa-solid fa-xmark"></i></button>
         </header>
 
-        <div style="padding:18px 20px;text-align:left;display:grid;gap:14px;background:#f8fafc;">
+        <div style="padding:16px 18px;text-align:left;display:grid;gap:12px;background:#f8fafc;">
           <!-- Info Ringkas Produk & Modal Faktur Fisik -->
           <div style="background:#fff;padding:12px 14px;border-radius:10px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
             <div style="font-size:11px;color:#64748b;font-weight:600;">Produk:</div>
             <strong id="price-modal-name" style="display:block;font-size:14.5px;color:#0f172a;margin-top:2px;">—</strong>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding-top:6px;border-top:1px dashed #e2e8f0;font-size:11.5px;flex-wrap:wrap;gap:6px;">
               <span style="color:#64748b;">Kode: <strong id="price-modal-code" style="color:#0f172a;">—</strong></span>
-              <span style="color:#0369a1;font-weight:700;">Modal Faktur Fisik: <strong id="price-modal-buy" style="color:#0284c7;">Rp0</strong> <span id="price-modal-buy-unit" style="font-size:10px;color:#64748b;"></span></span>
+              <span style="color:#0369a1;font-weight:700;">Modal Beli Faktur: <strong id="price-modal-buy" style="color:#0284c7;">Rp0</strong> <span id="price-modal-buy-unit" style="font-size:10px;color:#64748b;"></span></span>
             </div>
           </div>
 
-          <!-- Opsi Berapa Satuan Yang Dijual ke Pembeli -->
-          <div style="background:#fff;padding:14px;border-radius:10px;border:1px solid #cbd5e1;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
-            <label style="display:block;font-size:12px;font-weight:800;color:#0f172a;margin-bottom:8px;">
-              <i class="fa-solid fa-cart-shopping text-primary"></i> Pilihan Satuan Penjualan di Kasir (POS):
-            </label>
-            <div style="display:grid;gap:8px;">
-              <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;font-weight:600;color:#334155;background:#f8fafc;padding:8px 10px;border-radius:6px;border:1px solid #e2e8f0;">
-                <input type="radio" name="price-selling-mode" value="1" checked style="accent-color:#2563eb;">
-                <span><strong>Jual Satuan Eceran Saja</strong> <span style="font-size:11px;color:#64748b;display:block;font-weight:400;">Hanya menjual 1 jenis satuan pilihan di kasir (default eceran)</span></span>
-              </label>
-              <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;font-weight:600;color:#334155;background:#f8fafc;padding:8px 10px;border-radius:6px;border:1px solid #e2e8f0;">
-                <input type="radio" name="price-selling-mode" value="2" style="accent-color:#2563eb;">
-                <span><strong>Jual Eceran &amp; Grosir/Kemasan</strong> <span style="font-size:11px;color:#64748b;display:block;font-weight:400;">Menjual 2 pilihan satuan di kasir (misal eceran dan strip/box)</span></span>
-              </label>
-              <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer;font-weight:600;color:#334155;background:#f8fafc;padding:8px 10px;border-radius:6px;border:1px solid #e2e8f0;">
-                <input type="radio" name="price-selling-mode" value="3" style="accent-color:#2563eb;">
-                <span><strong>Jual Semua Satuan Kemasan</strong> <span style="font-size:11px;color:#64748b;display:block;font-weight:400;">Menjual lengkap seluruh satuan (Eceran, Sedang, dan Box) di kasir</span></span>
-              </label>
-            </div>
-
-            <!-- Selector Pilihan Satuan untuk Mode 1 -->
-            <div id="box-mode-1-selector" style="margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0;">
-              <label style="display:block;font-size:11.5px;font-weight:700;color:#0369a1;margin-bottom:4px;">Pilih Satuan yang Ingin Dijual di Kasir:</label>
-              <select id="select-active-single-unit" style="width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;font-weight:700;background:#fff;">
-              </select>
-            </div>
-
-            <!-- Selector Pilihan Satuan untuk Mode 2 -->
-            <div id="box-mode-2-selector" style="margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0;" hidden>
-              <label style="display:block;font-size:11.5px;font-weight:700;color:#0369a1;margin-bottom:4px;">Pilih Tepat 2 Satuan yang Ingin Dijual di Kasir:</label>
-              <div id="checkboxes-dual-unit" style="display:flex;gap:12px;flex-wrap:wrap;">
-              </div>
+          <!-- Banner Satuan Jual Aktif (Sedang & Eceran) -->
+          <div style="background:#eff6ff;padding:10px 12px;border-radius:8px;border:1px solid #bfdbfe;font-size:12px;color:#0369a1;display:flex;align-items:center;gap:8px;">
+            <i class="fa-solid fa-cart-shopping" style="font-size:15px;color:#0284c7;"></i>
+            <div>
+              <span style="font-weight:700;display:block;">Satuan Transaksi Kasir (POS):</span>
+              <span id="price-modal-units-info" style="font-size:11px;color:#0369a1;">Satuan Sedang (Kemasan Mayoritas) &amp; Satuan Terkecil (Eceran)</span>
             </div>
           </div>
 
-          <!-- Input Kolom Harga Jual Ketiga Satuan -->
+          <!-- Input Kolom Harga Jual Satuan Aktif -->
           <div style="background:#fff;padding:14px;border-radius:10px;border:1px solid #cbd5e1;box-shadow:0 1px 3px rgba(0,0,0,0.03);display:grid;gap:12px;">
-            <!-- 1. Satuan Terkecil / Ecer -->
-            <div id="box-price-row-base">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                <label id="label-edit-sell-price" style="font-size:12px;font-weight:700;color:#1e293b;">
-                  Harga Eceran <span class="text-danger">*</span>
-                </label>
-                <span id="badge-auto-base" style="font-size:10px;padding:2px 8px;border-radius:4px;background:#e0f2fe;color:#0369a1;font-weight:700;" hidden><i class="fa-solid fa-calculator"></i> Dihitung Otomatis</span>
-              </div>
-              <div style="position:relative;">
-                <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-weight:700;color:#64748b;font-size:12.5px;">Rp</span>
-                <input type="text" inputmode="numeric" id="input-edit-sell-price" style="width:100%;min-height:38px;padding:6px 10px 6px 34px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;font-weight:800;color:#0f172a;" placeholder="0">
-              </div>
-              <div id="hint-price-base" style="font-size:10.5px;color:#64748b;margin-top:2px;"></div>
-            </div>
-
-            <!-- 2. Satuan Sedang (Strip / Blister) -->
+            <!-- 1. Satuan Sedang (Strip / Blister / Botol) - Ditampilkan Teratas jika produk ada satuan sedang -->
             <div id="box-edit-price-mid">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                 <label id="label-edit-price-mid" style="font-size:12px;font-weight:700;color:#0369a1;">
@@ -1149,24 +1108,34 @@ function installEditPriceModal() {
               <div id="hint-price-mid" style="font-size:10.5px;color:#64748b;margin-top:2px;"></div>
             </div>
 
-            <!-- 3. Satuan Besar (Box / Dus) -->
-            <div id="box-edit-price-buy">
+            <!-- 2. Satuan Terkecil / Ecer -->
+            <div id="box-price-row-base">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                <label id="label-edit-price-buy" style="font-size:12px;font-weight:700;color:#047857;">
-                  Harga Satuan Besar
+                <label id="label-edit-sell-price" style="font-size:12px;font-weight:700;color:#1e293b;">
+                  Harga Eceran <span class="text-danger">*</span>
                 </label>
-                <span id="badge-auto-buy" style="font-size:10px;padding:2px 8px;border-radius:4px;background:#e0f2fe;color:#0369a1;font-weight:700;" hidden><i class="fa-solid fa-calculator"></i> Dihitung Otomatis</span>
+                <span id="badge-auto-base" style="font-size:10px;padding:2px 8px;border-radius:4px;background:#e0f2fe;color:#0369a1;font-weight:700;" hidden><i class="fa-solid fa-calculator"></i> Dihitung Otomatis</span>
               </div>
               <div style="position:relative;">
                 <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-weight:700;color:#64748b;font-size:12.5px;">Rp</span>
-                <input type="text" inputmode="numeric" id="input-edit-price-buy" style="width:100%;min-height:38px;padding:6px 10px 6px 34px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;font-weight:800;color:#047857;" placeholder="0">
+                <input type="text" inputmode="numeric" id="input-edit-sell-price" style="width:100%;min-height:38px;padding:6px 10px 6px 34px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;font-weight:800;color:#0f172a;" placeholder="0">
               </div>
-              <div id="hint-price-buy" style="font-size:10.5px;color:#64748b;margin-top:2px;"></div>
+              <div id="hint-price-base" style="font-size:10.5px;color:#64748b;margin-top:2px;"></div>
+            </div>
+
+            <!-- Info Arsip Kemasan Beli Supplier (Tidak untuk Transaksi Kasir) -->
+            <div id="box-edit-price-buy" style="margin-top:2px;padding:8px 10px;background:#f8fafc;border-radius:6px;border:1px dashed #cbd5e1;font-size:11px;color:#64748b;display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <span id="label-edit-price-buy" style="font-weight:600;">Kemasan Beli PBF (Arsip):</span>
+                <strong id="hint-price-buy" style="color:#0f2a43;margin-left:4px;">BOX</strong>
+              </div>
+              <input type="hidden" id="input-edit-price-buy" value="0">
+              <span id="badge-auto-buy" style="font-size:10px;color:#64748b;font-style:italic;">Data Arsip Faktur</span>
             </div>
           </div>
         </div>
 
-        <footer style="padding:12px 20px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:8px;">
+        <footer style="padding:12px 18px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:8px;">
           <button type="button" id="cancel-edit-price" class="button button-secondary">Batal</button>
           <button type="button" id="save-edit-price" class="button button-primary"><i class="fa-solid fa-floppy-disk"></i> Simpan Harga &amp; Aktifkan</button>
         </footer>
@@ -1175,7 +1144,7 @@ function installEditPriceModal() {
   `;
   document.body.insertAdjacentHTML("beforeend", modalHtml);
 
-  // Setup live auto dots pada ketiga input harga
+  // Setup live auto dots pada input harga & reaktif antara sedang dan eceran
   const setupAutoDots = (inputId, onInputCallback) => {
     const el = $(inputId);
     if (!el) return;
@@ -1188,213 +1157,25 @@ function installEditPriceModal() {
     el.addEventListener("focus", (e) => e.target.select());
   };
 
-  setupAutoDots("input-edit-sell-price", (val) => recalculateTieredPricesFrom("base", val));
-  setupAutoDots("input-edit-price-mid", (val) => recalculateTieredPricesFrom("mid", val));
-  setupAutoDots("input-edit-price-buy", (val) => recalculateTieredPricesFrom("buy", val));
-
-  // Radio button mode switch
-  document.querySelectorAll('input[name="price-selling-mode"]').forEach(radio => {
-    radio.addEventListener("change", (e) => {
-      priceModalState.mode = e.target.value;
-      updatePriceModalUIByMode();
-    });
+  setupAutoDots("input-edit-price-mid", (val) => {
+    const midQty = Math.max(1, priceModalState.midQty || 1);
+    const baseInput = $("input-edit-sell-price");
+    if (baseInput && (!baseInput.value || document.activeElement === $("input-edit-price-mid"))) {
+      baseInput.value = val ? formatNumber(Math.round(val / midQty)) : "";
+    }
   });
 
-  // Mode 1: Single unit selector change
-  $("select-active-single-unit")?.addEventListener("change", (e) => {
-    priceModalState.singleSelected = e.target.value;
-    updatePriceModalUIByMode();
+  setupAutoDots("input-edit-sell-price", (val) => {
+    const midQty = Math.max(1, priceModalState.midQty || 1);
+    const midInput = $("input-edit-price-mid");
+    if (midInput && priceModalState.midUnit && (!midInput.value || document.activeElement === $("input-edit-sell-price"))) {
+      midInput.value = val ? formatNumber(Math.round(val * midQty)) : "";
+    }
   });
 
   $("close-modal-price")?.addEventListener("click", closeEditPriceModal);
   $("cancel-edit-price")?.addEventListener("click", closeEditPriceModal);
   $("save-edit-price")?.addEventListener("click", handleSavePriceModal);
-}
-
-function updatePriceModalUIByMode() {
-  const mode = priceModalState.mode;
-  const boxMode1 = $("box-mode-1-selector");
-  const boxMode2 = $("box-mode-2-selector");
-
-  if (boxMode1) boxMode1.hidden = mode !== "1";
-  if (boxMode2) boxMode2.hidden = mode !== "2";
-
-  const inpBase = $("input-edit-sell-price");
-  const inpMid = $("input-edit-price-mid");
-  const inpBuy = $("input-edit-price-buy");
-
-  const badgeBase = $("badge-auto-base");
-  const badgeMid = $("badge-auto-mid");
-  const badgeBuy = $("badge-auto-buy");
-
-  if (mode === "1") {
-    // Mode 1: Pengguna cukup input harga satuan yang dipilih, 2 satuan lainnya terisi otomatis
-    const activeUnit = priceModalState.singleSelected || "base";
-    if (inpBase) {
-      inpBase.readOnly = activeUnit !== "base";
-      inpBase.style.background = activeUnit === "base" ? "#fff" : "#f1f5f9";
-      if (badgeBase) badgeBase.hidden = activeUnit === "base";
-    }
-    if (inpMid) {
-      inpMid.readOnly = activeUnit !== "mid";
-      inpMid.style.background = activeUnit === "mid" ? "#fff" : "#f1f5f9";
-      if (badgeMid) badgeMid.hidden = activeUnit === "mid";
-    }
-    if (inpBuy) {
-      inpBuy.readOnly = activeUnit !== "buy";
-      inpBuy.style.background = activeUnit === "buy" ? "#fff" : "#f1f5f9";
-      if (badgeBuy) badgeBuy.hidden = activeUnit === "buy";
-    }
-  } else if (mode === "2") {
-    // Mode 2: Pengguna cukup input 2 harga satuan yang dipilih, 1 satuan lainnya terisi otomatis
-    const dual = priceModalState.dualSelected || ["base", "mid"];
-    if (inpBase) {
-      const isAct = dual.includes("base");
-      inpBase.readOnly = !isAct;
-      inpBase.style.background = isAct ? "#fff" : "#f1f5f9";
-      if (badgeBase) badgeBase.hidden = isAct;
-    }
-    if (inpMid) {
-      const isAct = dual.includes("mid");
-      inpMid.readOnly = !isAct;
-      inpMid.style.background = isAct ? "#fff" : "#f1f5f9";
-      if (badgeMid) badgeMid.hidden = isAct;
-    }
-    if (inpBuy) {
-      const isAct = dual.includes("buy");
-      inpBuy.readOnly = !isAct;
-      inpBuy.style.background = isAct ? "#fff" : "#f1f5f9";
-      if (badgeBuy) badgeBuy.hidden = isAct;
-    }
-  } else {
-    // Mode 3: Ketiga satuan wajib diisi
-    if (inpBase) {
-      inpBase.readOnly = false;
-      inpBase.style.background = "#fff";
-      if (badgeBase) badgeBase.hidden = true;
-    }
-    if (inpMid) {
-      inpMid.readOnly = false;
-      inpMid.style.background = "#fff";
-      if (badgeMid) badgeMid.hidden = true;
-    }
-    if (inpBuy) {
-      inpBuy.readOnly = false;
-      inpBuy.style.background = "#fff";
-      if (badgeBuy) badgeBuy.hidden = true;
-    }
-  }
-
-  syncAutomaticPricesFromActiveUnits();
-}
-
-function syncAutomaticPricesFromActiveUnits() {
-  const mode = priceModalState.mode;
-  const buyPrice = num(priceModalState.buyPrice || 0);
-  const conv = Math.max(1, priceModalState.conversion || 1);
-  const midQty = Math.max(1, priceModalState.midQty || 1);
-
-  const inpBase = $("input-edit-sell-price");
-  const inpMid = $("input-edit-price-mid");
-  const inpBuy = $("input-edit-price-buy");
-
-  const curBase = inpBase ? parseInt(inpBase.value.replace(/[^0-9]/g, ""), 10) || 0 : 0;
-  const curMid = inpMid ? parseInt(inpMid.value.replace(/[^0-9]/g, ""), 10) || 0 : 0;
-  const curBuy = inpBuy ? parseInt(inpBuy.value.replace(/[^0-9]/g, ""), 10) || 0 : 0;
-
-  // Nilai perhitungan acuan dari satuan terbesar fisik
-  const defaultBuy = buyPrice > 0 ? buyPrice : 0;
-  const defaultBase = buyPrice > 0 ? Math.round(buyPrice / conv) : 0;
-  const defaultMid = buyPrice > 0 ? Math.round((buyPrice / conv) * midQty) : 0;
-
-  if (mode === "1") {
-    const single = priceModalState.singleSelected || "base";
-    if (single === "base") {
-      const activeBase = curBase > 0 ? curBase : defaultBase;
-      if (inpBase && !curBase && defaultBase) inpBase.value = formatNumber(defaultBase);
-      if (inpMid) inpMid.value = activeBase ? formatNumber(Math.round(activeBase * midQty)) : (defaultMid ? formatNumber(defaultMid) : "");
-      if (inpBuy) inpBuy.value = activeBase ? formatNumber(Math.round(activeBase * conv)) : (defaultBuy ? formatNumber(defaultBuy) : "");
-    } else if (single === "mid") {
-      const activeMid = curMid > 0 ? curMid : defaultMid;
-      if (inpMid && !curMid && defaultMid) inpMid.value = formatNumber(defaultMid);
-      const bPrice = activeMid ? Math.round(activeMid / midQty) : defaultBase;
-      if (inpBase) inpBase.value = bPrice ? formatNumber(bPrice) : "";
-      if (inpBuy) inpBuy.value = bPrice ? formatNumber(Math.round(bPrice * conv)) : (defaultBuy ? formatNumber(defaultBuy) : "");
-    } else if (single === "buy") {
-      const activeBuy = curBuy > 0 ? curBuy : defaultBuy;
-      if (inpBuy && !curBuy && defaultBuy) inpBuy.value = formatNumber(defaultBuy);
-      const bPrice = activeBuy ? Math.round(activeBuy / conv) : defaultBase;
-      if (inpBase) inpBase.value = bPrice ? formatNumber(bPrice) : "";
-      if (inpMid) inpMid.value = bPrice ? formatNumber(Math.round(bPrice * midQty)) : (defaultMid ? formatNumber(defaultMid) : "");
-    }
-  } else if (mode === "2") {
-    const dual = priceModalState.dualSelected || ["base", "mid"];
-    if (!dual.includes("base") && inpBase) {
-      if (dual.includes("mid") && curMid > 0) inpBase.value = formatNumber(Math.round(curMid / midQty));
-      else if (dual.includes("buy") && curBuy > 0) inpBase.value = formatNumber(Math.round(curBuy / conv));
-      else if (defaultBase) inpBase.value = formatNumber(defaultBase);
-    }
-    if (!dual.includes("mid") && inpMid) {
-      if (curBase > 0) inpMid.value = formatNumber(Math.round(curBase * midQty));
-      else if (curBuy > 0) inpMid.value = formatNumber(Math.round((curBuy / conv) * midQty));
-      else if (defaultMid) inpMid.value = formatNumber(defaultMid);
-    }
-    if (!dual.includes("buy") && inpBuy) {
-      if (curBase > 0) inpBuy.value = formatNumber(Math.round(curBase * conv));
-      else if (curMid > 0) inpBuy.value = formatNumber(Math.round((curMid / midQty) * conv));
-      else if (defaultBuy) inpBuy.value = formatNumber(defaultBuy);
-    }
-  }
-}
-
-function recalculateTieredPricesFrom(sourceLevel, sourceVal) {
-  if (sourceVal <= 0) return;
-
-  const conv = Math.max(1, priceModalState.conversion || 1); // isi kemasan total dasar
-  const midQty = Math.max(1, priceModalState.midQty || 1); // isi dasar per sedang
-
-  const inpBase = $("input-edit-sell-price");
-  const inpMid = $("input-edit-price-mid");
-  const inpBuy = $("input-edit-price-buy");
-
-  let basePrice = 0;
-  if (sourceLevel === "base") {
-    basePrice = sourceVal;
-  } else if (sourceLevel === "mid") {
-    basePrice = Math.round(sourceVal / midQty);
-  } else if (sourceLevel === "buy") {
-    basePrice = Math.round(sourceVal / conv);
-  }
-
-  // Jika mode 1 atau mode 2: isi field yang readOnly secara proporsional dari satuan terbesar
-  const mode = priceModalState.mode;
-  if (mode === "1") {
-    const single = priceModalState.singleSelected || "base";
-    if (single !== "base" && inpBase && inpBase.readOnly) {
-      inpBase.value = basePrice ? formatNumber(basePrice) : "";
-    }
-    if (single !== "mid" && inpMid && inpMid.readOnly) {
-      const midP = Math.round(basePrice * midQty);
-      inpMid.value = midP ? formatNumber(midP) : "";
-    }
-    if (single !== "buy" && inpBuy && inpBuy.readOnly) {
-      const buyP = Math.round(basePrice * conv);
-      inpBuy.value = buyP ? formatNumber(buyP) : "";
-    }
-  } else if (mode === "2") {
-    const dual = priceModalState.dualSelected || [];
-    if (!dual.includes("base") && inpBase && inpBase.readOnly) {
-      inpBase.value = basePrice ? formatNumber(basePrice) : "";
-    }
-    if (!dual.includes("mid") && inpMid && inpMid.readOnly) {
-      const midP = Math.round(basePrice * midQty);
-      inpMid.value = midP ? formatNumber(midP) : "";
-    }
-    if (!dual.includes("buy") && inpBuy && inpBuy.readOnly) {
-      const buyP = Math.round(basePrice * conv);
-      inpBuy.value = buyP ? formatNumber(buyP) : "";
-    }
-  }
 }
 
 function openEditPriceModal(prod) {
@@ -1427,9 +1208,7 @@ function openEditPriceModal(prod) {
   const conversion = num(invData.conversionRatio || prod["Konversi"] || prod["Isi Kemasan"] || 1);
 
   priceModalState = {
-    mode: String(prod["Opsi Jual"] || "1"),
-    singleSelected: "base",
-    dualSelected: ["base", "mid"],
+    hasMid: Boolean(midUnit && norm(midUnit) !== norm(baseUnit) && midQty > 1),
     baseUnit,
     midUnit: midUnit && norm(midUnit) !== norm(baseUnit) && midQty > 1 ? midUnit : "",
     midQty: midQty > 1 ? midQty : 1,
@@ -1442,61 +1221,15 @@ function openEditPriceModal(prod) {
     $("price-modal-buy-unit").textContent = priceModalState.buyUnit ? ` / ${priceModalState.buyUnit}` : ` / ${baseUnit}`;
   }
 
-  // Populate Selector Mode 1 (Single Unit)
-  const selSingle = $("select-active-single-unit");
-  if (selSingle) {
-    let opts = `<option value="base">Satuan Eceran (${escapeHtml(baseUnit)})</option>`;
+  // Update deskripsi satuan aktif
+  const infoEl = $("price-modal-units-info");
+  if (infoEl) {
     if (priceModalState.midUnit) {
-      opts += `<option value="mid">Satuan Sedang (${escapeHtml(priceModalState.midUnit)} — isi ${priceModalState.midQty} ${escapeHtml(baseUnit)})</option>`;
+      infoEl.innerHTML = `<strong>${escapeHtml(priceModalState.midUnit)}</strong> (Kemasan Mayoritas) &amp; <strong>${escapeHtml(baseUnit)}</strong> (Eceran Pasien)`;
+    } else {
+      infoEl.innerHTML = `<strong>${escapeHtml(baseUnit)}</strong> (Kemasan Tunggal)`;
     }
-    if (priceModalState.buyUnit) {
-      opts += `<option value="buy">Satuan Besar (${escapeHtml(priceModalState.buyUnit)} — isi ${priceModalState.conversion} ${escapeHtml(baseUnit)})</option>`;
-    }
-    selSingle.innerHTML = opts;
-    selSingle.value = "base";
   }
-
-  // Populate Checkbox Mode 2 (Dual Unit)
-  const boxDual = $("checkboxes-dual-unit");
-  if (boxDual) {
-    boxDual.innerHTML = `
-      <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
-        <input type="checkbox" class="chk-dual-unit" value="base" checked style="accent-color:#2563eb;">
-        <span>${escapeHtml(baseUnit)} (Eceran)</span>
-      </label>
-      ${priceModalState.midUnit ? `
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
-          <input type="checkbox" class="chk-dual-unit" value="mid" checked style="accent-color:#2563eb;">
-          <span>${escapeHtml(priceModalState.midUnit)} (Sedang — isi ${priceModalState.midQty} ${escapeHtml(baseUnit)})</span>
-        </label>
-      ` : ''}
-      ${priceModalState.buyUnit ? `
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;">
-          <input type="checkbox" class="chk-dual-unit" value="buy" style="accent-color:#2563eb;">
-          <span>${escapeHtml(priceModalState.buyUnit)} (Besar — isi ${priceModalState.conversion} ${escapeHtml(baseUnit)})</span>
-        </label>
-      ` : ''}
-    `;
-
-    boxDual.querySelectorAll(".chk-dual-unit").forEach(chk => {
-      chk.addEventListener("change", () => {
-        const checkedVals = Array.from(boxDual.querySelectorAll(".chk-dual-unit:checked")).map(c => c.value);
-        if (checkedVals.length > 2) {
-          chk.checked = false;
-          window.KasirProDialog?.warning("Maksimal 2 Satuan", "Pada Opsi Jual 2 Satuan, Anda hanya dapat memilih tepat 2 satuan.");
-          return;
-        }
-        priceModalState.dualSelected = checkedVals;
-        updatePriceModalUIByMode();
-      });
-    });
-  }
-
-  // Set nilai radio mode
-  const radios = document.querySelectorAll('input[name="price-selling-mode"]');
-  radios.forEach(r => {
-    r.checked = r.value === priceModalState.mode;
-  });
 
   // Label & Nilai Awal Satuan Terkecil / Ecer
   $("label-edit-sell-price").innerHTML = `Harga Eceran (<strong>${escapeHtml(baseUnit)}</strong>) <span class="text-danger">*</span>`;
@@ -1517,23 +1250,22 @@ function openEditPriceModal(prod) {
     }
   }
 
-  // Satuan Besar
+  // Info Arsip Satuan Besar (Beli PBF)
   const buyBox = $("box-edit-price-buy");
   if (buyBox) {
     buyBox.hidden = !priceModalState.buyUnit;
     if (priceModalState.buyUnit) {
-      $("label-edit-price-buy").innerHTML = `Harga Satuan Besar (<strong>${escapeHtml(priceModalState.buyUnit)}</strong> — isi ${priceModalState.conversion} ${escapeHtml(baseUnit)})`;
-      const curBuy = num(prod["Harga Jual Satuan Besar"]);
-      const initBuy = curBuy > 0 ? curBuy : (curBase ? curBase * priceModalState.conversion : buyPrice);
-      $("input-edit-price-buy").value = initBuy > 0 ? formatNumber(initBuy) : "";
-      if ($("hint-price-buy")) $("hint-price-buy").textContent = `Modal beli faktur: ${rupiah(buyPrice)} per ${priceModalState.buyUnit}`;
+      if ($("hint-price-buy")) $("hint-price-buy").textContent = `${priceModalState.buyUnit} (isi ${priceModalState.conversion} ${baseUnit})`;
+      const curBuy = num(prod["Harga Jual Satuan Besar"]) || (curBase ? curBase * priceModalState.conversion : buyPrice);
+      if ($("input-edit-price-buy")) $("input-edit-price-buy").value = curBuy > 0 ? curBuy : "";
     }
   }
 
-  updatePriceModalUIByMode();
-
   modal.hidden = false;
-  setTimeout(() => $("input-edit-sell-price")?.focus(), 60);
+  setTimeout(() => {
+    if (priceModalState.midUnit) $("input-edit-price-mid")?.focus();
+    else $("input-edit-sell-price")?.focus();
+  }, 60);
 }
 
 function closeEditPriceModal() {
@@ -1551,90 +1283,31 @@ async function handleSavePriceModal() {
     return parseInt(el.value.replace(/[^0-9]/g, ""), 10) || 0;
   };
 
-  const mode = priceModalState.mode;
-  let priceBase = getNumVal("input-edit-sell-price");
-  let priceMid = getNumVal("input-edit-price-mid");
-  let priceBuy = getNumVal("input-edit-price-buy");
-
+  const curBase = getNumVal("input-edit-sell-price");
+  const curMid = getNumVal("input-edit-price-mid");
   const conv = Math.max(1, priceModalState.conversion || 1);
   const midQty = Math.max(1, priceModalState.midQty || 1);
 
-  let allowedUnits = ["base"];
+  let priceBase = curBase;
+  let priceMid = curMid;
 
-  if (mode === "1") {
-    // Mode 1: Cukup input satuan yang dipilih
-    const selected = priceModalState.singleSelected || "base";
-    allowedUnits = [selected];
-
-    if (selected === "base") {
-      if (priceBase <= 0) {
-        window.KasirProDialog?.warning("Perhatian", "Silakan isi Harga Jual Satuan Terkecil / Ecer.");
-        return;
-      }
-      if (!priceMid) priceMid = Math.round(priceBase * midQty);
-      if (!priceBuy) priceBuy = Math.round(priceBase * conv);
-    } else if (selected === "mid") {
-      if (priceMid <= 0) {
-        window.KasirProDialog?.warning("Perhatian", "Silakan isi Harga Jual Satuan Sedang.");
-        return;
-      }
-      priceBase = Math.round(priceMid / midQty);
-      if (!priceBuy) priceBuy = Math.round(priceBase * conv);
-    } else if (selected === "buy") {
-      if (priceBuy <= 0) {
-        window.KasirProDialog?.warning("Perhatian", "Silakan isi Harga Jual Satuan Besar.");
-        return;
-      }
-      priceBase = Math.round(priceBuy / conv);
-      if (!priceMid) priceMid = Math.round(priceBase * midQty);
-    }
-  } else if (mode === "2") {
-    // Mode 2: Wajib isi 2 satuan yang dipilih
-    const dual = priceModalState.dualSelected || [];
-    if (dual.length < 2) {
-      window.KasirProDialog?.warning("Pilih 2 Satuan", "Silakan centang tepat 2 satuan konversi yang boleh dijual.");
+  if (priceModalState.midUnit) {
+    if (priceMid <= 0 && priceBase <= 0) {
+      window.KasirProDialog?.warning("Perhatian", "Silakan isi Harga Satuan Sedang atau Harga Eceran.");
       return;
     }
-    allowedUnits = dual;
-
-    for (const u of dual) {
-      if (u === "base" && priceBase <= 0) {
-        window.KasirProDialog?.warning("Perhatian", "Harga jual satuan terkecil wajib diisi.");
-        return;
-      }
-      if (u === "mid" && priceMid <= 0) {
-        window.KasirProDialog?.warning("Perhatian", "Harga jual satuan sedang wajib diisi.");
-        return;
-      }
-      if (u === "buy" && priceBuy <= 0) {
-        window.KasirProDialog?.warning("Perhatian", "Harga jual satuan besar wajib diisi.");
-        return;
-      }
-    }
-
-    // 1 satuan sisanya dihitung otomatis
-    if (!dual.includes("base")) priceBase = priceMid ? Math.round(priceMid / midQty) : Math.round(priceBuy / conv);
-    if (!dual.includes("mid")) priceMid = Math.round(priceBase * midQty);
-    if (!dual.includes("buy")) priceBuy = Math.round(priceBase * conv);
+    if (priceMid <= 0 && priceBase > 0) priceMid = Math.round(priceBase * midQty);
+    if (priceBase <= 0 && priceMid > 0) priceBase = Math.round(priceMid / midQty);
   } else {
-    // Mode 3: Wajib isi ketiga satuan konversi
-    allowedUnits = ["base"];
-    if (priceModalState.midUnit) allowedUnits.push("mid");
-    if (priceModalState.buyUnit) allowedUnits.push("buy");
-
     if (priceBase <= 0) {
-      window.KasirProDialog?.warning("Perhatian", "Harga jual satuan terkecil wajib diisi.");
-      return;
-    }
-    if (priceModalState.midUnit && priceMid <= 0) {
-      window.KasirProDialog?.warning("Perhatian", "Harga jual satuan sedang wajib diisi pada opsi 3 satuan.");
-      return;
-    }
-    if (priceModalState.buyUnit && priceBuy <= 0) {
-      window.KasirProDialog?.warning("Perhatian", "Harga jual satuan besar wajib diisi pada opsi 3 satuan.");
+      window.KasirProDialog?.warning("Perhatian", "Harga jual eceran wajib diisi.");
       return;
     }
   }
+
+  const priceBuy = priceBase > 0 ? Math.round(priceBase * conv) : (num(activeEditingProduct["Harga Jual Satuan Besar"]) || 0);
+  const allowedUnits = priceModalState.midUnit ? ["mid", "base"] : ["base"];
+  const mode = priceModalState.midUnit ? "2" : "1";
 
   const master = readStore(STORE_KEYS.master, {});
   const prods = Array.isArray(master.produk) ? master.produk : [];
@@ -1657,7 +1330,6 @@ async function handleSavePriceModal() {
     target["Kemasan Beli"] = priceModalState.buyUnit;
     target["Satuan Pembelian"] = priceModalState.buyUnit;
   }
-
   if (priceModalState.buyPrice > 0) {
     if (!num(target["Harga Beli Terakhir"])) target["Harga Beli Terakhir"] = priceModalState.buyPrice;
     if (!num(target["Harga Beli"])) target["Harga Beli"] = priceModalState.buyPrice;
