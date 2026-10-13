@@ -166,6 +166,10 @@ function renderSearchResults(){
 
     box.innerHTML=searchResults.map((p,i)=>{
         const st=num(p["Stok Awal"]),mn=num(p["Stok Minimum"]),code=text(p["Kode Produk"])||"Tanpa kode";
+        const availUnits=getAvailableUnitsForProduct(p);
+        const primaryUnit=availUnits[0];
+        const displayPrice=primaryUnit?primaryUnit.price:num(p["Harga Jual"]);
+        const displayUnitLabel=primaryUnit?` / ${escapeHtml(primaryUnit.name)}`:"";
         return `
             <button
                 class="search-result-item ${st<=0?'disabled':''}"
@@ -182,7 +186,7 @@ function renderSearchResults(){
                         <span class="search-result-stock ${st<=0?'empty':mn>0&&st<=mn?'low':''}">Stok ${st}</span>
                     </span>
                 </span>
-                <strong class="search-result-price">${rupiah(p["Harga Jual"])}</strong>
+                <strong class="search-result-price">${rupiah(displayPrice)}${displayUnitLabel}</strong>
             </button>
         `;
     }).join("")+`<div class="search-results-info">Menampilkan maksimal ${SEARCH_RESULT_LIMIT} hasil</div>`;
@@ -231,15 +235,8 @@ function getAvailableUnitsForProduct(p) {
     const baseUnit = text(p["Satuan Dasar"] || p["Satuan"] || "Pcs") || "Pcs";
     const basePrice = num(p["Harga Jual"]) || 0;
 
-    // 1. Satuan Dasar (Ecer terkecil) - Selalu Ada
-    units.push({
-        level: "base",
-        name: baseUnit,
-        multiplier: 1,
-        price: basePrice
-    });
-
-    // 2. Satuan Sedang (hanya jika ada, berbeda nama dengan dasar, dan isi > 1)
+    // 1. Satuan Sedang (Kemasan ritel utama apotek: Strip, Blister, Botol, Tube, Sachet, dll)
+    // Jika produk memiliki satuan sedang dengan isi > 1, posisikan sebagai unit transaksi utama (default saat masuk keranjang POS)
     const midUnit = text(p["Satuan Antara"] || p["intermediateUnit"]);
     const midQty = num(p["Isi Satuan Antara"] ?? p["intermediateQty"] ?? 1);
     if (midUnit && norm(midUnit) !== norm(baseUnit) && midQty > 1) {
@@ -253,19 +250,16 @@ function getAvailableUnitsForProduct(p) {
         });
     }
 
-    // 3. Satuan Besar (hanya jika ada, berbeda nama, dan konversi > 1)
-    const buyUnit = text(p["Kemasan Beli"] || p["Satuan Pembelian"] || p["purchaseUnit"]);
-    const conv = num(p["Konversi"] ?? p["Isi Kemasan"] ?? p["conversion"] ?? 1);
-    if (buyUnit && norm(buyUnit) !== norm(baseUnit) && (!midUnit || norm(buyUnit) !== norm(midUnit)) && conv > 1) {
-        const customBuyPrice = num(p["Harga Jual Satuan Besar"] ?? p["Harga Jual Besar"]);
-        const buyPrice = customBuyPrice > 0 ? customBuyPrice : (basePrice * conv);
-        units.push({
-            level: "buy",
-            name: buyUnit,
-            multiplier: conv,
-            price: buyPrice
-        });
-    }
+    // 2. Satuan Terkecil / Eceran (Tablet, Kaplet, Kapsul, Pcs) - Selalu ada untuk eceran/racikan/puyer
+    units.push({
+        level: "base",
+        name: baseUnit,
+        multiplier: 1,
+        price: basePrice
+    });
+
+    // Catatan Arsitektur: Satuan Besar (Box/Karton) sengaja TIDAK dimasukkan ke dalam opsi transaksi kasir POS.
+    // Satuan Besar murni arsip data faktur supplier / HPP. Pembelian 1 box dilayani via kelipatan satuan sedang + diskon POS.
 
     // Filter unit jika ada pembatasan opsi satuan jual yang dikonfigurasi apotek
     if (Array.isArray(p["Satuan Dijual"]) && p["Satuan Dijual"].length > 0) {

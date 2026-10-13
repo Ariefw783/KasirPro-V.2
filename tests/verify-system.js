@@ -2290,6 +2290,77 @@ assert(parsedHeader.dueDate === "2026-10-23", "TSV Parser: Tanggal Jatuh Tempo '
 assert(parsedHeader.paymentType === "tempo", "TSV Parser: Metode Pembayaran 'tempo' Terdeteksi Benar");
 assert(parsedHeader.printedTotal === 1241464, "TSV Parser: Total Faktur Tercetak Rp 1.241.464 Akurat");
 
+console.log("\n🛒 BAGIAN 30: PENGUJIAN 2 SATUAN TRANSAKSI AKTIF POS (SEDANG & TERKECIL) + ARSIP PEMBELIAN");
+
+// 1. Ekstrak getAvailableUnitsForProduct dari pos/pos-at07-core.js
+const posCoreFileContent = fs.readFileSync(path.join(rootDir, "pos/pos-at07-core.js"), "utf8");
+
+// Verifikasi kode POS tidak lagi mendaftarkan level: "buy" di getAvailableUnitsForProduct
+assert(
+  !posCoreFileContent.includes('level: "buy"') && !posCoreFileContent.includes("level: 'buy'"),
+  "POS Core: Satuan Besar (level: 'buy') Sepenuhnya Dieliminasi dari Opsi Transaksi Kasir"
+);
+
+// Verifikasi bahwa Satuan Sedang diprioritaskan sebelum Satuan Dasar
+const midIndex = posCoreFileContent.indexOf('level: "mid"');
+const baseIndex = posCoreFileContent.indexOf('level: "base"');
+assert(
+  midIndex !== -1 && baseIndex !== -1 && midIndex < baseIndex,
+  "POS Core: Satuan Sedang (mid) Diposisikan Sebelum Satuan Dasar (base) sebagai Unit Default Transaksi"
+);
+
+// 2. Eksekusi fungsi getAvailableUnitsForProduct dalam sandbox
+const getUnitsFnMatch = posCoreFileContent.match(/function getAvailableUnitsForProduct\(p\)\s*\{[\s\S]*?\n\}/);
+assert(getUnitsFnMatch !== null, "POS Core: Fungsi getAvailableUnitsForProduct Terdefinisi dengan Benar");
+
+const testGetAvailableUnits = new Function("p", "text", "num", "norm", `
+  ${getUnitsFnMatch[0]}
+  return getAvailableUnitsForProduct(p);
+`);
+
+const mockText = (v) => String(v || "").trim();
+const mockNum = (v) => Number(v || 0);
+const mockNorm = (v) => String(v || "").trim().toLowerCase();
+
+// Tes Produk Multi-Satuan (Amoxicillin: Box=100, Strip=10, Kaplet=1)
+const amoxProd = {
+  "Nama Produk": "AMOXICILLIN 500MG KAPLET",
+  "Satuan Dasar": "KAPLET",
+  "Harga Jual": 700,
+  "Satuan Antara": "STRIP",
+  "Isi Satuan Antara": 10,
+  "Harga Jual Satuan Sedang": 7000,
+  "Kemasan Beli": "BOX",
+  "Konversi": 100,
+  "Harga Beli": 50000
+};
+
+const amoxUnits = testGetAvailableUnits(amoxProd, mockText, mockNum, mockNorm);
+assert(amoxUnits.length === 2, "POS Multi-Satuan: Hanya Menghasilkan Tepat 2 Satuan Transaksi Aktif");
+assert(amoxUnits[0].level === "mid" && amoxUnits[0].name === "STRIP", "POS Multi-Satuan: Default Unit (Index 0) adalah Satuan Sedang (STRIP)");
+assert(amoxUnits[0].price === 7000 && amoxUnits[0].multiplier === 10, "POS Multi-Satuan: Satuan Sedang Menggunakan Harga & Multiplier Strip yang Akurat");
+assert(amoxUnits[1].level === "base" && amoxUnits[1].name === "KAPLET", "POS Multi-Satuan: Satuan Cadangan (Index 1) adalah Satuan Terkecil / Eceran (KAPLET)");
+assert(!amoxUnits.some(u => u.name === "BOX" || u.level === "buy"), "POS Multi-Satuan: Satuan Besar BOX Terbukti Tidak Muncul di Transaksi POS");
+
+// Tes Produk Single-Satuan (Sirup Botol)
+const sirupProd = {
+  "Nama Produk": "OBAT BATUK SIRUP 60ML",
+  "Satuan Dasar": "BOTOL",
+  "Harga Jual": 20000,
+  "Kemasan Beli": "BOTOL",
+  "Konversi": 1
+};
+
+const sirupUnits = testGetAvailableUnits(sirupProd, mockText, mockNum, mockNorm);
+assert(sirupUnits.length === 1, "POS Single-Satuan: Hanya Menghasilkan Tepat 1 Satuan (BOTOL)");
+assert(sirupUnits[0].level === "base" && sirupUnits[0].name === "BOTOL", "POS Single-Satuan: Unit Default adalah BOTOL");
+
+// Verifikasi Tampilan Harga & Satuan di Hasil Pencarian POS
+assert(
+  posCoreFileContent.includes("displayUnitLabel") && posCoreFileContent.includes("search-result-price"),
+  "POS Search: Hasil Pencarian Menampilkan Harga Disertai Label Kemasan Primer Transaksi"
+);
+
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
 console.log(`   Total Pengujian: ${passedTests + failedTests}`);
