@@ -1564,7 +1564,9 @@ table.desktop-only-table,
     pointer-events: none !important;
 }
 
-/* Tampilkan kartu vertikal adaptif secara universal di desktop & mobile */
+/* Tampilkan kartu responsif adaptif di semua perangkat:
+   - Mobile (< 821px): 1 kolom penuh
+   - Tablet & Desktop (>= 821px): 2 kolom dinamis seimbang */
 .mobile-only-card-list,
 .responsive-card-list,
 .responsive-data-card-list,
@@ -1585,11 +1587,47 @@ table.desktop-only-table,
 #report-goods-cards,
 #report-invoices-cards,
 #report-cashiers-cards {
-    display: flex !important;
-    flex-direction: column;
-    gap: 7px;
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 8px;
     margin-top: 6px;
     width: 100%;
+    align-items: start;
+}
+
+@media (min-width: 821px) {
+    .mobile-only-card-list,
+    .responsive-card-list,
+    .responsive-data-card-list,
+    #suppliers-card-list,
+    #categories-card-list,
+    #products-card-list,
+    #invoice-card-list,
+    #sales-card-list,
+    #stock-card-list,
+    #users-card-list,
+    #movement-card-list,
+    #goods-in-card-list,
+    #opname-card-list,
+    #report-daily-cards,
+    #report-sales-cards,
+    #report-products-cards,
+    #report-stock-cards,
+    #report-goods-cards,
+    #report-invoices-cards,
+    #report-cashiers-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 12px;
+    }
+}
+
+/* Pastikan jika hanya ada pesan kosong (empty-state) atau satu child, child tersebut membentang 2 kolom penuh */
+.mobile-only-card-list > div:only-child,
+.responsive-card-list > div:only-child,
+.responsive-data-card-list > div:only-child,
+.responsive-card-list > .empty-table-state,
+.responsive-card-list > .empty-state {
+    grid-column: 1 / -1;
 }
 
 .responsive-data-card {

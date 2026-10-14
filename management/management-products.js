@@ -16,7 +16,7 @@
 import { $, num, text, norm, rupiah, formatNumber, escapeHtml } from "../modules/core/utils.js";
 import { STORE_KEYS, readStore, writeMasterDelta, deleteMasterProduct, readCurrentStock } from "../modules/database/database-store.js";
 import { indexedDBStore, STORES } from "../modules/local/indexeddb-store.js";
-import { exportMasterData, parseMasterWorkbook, exportPricingWorkbook, parsePricingWorkbook } from "../modules/excel/excel-service.js";
+import { exportMasterData, parseMasterWorkbook, exportPricingWorkbook, parsePricingWorkbook, exportPhysicalCheckWorkbook } from "../modules/excel/excel-service.js";
 import { openStockHistoryModal } from "./management-stock.js";
 
 const PAGE_SIZE = 25;
@@ -109,6 +109,9 @@ function bindEvents() {
   // Tombol Export Master Seluruh Data
   const exportBtn = $("export-master-button") || $("export-products");
   exportBtn?.addEventListener("click", handleExportMaster);
+
+  // Tombol Export Lembar Cek Fisik / Opname Rak (Sesuai Filter Aktif)
+  $("btn-export-physical-check")?.addEventListener("click", handleExportPhysicalCheck);
 
   // Tombol Ekspor & Impor Khusus Perlu Harga Jual
   $("btn-export-pricing-excel")?.addEventListener("click", handleExportPricingExcel);
@@ -803,6 +806,43 @@ export function handleExportMaster() {
   } catch (err) {
     console.error("[ExportMaster] Error exporting:", err);
     window.KasirProDialog?.error("Gagal Export Master", err.message || "Terjadi kesalahan saat membuat file Excel.");
+  }
+}
+
+/**
+ * Handle Export Lembar Cek Fisik Stok (Sesuai Filter & Pencarian Aktif)
+ * Format One-Way Export untuk monitoring & stock opname fisik etalase/rak.
+ */
+export function handleExportPhysicalCheck() {
+  try {
+    const invoiceLookup = getInvoiceLookupMap();
+    const sourceList = Array.isArray(filteredProducts) && filteredProducts.length ? filteredProducts : currentProducts;
+    const itemsToExport = (sourceList || []).filter(p => !p._isDeleted).map(p => {
+      const code = p["Kode Produk"] || p["Kode Produk Internal"] || p.id;
+      const invData = resolveProductInvoiceData(p, invoiceLookup);
+      const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
+      return {
+        ...p,
+        "Kemasan Beli": invData.purchaseUnit || p["Kemasan Beli"] || p["Satuan Pembelian"] || p["Satuan Dasar"] || "Pcs",
+        "Konversi": num(invData.conversionRatio) || num(p["Konversi"]) || 1,
+        "Satuan Dasar": invData.baseUnit || p["Satuan Dasar"] || p["Satuan"] || "Pcs",
+        _stockAktual: stock
+      };
+    });
+
+    if (!itemsToExport.length) {
+      window.KasirProDialog?.warning("Tidak Ada Produk", "Tidak ada produk yang sesuai dengan filter aktif untuk diekspor ke lembar cek fisik.");
+      return;
+    }
+
+    const res = exportPhysicalCheckWorkbook(itemsToExport);
+    window.KasirProDialog?.success(
+      "Export Cek Fisik Berhasil",
+      `Berhasil mengekspor ${res.count} produk (sesuai filter aktif) ke file:\n${res.fileName}\n\nFile siap digunakan untuk audit/monitoring fisik di rak toko.`
+    );
+  } catch (err) {
+    console.error("[ExportPhysicalCheck] Error:", err);
+    window.KasirProDialog?.error("Gagal Export Cek Fisik", err.message || "Terjadi kesalahan saat membuat file Excel.");
   }
 }
 

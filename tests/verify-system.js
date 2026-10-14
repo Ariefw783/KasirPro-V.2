@@ -2504,8 +2504,8 @@ assert(revisedDownResult === 40, "Simulasi Koreksi: Produk Terkoreksi Turun (50 
 const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
 const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
 
-assert(versionJson.version === "2.2.81", "Versioning: Versi Sistem Tepat v2.2.81");
-assert(swJsContent.includes("v122"), "Service Worker: Cache PWA Terbarui ke v122");
+assert(versionJson.version === "2.2.82", "Versioning: Versi Sistem Tepat v2.2.82");
+assert(swJsContent.includes("v123"), "Service Worker: Cache PWA Terbarui ke v123");
 
 // Verifikasi aturan changelog <= 5 kata bahasa Inggris
 if (Array.isArray(versionJson.changelog)) {
@@ -2514,6 +2514,49 @@ if (Array.isArray(versionJson.changelog)) {
     assert(wordCount <= 5, `Changelog #${idx + 1}: Teks Bahasa Inggris Sesuai Batas Maksimal 5 Kata (${wordCount} kata)`, `Melebihi batas: ${item}`);
   });
 }
+
+console.log("\n📐 BAGIAN 31: PENGUJIAN RESPONSIVE CARD GRID 2-KOLOM (PC/TABLET) & EXPORT CEK FISIK");
+
+// 1. Verifikasi Responsive Grid CSS
+const mgmtCssContent = fs.readFileSync(path.join(rootDir, "management/management.css"), "utf8");
+assert(
+  mgmtCssContent.includes("@media (min-width: 821px)") &&
+  mgmtCssContent.includes("grid-template-columns: repeat(2, minmax(0, 1fr)) !important;"),
+  "Responsive Grid: Aturan CSS Grid 2 Kolom Terpasang untuk Layar Tablet Landscape & PC (>= 821px)"
+);
+
+assert(
+  mgmtCssContent.includes("grid-column: 1 / -1;") &&
+  mgmtCssContent.includes(".responsive-card-list > div:only-child"),
+  "Responsive Grid: Pesan Kosong / Single Child Terproteksi Membentang Penuh 2 Kolom"
+);
+
+// 2. Verifikasi Tombol & DOM Export Cek Fisik
+const currentHtmlContent = fs.readFileSync(path.join(rootDir, "management/index.html"), "utf8");
+assert(
+  currentHtmlContent.includes('id="btn-export-physical-check"') &&
+  currentHtmlContent.includes("Export Cek Fisik"),
+  "DOM Produk: Tombol Export Cek Fisik Terintegrasi pada Toolbar Filter Produk"
+);
+
+// 3. Verifikasi Logika Handler Export Cek Fisik di Management Products
+const mgmtProductsContent = fs.readFileSync(path.join(rootDir, "management/management-products.js"), "utf8");
+assert(
+  mgmtProductsContent.includes("exportPhysicalCheckWorkbook") &&
+  mgmtProductsContent.includes("handleExportPhysicalCheck") &&
+  mgmtProductsContent.includes('btn-export-physical-check'),
+  "Produk Module: Handler handleExportPhysicalCheck Terhubung dengan Filter Aktif dan Tombol Export"
+);
+
+// 4. Verifikasi Fitur Excel Service exportPhysicalCheckWorkbook
+assert(
+  excelServiceContent.includes("exportPhysicalCheckWorkbook") &&
+  excelServiceContent.includes("CEK_FISIK_STOK") &&
+  excelServiceContent.includes("Stok Fisik (Ceklis Rak)") &&
+  excelServiceContent.includes("formulaSelisih") &&
+  excelServiceContent.includes("PETUNJUK_AUDIT"),
+  "Excel Service: Fungsi exportPhysicalCheckWorkbook Dikonfigurasi Lengkap dengan Rumus Otomatis Selisih"
+);
 
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);

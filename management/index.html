@@ -1457,15 +1457,28 @@
                     </button>
                 </div>
 
-                <button
-                    id="product-reset-filter"
-                    class="button button-secondary"
-                    type="button"
-                    hidden
-                    style="font-size:12px;padding:6px 14px;border-radius:6px;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;display:inline-flex;align-items:center;gap:6px;font-weight:600;"
-                >
-                    <i class="fa-solid fa-filter-circle-xmark"></i> Reset Filter
-                </button>
+                <div class="product-toolbar-actions" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <button
+                        type="button"
+                        id="btn-export-physical-check"
+                        class="button button-secondary"
+                        style="font-size:12px;padding:6px 14px;border-radius:6px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;display:inline-flex;align-items:center;gap:6px;font-weight:600;cursor:pointer;"
+                        title="Download lembar kerja Excel untuk monitoring dan cek fisik stok di rak (sesuai filter yang sedang aktif)"
+                    >
+                        <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i>
+                        <span>Export Cek Fisik</span>
+                    </button>
+
+                    <button
+                        id="product-reset-filter"
+                        class="button button-secondary"
+                        type="button"
+                        hidden
+                        style="font-size:12px;padding:6px 14px;border-radius:6px;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;display:inline-flex;align-items:center;gap:6px;font-weight:600;"
+                    >
+                        <i class="fa-solid fa-filter-circle-xmark"></i> Reset Filter
+                    </button>
+                </div>
             </div>
 
         </section>

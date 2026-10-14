@@ -1,14 +1,14 @@
 {
-  "version": "2.2.81",
-  "build": "20261014.01",
+  "version": "2.2.82",
+  "build": "20261014.02",
   "releaseDate": "14 Oktober 2026",
-  "title": "Atomic Invoice Correction Reversal & Stock Accumulation Fix",
-  "description": "Perbaikan pembalikan (reversal) stok atomik saat koreksi/pembaruan faktur agar produk yang tidak terkoreksi tidak terakumulasi ganda.",
+  "title": "Responsive 2-Column Card Grid & Physical Check Export",
+  "description": "Tampilan grid responsif 2-kolom pada PC/Tablet untuk kartu data serta fitur ekspor lembar cek fisik stok opname rak sesuai filter aktif.",
   "changelog": [
-    "Fixed invoice correction stock accumulation",
-    "Atomic reversal for edited invoices",
-    "Accurate Firestore stock deduction sync",
-    "Preserved uncorrected product stock balance",
-    "Updated PWA cache to v122"
+    "Add responsive two column grid",
+    "Add physical stock check export",
+    "Include automated formula check sheet",
+    "Optimize tablet and desktop layout",
+    "Updated PWA cache to v123"
   ]
 }

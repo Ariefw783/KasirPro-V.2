@@ -1118,3 +1118,106 @@ function formatExcelDate(val) {
     issueCount
   };
 }
+
+/**
+ * Export Lembar Cek Fisik Stok / Stock Opname Rak (Excel)
+ * Sifat: One-Way Export untuk monitoring & audit fisik mandiri.
+ * Mengikuti filter aktif (misal khusus produk Aktif Siap Jual / supplier tertentu).
+ */
+export function exportPhysicalCheckWorkbook(items = [], filterInfo = {}) {
+  const XLSX = getXLSX();
+  const wb = XLSX.utils.book_new();
+
+  const ts = getTimestampString();
+  const fileName = `Lembar_Cek_Fisik_Stok_${ts}.xlsx`;
+
+  // Sheet 1: CEK_FISIK_STOK
+  const headers = [
+    "No",
+    "Kode Produk",
+    "Barcode",
+    "Nama Produk",
+    "Kategori",
+    "Supplier",
+    "Kemasan Beli",
+    "Konversi (Isi)",
+    "Satuan Dasar",
+    "Stok Sistem",
+    "Stok Fisik (Ceklis Rak)",
+    "Selisih (+/-)",
+    "Kondisi / Catatan ED"
+  ];
+
+  const rows = [headers];
+
+  items.forEach((p, idx) => {
+    const code = p["Kode Produk"] || p["Kode Produk Internal"] || p.id || "";
+    const barcode = p["Barcode"] || p.barcode || "";
+    const name = p["Nama Produk"] || p.name || "";
+    const cat = p["Kategori"] || p.category || "";
+    const sup = p["Supplier"] || p.supplier || "";
+    const buyUnit = p["Kemasan Beli"] || p["Satuan Pembelian"] || p.purchaseUnit || "";
+    const conv = num(p["Isi Kemasan"] ?? p["Konversi"] ?? p.conversionRatio ?? 1);
+    const baseUnit = p["Satuan Dasar"] || p["Satuan"] || p.baseUnit || "Pcs";
+    const stock = num(p._stockAktual ?? p.currentStock ?? p["Stok Awal"] ?? p.stock ?? 0);
+
+    const rowNum = idx + 2; // Data row index di excel (baris 1 = header)
+    const formulaSelisih = { f: `IF(ISBLANK(K${rowNum}),"",K${rowNum}-J${rowNum})` };
+
+    rows.push([
+      idx + 1,
+      code,
+      barcode,
+      name,
+      cat,
+      sup,
+      buyUnit || baseUnit,
+      conv,
+      baseUnit,
+      stock,
+      "", // Kolom kosong untuk ceklis manual staf
+      formulaSelisih,
+      ""  // Kolom kosong untuk catatan kondisi / expired date
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"] = [
+    { wch: 6 },  // No
+    { wch: 18 }, // Kode Produk
+    { wch: 16 }, // Barcode
+    { wch: 38 }, // Nama Produk
+    { wch: 18 }, // Kategori
+    { wch: 22 }, // Supplier
+    { wch: 14 }, // Kemasan Beli
+    { wch: 14 }, // Konversi (Isi)
+    { wch: 14 }, // Satuan Dasar
+    { wch: 14 }, // Stok Sistem
+    { wch: 22 }, // Stok Fisik (Ceklis Rak)
+    { wch: 14 }, // Selisih (+/-)
+    { wch: 24 }  // Kondisi / Catatan ED
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, "CEK_FISIK_STOK");
+
+  // Sheet 2: PETUNJUK_AUDIT
+  const guideRows = [
+    ["LEMBAR PANDUAN AUDIT CEK FISIK / STOCK OPNAME KASIRPRO"],
+    [""],
+    ["NO", "LANGKAH KERJA", "PENJELASAN"],
+    [1, "Cetak / Buka File", "Gunakan file Excel ini di tablet/laptop atau cetak sebagai lembar kerja pengecekan fisik di etalase rak toko."],
+    [2, "Hitung Fisik", "Isi jumlah stok fisik nyata yang ditemukan di rak pada Kolom K (Stok Fisik). Gunakan satuan dasar terkecil (misal tablet/botol/pcs)."],
+    [3, "Lihat Selisih", "Kolom L (Selisih) otomatis menghitung selisih antara stok fisik nyata dengan stok sistem KasirPro."],
+    [4, "Catatan Khusus", "Tuliskan tanggal kedaluwarsa (ED) yang mendekati atau kondisi kemasan rusak pada Kolom M."],
+    [5, "Sifat Berkas", "File ini bersifat One-Way Export (khusus audit fisik mandiri) sehingga tidak akan mengubah atau mengacaukan database master KasirPro."]
+  ];
+  const wsGuide = XLSX.utils.aoa_to_sheet(guideRows);
+  wsGuide["!cols"] = [{ wch: 6 }, { wch: 24 }, { wch: 60 }];
+  XLSX.utils.book_append_sheet(wb, wsGuide, "PETUNJUK_AUDIT");
+
+  if (typeof XLSX.writeFile === "function") {
+    XLSX.writeFile(wb, fileName);
+  }
+
+  return { fileName, count: items.length };
+}

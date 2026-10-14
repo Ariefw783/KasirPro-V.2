@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v122-invoice-reversal-fix";
+const CACHE_VERSION = "kasirpro-pwa-v123-responsive-grid-export";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
