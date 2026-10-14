@@ -1,14 +1,14 @@
 {
-  "version": "2.2.84",
-  "build": "20261014.04",
+  "version": "2.2.85",
+  "build": "20261014.05",
   "releaseDate": "14 Oktober 2026",
-  "title": "Reset Selling Price to Pending Option",
-  "description": "Menambahkan tombol reset kembalikan harga jual ke perlu harga jual pada modal ubah harga dan konfirmasi otomatis saat harga dinolkan.",
+  "title": "Colored Active Products Export & Minimalist Pricing Buttons",
+  "description": "Format ekspor Excel produk siap jual ditingkatkan menggunakan ExcelJS dengan pewarnaan tema, serta tombol export & import harga jual dibuat minimalis pada toolbar filter.",
   "changelog": [
-    "Add reset price to pending",
-    "Zero price confirmation dialog added",
-    "Reset product to pending filter",
-    "Dynamic reset button visibility modal",
-    "Updated PWA cache to v125"
+    "Colored Excel ready products export",
+    "Add ExcelJS styling ready products",
+    "Minimalist pricing toolbar buttons added",
+    "Conditional toolbar buttons on filter",
+    "Updated PWA cache to v126"
   ]
 }

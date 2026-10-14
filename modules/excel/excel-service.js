@@ -1121,15 +1121,320 @@ function formatExcelDate(val) {
 
 /**
  * Export Excel Khusus Produk Siap Jual (Aktif di Kasir POS)
- * Format selaras dengan template "Perlu Harga Jual" (Kode, Nama, Modal Beli, Kemasan A, Harga A, Kemasan B, Harga B, Stok).
+ * Format selaras dengan template "Perlu Harga Jual" yang rapih, elegan, dan berwarna (ExcelJS)
  * Sifat: Monitoring daftar harga & ketersediaan stok fisik siap jual.
  */
-export function exportActiveProductsWorkbook(items = []) {
-  const XLSX = getXLSX();
-  const wb = XLSX.utils.book_new();
-
+export async function exportActiveProductsWorkbook(items = []) {
   const ts = getTimestampString();
   const fileName = `Daftar_Produk_Siap_Jual_${ts}.xlsx`;
+
+  const ExcelJS = typeof window !== "undefined" ? window.ExcelJS : (typeof globalThis !== "undefined" ? globalThis.ExcelJS : null);
+
+  if (ExcelJS) {
+    return await exportActiveProductsWithExcelJS(items, fileName);
+  } else {
+    return exportActiveProductsWithSheetJS(items, fileName);
+  }
+}
+
+async function exportActiveProductsWithExcelJS(items, fileName) {
+  const ExcelJS = typeof window !== "undefined" ? window.ExcelJS : globalThis.ExcelJS;
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "KasirPro V2";
+  wb.lastModifiedBy = "KasirPro System";
+  wb.created = new Date();
+  wb.modified = new Date();
+
+  // 1. Sheet PRODUK_SIAP_JUAL
+  const ws = wb.addWorksheet("PRODUK_SIAP_JUAL", {
+    views: [{ showGridLines: true }]
+  });
+
+  ws.columns = [
+    { header: "Kode Produk", key: "code", width: 18 },
+    { header: "Barcode", key: "barcode", width: 16 },
+    { header: "Nama Produk", key: "name", width: 38 },
+    { header: "Kategori", key: "cat", width: 18 },
+    { header: "Supplier", key: "sup", width: 22 },
+    { header: "Harga Beli Faktur", key: "buyPrice", width: 22 },
+    { header: "Jenis Kemasan A", key: "unitA", width: 18 },
+    { header: "Harga Kemasan A", key: "priceA", width: 20 },
+    { header: "Jenis Kemasan B", key: "unitB", width: 22 },
+    { header: "Harga Kemasan B", key: "priceB", width: 20 },
+    { header: "Stok Aktual", key: "stock", width: 18 },
+    { header: "Status", key: "status", width: 18 }
+  ];
+
+  ws.autoFilter = {
+    from: "A1",
+    to: `L${items.length + 1}`
+  };
+
+  // Styling Header (Baris 1) - RATA KIRI SEMUANYA
+  const headerRow = ws.getRow(1);
+  headerRow.height = 32;
+  headerRow.eachCell((cell, colNumber) => {
+    cell.font = { name: "Segoe UI", size: 10.5, bold: true, color: { argb: "FFFFFFFF" } };
+    cell.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
+
+    if (colNumber === 7 || colNumber === 8) {
+      // Kelompok Kemasan A (Emerald Hijau - Satuan Terkecil / Eceran Utama)
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF047857" }
+      };
+    } else if (colNumber === 9 || colNumber === 10) {
+      // Kelompok Kemasan B (Slate Dark - Satuan Sedang)
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF334155" }
+      };
+    } else if (colNumber === 11) {
+      // Stok Aktual (Biru Sapphire)
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF1D4ED8" }
+      };
+    } else if (colNumber === 12) {
+      // Status (Teal Emerald)
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF059669" }
+      };
+    } else {
+      // Info Produk & Faktur (Teal Medical)
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF0F766E" }
+      };
+    }
+
+    cell.border = {
+      top: { style: "thin", color: { argb: "FF0F172A" } },
+      bottom: { style: "medium", color: { argb: "FF0F172A" } },
+      left: { style: "thin", color: { argb: "FF0F172A" } },
+      right: { style: "thin", color: { argb: "FF0F172A" } }
+    };
+  });
+
+  const dataBorder = {
+    top: { style: "thin", color: { argb: "FFCBD5E1" } },
+    bottom: { style: "thin", color: { argb: "FFCBD5E1" } },
+    left: { style: "thin", color: { argb: "FFCBD5E1" } },
+    right: { style: "thin", color: { argb: "FFCBD5E1" } }
+  };
+
+  const disabledFill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF334155" }
+  };
+
+  const disabledFont = {
+    name: "Segoe UI",
+    size: 10,
+    color: { argb: "FF94A3B8" },
+    italic: true
+  };
+
+  const standardFont = {
+    name: "Segoe UI",
+    size: 10,
+    color: { argb: "FF0F172A" }
+  };
+
+  const boldFont = {
+    name: "Segoe UI",
+    size: 10,
+    bold: true,
+    color: { argb: "FF0F172A" }
+  };
+
+  items.forEach(p => {
+    const code = p["Kode Produk"] || p["Kode Produk Internal"] || p.id || "";
+    const barcode = p["Barcode"] || p.barcode || "";
+    const name = p["Nama Produk"] || p.name || "";
+    const cat = p["Kategori"] || p.category || "";
+    const sup = p["Supplier"] || p.supplier || "";
+
+    const baseUnit = String(p["Satuan Dasar"] || p["Satuan"] || "Pcs").trim();
+    const midUnit = String(p["Satuan Antara"] || "").trim();
+    const midQty = num(p["Isi Satuan Antara"] || 1);
+    const buyUnit = String(p["Kemasan Beli"] || p["Satuan Pembelian"] || baseUnit).trim();
+
+    const hasMid = Boolean(midUnit && norm(midUnit) !== norm(baseUnit) && midQty > 1);
+
+    const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
+    const safeBuyUnit = (buyUnit || baseUnit || "PCS").replace(/"/g, "").toUpperCase();
+
+    const sellPriceA = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
+    const sellPriceB = num(p["Harga Jual Satuan Sedang"] ?? 0);
+    const effectiveSellPriceB = sellPriceB > 0 ? sellPriceB : (hasMid ? Math.round(sellPriceA * midQty) : 0);
+
+    const stock = num(p._stockAktual ?? p.currentStock ?? p["Stok Awal"] ?? p.stock ?? 0);
+
+    const row = ws.addRow({
+      code,
+      barcode,
+      name,
+      cat,
+      sup,
+      buyPrice,
+      unitA: baseUnit,
+      priceA: sellPriceA,
+      unitB: hasMid ? `${midUnit} (${midQty} ${baseUnit})` : "-",
+      priceB: hasMid ? effectiveSellPriceB : "-",
+      stock,
+      status: "Aktif (Siap Jual)"
+    });
+
+    row.height = 24;
+
+    // Kolom 1-5 (Kode, Barcode, Nama, Kategori, Supplier)
+    const c1 = row.getCell(1);
+    c1.font = standardFont;
+    c1.border = dataBorder;
+    c1.alignment = { vertical: "middle", horizontal: "left" };
+
+    const c2 = row.getCell(2);
+    c2.font = standardFont;
+    c2.border = dataBorder;
+    c2.alignment = { vertical: "middle", horizontal: "left" };
+
+    const c3 = row.getCell(3);
+    c3.font = boldFont;
+    c3.border = dataBorder;
+    c3.alignment = { vertical: "middle", horizontal: "left" };
+
+    const c4 = row.getCell(4);
+    c4.font = standardFont;
+    c4.border = dataBorder;
+    c4.alignment = { vertical: "middle", horizontal: "left" };
+
+    const c5 = row.getCell(5);
+    c5.font = standardFont;
+    c5.border = dataBorder;
+    c5.alignment = { vertical: "middle", horizontal: "left" };
+
+    // Kolom 6: Harga Beli Faktur
+    const c6 = row.getCell(6);
+    c6.font = standardFont;
+    c6.border = dataBorder;
+    c6.numFmt = '"Rp "#,##0" / ' + safeBuyUnit + '"';
+    c6.alignment = { vertical: "middle", horizontal: "left" };
+
+    // Kolom 7 & 8: Jenis Kemasan A & Harga Kemasan A
+    const c7 = row.getCell(7);
+    c7.font = boldFont;
+    c7.border = dataBorder;
+    c7.alignment = { vertical: "middle", horizontal: "left" };
+
+    const c8 = row.getCell(8);
+    c8.font = boldFont;
+    c8.border = dataBorder;
+    c8.numFmt = '"Rp "#,##0';
+    c8.alignment = { vertical: "middle", horizontal: "left" };
+
+    // Kolom 9 & 10: Jenis Kemasan B & Harga Kemasan B
+    const c9 = row.getCell(9);
+    const c10 = row.getCell(10);
+    if (hasMid) {
+      c9.font = standardFont;
+      c9.border = dataBorder;
+      c9.alignment = { vertical: "middle", horizontal: "left" };
+
+      c10.font = boldFont;
+      c10.border = dataBorder;
+      c10.numFmt = '"Rp "#,##0';
+      c10.alignment = { vertical: "middle", horizontal: "left" };
+    } else {
+      c9.font = disabledFont;
+      c9.fill = disabledFill;
+      c9.border = dataBorder;
+      c9.alignment = { vertical: "middle", horizontal: "left" };
+
+      c10.font = disabledFont;
+      c10.fill = disabledFill;
+      c10.border = dataBorder;
+      c10.alignment = { vertical: "middle", horizontal: "left" };
+    }
+
+    // Kolom 11: Stok Aktual
+    const c11 = row.getCell(11);
+    c11.font = boldFont;
+    c11.border = dataBorder;
+    c11.numFmt = '#,##0" ' + baseUnit + '"';
+    c11.alignment = { vertical: "middle", horizontal: "left" };
+
+    // Kolom 12: Status
+    const c12 = row.getCell(12);
+    c12.font = standardFont;
+    c12.border = dataBorder;
+    c12.alignment = { vertical: "middle", horizontal: "left" };
+  });
+
+  // 2. Sheet PANDUAN_INFO
+  const wsGuide = wb.addWorksheet("PANDUAN_INFO", {
+    views: [{ showGridLines: true }]
+  });
+
+  wsGuide.columns = [
+    { header: "NO", key: "no", width: 6 },
+    { header: "KOLOM", key: "section", width: 25 },
+    { header: "DESKRIPSI & PETUNJUK MONITORING PRODUK SIAP JUAL", key: "desc", width: 85 }
+  ];
+
+  const guideHeader = wsGuide.getRow(1);
+  guideHeader.height = 30;
+  guideHeader.eachCell(c => {
+    c.font = { name: "Segoe UI", size: 10.5, bold: true, color: { argb: "FFFFFFFF" } };
+    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0F766E" } };
+    c.alignment = { vertical: "middle", horizontal: "left" };
+  });
+
+  const guideItems = [
+    { no: 1, section: "Kode & Barcode", desc: "Identitas barcode unik untuk transaksi scanner di meja kasir POS." },
+    { no: 2, section: "Harga Beli Faktur", desc: "Harga modal beli netto perolehan terakhir dari distributor faktur." },
+    { no: 3, section: "Kemasan A (Eceran)", desc: "Satuan terkecil transaksi pasien / eceran utama apotek." },
+    { no: 4, section: "Kemasan B (Sedang)", desc: "Satuan transaksi sedang (Strip / Blister / Sachet) kasir POS." },
+    { no: 5, section: "Stok Aktual", desc: "Sisa persediaan fisik produk yang siap dijual di meja kasir POS." },
+    { no: 6, section: "Tujuan Berkas", desc: "Monitoring berkala untuk Owner / Manajer dalam mengawasi marjin harga & ketersediaan stok fisik toko." }
+  ];
+
+  guideItems.forEach(g => {
+    const gr = wsGuide.addRow(g);
+    gr.height = 24;
+    gr.eachCell(c => {
+      c.font = { name: "Segoe UI", size: 10 };
+      c.border = dataBorder;
+      c.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
+    });
+  });
+
+  const buffer = await wb.xlsx.writeBuffer();
+  if (typeof window !== "undefined" && typeof document !== "undefined") {
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  return { fileName, count: items.length };
+}
+
+function exportActiveProductsWithSheetJS(items, fileName) {
+  const XLSX = getXLSX();
+  const wb = XLSX.utils.book_new();
 
   const headers = [
     "Kode Produk",

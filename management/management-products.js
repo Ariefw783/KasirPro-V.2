@@ -825,7 +825,7 @@ export function handleExportMaster() {
  * Handle Export Excel Khusus Produk Siap Jual (Aktif di Kasir POS)
  * Format selaras dengan template "Perlu Harga Jual" (Kode, Nama, Modal Beli, Kemasan A, Harga A, Kemasan B, Harga B, Stok).
  */
-export function handleExportActiveProducts() {
+export async function handleExportActiveProducts() {
   try {
     const invoiceLookup = getInvoiceLookupMap();
     const sourceList = Array.isArray(filteredProducts) && filteredProducts.length ? filteredProducts : currentProducts;
@@ -848,7 +848,7 @@ export function handleExportActiveProducts() {
       return;
     }
 
-    const res = exportActiveProductsWorkbook(itemsToExport);
+    const res = await exportActiveProductsWorkbook(itemsToExport);
     window.KasirProDialog?.success(
       "Export Produk Siap Jual Berhasil",
       `Berhasil mengekspor ${res.count} produk siap jual ke file:\n${res.fileName}\n\nFormat file memuat modal beli, harga kemasan eceran & sedang, serta stok aktual kasir POS.`
@@ -865,20 +865,28 @@ export const handleExportPhysicalCheck = handleExportActiveProducts;
  * Update UI dan Status Action Bar Khusus Perlu Harga Jual Excel
  */
 export function updatePricingActionBar() {
-  const bar = $("pricing-excel-action-bar");
+  const statusVal = norm($("product-status-filter")?.value || "");
+  const isPerluHargaJual = (statusVal === "belum aktif" || statusVal === "perlu harga jual");
+
+  const btnExportPricing = $("btn-export-pricing-excel");
+  const btnImportPricing = $("btn-import-pricing-excel");
+  if (btnExportPricing) {
+    btnExportPricing.style.display = isPerluHargaJual ? "inline-flex" : "none";
+  }
+  if (btnImportPricing) {
+    btnImportPricing.style.display = isPerluHargaJual ? "inline-flex" : "none";
+  }
+
   const badge = $("badge-pending-pricing-count");
-  if (!bar) return;
-
-  const invoiceLookup = getInvoiceLookupMap();
-  const pendingCount = currentProducts.filter(p => {
-    if (p._isDeleted) return false;
-    const code = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
-    const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
-    const sellPrice = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
-    return stock > 0 && sellPrice <= 0;
-  }).length;
-
   if (badge) {
+    const pendingCount = currentProducts.filter(p => {
+      if (p._isDeleted) return false;
+      const code = norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id);
+      const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
+      const sellPrice = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
+      return stock > 0 && sellPrice <= 0;
+    }).length;
+
     if (pendingCount > 0) {
       badge.textContent = `${pendingCount} Perlu Harga Jual`;
       badge.style.background = "#d97706";
@@ -890,15 +898,9 @@ export function updatePricingActionBar() {
     }
   }
 
-  const statusVal = norm($("product-status-filter")?.value || "");
-  const isPerluHargaJual = (statusVal === "belum aktif" || statusVal === "perlu harga jual");
-  bar.style.display = isPerluHargaJual ? "flex" : "none";
-  if (isPerluHargaJual) {
-    bar.style.border = "2px solid #f59e0b";
-    bar.style.background = "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)";
-  } else {
-    bar.style.border = "1px solid #a7f3d0";
-    bar.style.background = "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)";
+  const bar = $("pricing-excel-action-bar");
+  if (bar) {
+    bar.style.display = "none";
   }
 }
 

@@ -2504,8 +2504,8 @@ assert(revisedDownResult === 40, "Simulasi Koreksi: Produk Terkoreksi Turun (50 
 const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
 const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
 
-assert(versionJson.version === "2.2.84", "Versioning: Versi Sistem Tepat v2.2.84");
-assert(swJsContent.includes("v125"), "Service Worker: Cache PWA Terbarui ke v125");
+assert(versionJson.version === "2.2.85", "Versioning: Versi Sistem Tepat v2.2.85");
+assert(swJsContent.includes("v126"), "Service Worker: Cache PWA Terbarui ke v126");
 
 // Verifikasi aturan changelog <= 5 kata bahasa Inggris
 if (Array.isArray(versionJson.changelog)) {
@@ -2618,6 +2618,34 @@ assert(
   mgmtProductsContent.includes("Nol-kan Harga Jual?") &&
   mgmtProductsContent.includes("await executeResetProductPrice(activeEditingProduct)"),
   "Validasi Simpan: Deteksi Cerdas Harga Rp0 Menawarkan Reset ke Perlu Harga Jual secara Otomatis"
+);
+
+console.log("\n🎨 BAGIAN 33: PENGUJIAN EXCELJS BERWARNA PRODUK SIAP JUAL & TOMBOL MINIMALIS FILTER PERLU HARGA");
+
+// 1. Verifikasi Fitur ExcelJS Berwarna pada exportActiveProductsWorkbook
+assert(
+  freshExcelService.includes("exportActiveProductsWithExcelJS") &&
+  freshExcelService.includes("PANDUAN_INFO") &&
+  freshExcelService.includes("FF047857") &&
+  freshExcelService.includes("FF334155") &&
+  freshExcelService.includes("FF1D4ED8"),
+  "Excel Service: exportActiveProductsWorkbook Mendukung Format ExcelJS Rapi, Berwarna, dan Multi-Sheet"
+);
+
+// 2. Verifikasi Tombol Minimalis Perlu Harga Jual Terpasang di Toolbar Produk
+assert(
+  currentHtmlContent.includes('class="product-toolbar-actions"') &&
+  currentHtmlContent.includes('id="btn-export-pricing-excel"') &&
+  currentHtmlContent.includes('id="btn-import-pricing-excel"') &&
+  currentHtmlContent.includes('id="input-import-pricing-excel"'),
+  "DOM Toolbar: Tombol Download Excel & Upload Harga Terpasang Minimalis di product-toolbar-actions"
+);
+
+// 3. Verifikasi Logika Visibilitas Tombol Minimalis pada updatePricingActionBar
+assert(
+  mgmtProductsContent.includes('btnExportPricing.style.display = isPerluHargaJual ? "inline-flex" : "none"') &&
+  mgmtProductsContent.includes('btnImportPricing.style.display = isPerluHargaJual ? "inline-flex" : "none"'),
+  "Toolbar Logic: updatePricingActionBar Mengontrol Visibilitas Tombol Minimalis Sesuai Filter Perlu Harga Jual"
 );
 
 console.log("\n========================================================");

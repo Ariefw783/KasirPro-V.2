@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v125-reset-price-to-pending";
+const CACHE_VERSION = "kasirpro-pwa-v126-colored-export-and-minimal-toolbar-buttons";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
