@@ -2504,8 +2504,8 @@ assert(revisedDownResult === 40, "Simulasi Koreksi: Produk Terkoreksi Turun (50 
 const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
 const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
 
-assert(versionJson.version === "2.2.83", "Versioning: Versi Sistem Tepat v2.2.83");
-assert(swJsContent.includes("v124"), "Service Worker: Cache PWA Terbarui ke v124");
+assert(versionJson.version === "2.2.84", "Versioning: Versi Sistem Tepat v2.2.84");
+assert(swJsContent.includes("v125"), "Service Worker: Cache PWA Terbarui ke v125");
 
 // Verifikasi aturan changelog <= 5 kata bahasa Inggris
 if (Array.isArray(versionJson.changelog)) {
@@ -2582,6 +2582,42 @@ assert(
   mgmtOpnameContent.includes('fileSuffix = "Produk_Berstok"') &&
   mgmtOpnameContent.includes('fileSuffix = "Seluruh_Master"'),
   "Opname Module: Handler Mendukung 2 Opsi Ekspor (Produk Berstok dan Seluruh Master) Lengkap"
+);
+
+console.log("\n🔄 BAGIAN 32: PENGUJIAN FITUR RESET HARGA JUAL KE PERLU HARGA JUAL (NOL-KAN HARGA)");
+
+// 1. Verifikasi Elemen Tombol Reset pada Template Modal Edit Harga
+assert(
+  mgmtProductsContent.includes('id="btn-reset-price-to-pending"') &&
+  mgmtProductsContent.includes("Kembalikan ke Perlu Harga Jual"),
+  "Modal Edit Harga: Tombol Reset ke Perlu Harga Jual Terpasang di Footer Modal"
+);
+
+// 2. Verifikasi Wiring Event Listener & Kontrol Visibilitas Tombol
+assert(
+  mgmtProductsContent.includes('$("btn-reset-price-to-pending")?.addEventListener("click", handleResetPriceToPending)') &&
+  mgmtProductsContent.includes('resetBtn.style.display = curBase > 0 ? "inline-flex" : "none"'),
+  "Modal Edit Harga: Kontrol Visibilitas Dinamis (Hanya Muncul Jika Harga > 0) & Event Listener Terpasang"
+);
+
+// 3. Verifikasi Logika Eksekusi Reset Harga & Status Belum Aktif
+assert(
+  mgmtProductsContent.includes("executeResetProductPrice") &&
+  mgmtProductsContent.includes('target["Harga Jual"] = 0;') &&
+  mgmtProductsContent.includes('target["Harga Jual Satuan Sedang"] = 0;') &&
+  mgmtProductsContent.includes('target["Harga Jual Satuan Besar"] = 0;') &&
+  mgmtProductsContent.includes('target["sellPrice"] = 0;') &&
+  mgmtProductsContent.includes('target["Status"] = "Belum Aktif";') &&
+  mgmtProductsContent.includes('target["Status Produk"] = "Belum Aktif";'),
+  "Logika Reset: Fungsi executeResetProductPrice Mengosongkan Seluruh Satuan Harga & Mengubah Status Menjadi Belum Aktif"
+);
+
+// 4. Verifikasi Smart Confirmation Dialog saat Input Harga Dinolkan pada Form Simpan
+assert(
+  mgmtProductsContent.includes("curBase <= 0 && curMid <= 0") &&
+  mgmtProductsContent.includes("Nol-kan Harga Jual?") &&
+  mgmtProductsContent.includes("await executeResetProductPrice(activeEditingProduct)"),
+  "Validasi Simpan: Deteksi Cerdas Harga Rp0 Menawarkan Reset ke Perlu Harga Jual secara Otomatis"
 );
 
 console.log("\n========================================================");

@@ -1190,9 +1190,16 @@ function installEditPriceModal() {
           </div>
         </div>
 
-        <footer style="padding:12px 18px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:8px;">
-          <button type="button" id="cancel-edit-price" class="button button-secondary">Batal</button>
-          <button type="button" id="save-edit-price" class="button button-primary"><i class="fa-solid fa-floppy-disk"></i> Simpan Harga &amp; Aktifkan</button>
+        <footer style="padding:12px 18px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div>
+            <button type="button" id="btn-reset-price-to-pending" class="button button-danger" style="display:none;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;font-size:12px;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:600;">
+              <i class="fa-solid fa-rotate-left"></i> Kembalikan ke Perlu Harga Jual
+            </button>
+          </div>
+          <div style="display:flex;gap:8px;margin-left:auto;">
+            <button type="button" id="cancel-edit-price" class="button button-secondary">Batal</button>
+            <button type="button" id="save-edit-price" class="button button-primary"><i class="fa-solid fa-floppy-disk"></i> Simpan Harga &amp; Aktifkan</button>
+          </div>
         </footer>
       </section>
     </div>
@@ -1231,6 +1238,7 @@ function installEditPriceModal() {
   $("close-modal-price")?.addEventListener("click", closeEditPriceModal);
   $("cancel-edit-price")?.addEventListener("click", closeEditPriceModal);
   $("save-edit-price")?.addEventListener("click", handleSavePriceModal);
+  $("btn-reset-price-to-pending")?.addEventListener("click", handleResetPriceToPending);
 }
 
 function openEditPriceModal(prod) {
@@ -1292,6 +1300,12 @@ function openEditPriceModal(prod) {
   $("input-edit-sell-price").value = curBase > 0 ? formatNumber(curBase) : "";
   if ($("hint-price-base")) $("hint-price-base").textContent = `Modal beli faktur: ${rupiah(Math.round(buyPrice / priceModalState.conversion))} per ${baseUnit}`;
 
+  // Kontrol tombol reset: muncul jika produk sudah memiliki harga jual (> 0)
+  const resetBtn = $("btn-reset-price-to-pending");
+  if (resetBtn) {
+    resetBtn.style.display = curBase > 0 ? "inline-flex" : "none";
+  }
+
   // Satuan Sedang
   const midBox = $("box-edit-price-mid");
   if (midBox) {
@@ -1329,6 +1343,60 @@ function closeEditPriceModal() {
   activeEditingProduct = null;
 }
 
+/**
+ * Handler konfirmasi reset harga produk kembali ke nol (Perlu Harga Jual)
+ */
+async function handleResetPriceToPending() {
+  if (!activeEditingProduct) return;
+  const prodName = activeEditingProduct["Nama Produk"] || activeEditingProduct["Kode Produk"] || "produk ini";
+  const ok = await window.KasirProDialog?.confirm?.(
+    "Kembalikan ke Perlu Harga Jual?",
+    `Apakah Anda yakin ingin me-reset harga jual "${prodName}" menjadi Rp0?\n\nProduk ini akan dipindahkan kembali ke tab "Perlu Harga Jual" dan tidak dapat dijual di kasir sebelum harga ditentukan ulang.`
+  );
+  if (!ok) return;
+
+  await executeResetProductPrice(activeEditingProduct);
+}
+
+/**
+ * Eksekusi reset harga jual produk menjadi 0 dan status kembali ke Belum Aktif
+ */
+export async function executeResetProductPrice(prod) {
+  if (!prod) return;
+  const code = norm(prod["Kode Produk"] || prod["Kode Produk Internal"] || prod.code || prod.id);
+  const master = readStore(STORE_KEYS.master, {});
+  const prods = Array.isArray(master.produk) ? master.produk : [];
+  const target = prods.find(p => norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.code || p.id) === code);
+  if (!target) return;
+
+  target["Harga Jual"] = 0;
+  target["Harga Jual Satuan Sedang"] = 0;
+  target["Harga Jual Satuan Besar"] = 0;
+  target["sellPrice"] = 0;
+  target["Status"] = "Belum Aktif";
+  target["Status Produk"] = "Belum Aktif";
+
+  const resetBtn = $("btn-reset-price-to-pending");
+  const saveBtn = $("save-edit-price");
+  if (resetBtn) resetBtn.disabled = true;
+  if (saveBtn) saveBtn.disabled = true;
+
+  try {
+    await writeMasterDelta({ produk: [target] });
+    closeEditPriceModal();
+    renderProducts();
+    window.KasirProDialog?.success?.(
+      "Berhasil Direset",
+      `Harga jual "${target["Nama Produk"] || code}" berhasil dikosongkan. Produk kini berada di filter "Perlu Harga Jual".`
+    );
+  } catch (err) {
+    window.KasirProDialog?.error?.("Gagal Mereset", err.message);
+  } finally {
+    if (resetBtn) resetBtn.disabled = false;
+    if (saveBtn) saveBtn.disabled = false;
+  }
+}
+
 async function handleSavePriceModal() {
   if (!activeEditingProduct) return;
 
@@ -1346,11 +1414,23 @@ async function handleSavePriceModal() {
   let priceBase = curBase;
   let priceMid = curMid;
 
-  if (priceModalState.midUnit) {
-    if (priceMid <= 0 && priceBase <= 0) {
-      window.KasirProDialog?.warning("Perhatian", "Silakan isi Harga Satuan Sedang atau Harga Eceran.");
-      return;
+  if (curBase <= 0 && curMid <= 0) {
+    const currentPrice = num(activeEditingProduct["Harga Jual"]);
+    if (currentPrice > 0) {
+      const wantReset = await window.KasirProDialog?.confirm?.(
+        "Nol-kan Harga Jual?",
+        `Anda mengosongkan / mengisi 0 pada harga jual.\n\nApakah Anda ingin mengembalikan produk ini ke filter "Perlu Harga Jual"?`
+      );
+      if (wantReset) {
+        await executeResetProductPrice(activeEditingProduct);
+        return;
+      }
     }
+    window.KasirProDialog?.warning("Perhatian", priceModalState.midUnit ? "Silakan isi Harga Satuan Sedang atau Harga Eceran." : "Harga jual eceran wajib diisi.");
+    return;
+  }
+
+  if (priceModalState.midUnit) {
     if (priceMid <= 0 && priceBase > 0) priceMid = Math.round(priceBase * midQty);
     if (priceBase <= 0 && priceMid > 0) priceBase = Math.round(priceMid / midQty);
   } else {

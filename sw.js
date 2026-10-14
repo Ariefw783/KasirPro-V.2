@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v124-opname-scope-and-active-export";
+const CACHE_VERSION = "kasirpro-pwa-v125-reset-price-to-pending";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

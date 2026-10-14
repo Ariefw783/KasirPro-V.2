@@ -1,14 +1,14 @@
 {
-  "version": "2.2.83",
-  "build": "20261014.03",
+  "version": "2.2.84",
+  "build": "20261014.04",
   "releaseDate": "14 Oktober 2026",
-  "title": "Dual-Scope Stock Opname & Conditional Active Product Export",
-  "description": "Dua opsi cakupan ekspor stock opname (produk berstok vs seluruh master) dan ekspor kondisional produk siap jual pada filter aktif.",
+  "title": "Reset Selling Price to Pending Option",
+  "description": "Menambahkan tombol reset kembalikan harga jual ke perlu harga jual pada modal ubah harga dan konfirmasi otomatis saat harga dinolkan.",
   "changelog": [
-    "Add dual scope stock opname",
-    "Filter active ready product export",
-    "Conditional export button on filter",
-    "Standardize multi unit price export",
-    "Updated PWA cache to v124"
+    "Add reset price to pending",
+    "Zero price confirmation dialog added",
+    "Reset product to pending filter",
+    "Dynamic reset button visibility modal",
+    "Updated PWA cache to v125"
   ]
 }
