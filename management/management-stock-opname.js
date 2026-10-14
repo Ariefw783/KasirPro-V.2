@@ -37,8 +37,18 @@ export function initStockOpnameModule() {
 }
 
 function bindEvents() {
-  // 1. Tombol Export Stok Sistem ke Excel
-  $("opname-export-button")?.addEventListener("click", handleExportStockOpname);
+  // 1. Tombol Export Stok Sistem ke Excel (Buka Modal Pilihan 2 Cakupan)
+  $("opname-export-button")?.addEventListener("click", () => handleExportStockOpname("prompt"));
+  $("btn-export-opname-active")?.addEventListener("click", () => handleExportStockOpname("active"));
+  $("btn-export-opname-all")?.addEventListener("click", () => handleExportStockOpname("all"));
+  $("close-modal-opname-scope")?.addEventListener("click", () => {
+    const modal = $("modal-choose-opname-scope");
+    if (modal) modal.style.display = "none";
+  });
+  const scopeModal = $("modal-choose-opname-scope");
+  scopeModal?.addEventListener("click", (e) => {
+    if (e.target === scopeModal) scopeModal.style.display = "none";
+  });
 
   // 2. Tombol Navigasi ke Import Hasil Opname
   $("go-import-opname")?.addEventListener("click", openOpnameImportWorkflow);
@@ -231,9 +241,19 @@ export function renderOpnameHistory() {
 }
 
 /**
- * 0A. EXPORT STOK SISTEM KE EXCEL
+ * 0A. EXPORT STOK SISTEM KE EXCEL (2 OPSI CAKUPAN: PRODUK BERSTOK vs SELURUH MASTER)
  */
-async function handleExportStockOpname() {
+export async function handleExportStockOpname(scope = "prompt") {
+  if (scope === "prompt") {
+    const modal = $("modal-choose-opname-scope");
+    if (modal) {
+      modal.style.display = "flex";
+      return;
+    }
+    // Fallback jika modal tidak tersedia
+    scope = "active";
+  }
+
   try {
     const XLSX = window.XLSX;
     if (!XLSX) {
@@ -248,18 +268,41 @@ async function handleExportStockOpname() {
       return;
     }
 
+    // Filter produk berdasarkan cakupan (scope)
+    let targetProds = prods.filter(p => !p._isDeleted);
+    let scopeLabel = "Seluruh Master Data";
+    let fileSuffix = "Seluruh_Master";
+
+    if (scope === "active") {
+      targetProds = targetProds.filter(p => {
+        const code = p["Kode Produk Internal"] || p["Kode Produk"] || p.id || "";
+        const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
+        return stock > 0;
+      });
+      scopeLabel = "Produk Berstok";
+      fileSuffix = "Produk_Berstok";
+
+      if (!targetProds.length) {
+        window.KasirProDialog?.warning(
+          "Tidak Ada Produk Berstok",
+          "Belum ada produk yang memiliki stok aktif (> 0) atau pernah dicatat di sistem."
+        );
+        return;
+      }
+    }
+
     const rows = [
       ["No", "Kode Produk Internal", "Barcode", "Nama Produk", "Kategori", "Satuan Dasar", "Harga Beli Terakhir", "Stok Sistem", "Stok Fisik", "Alasan"]
     ];
 
-    prods.forEach((p, idx) => {
+    targetProds.forEach((p, idx) => {
       const code = p["Kode Produk Internal"] || p["Kode Produk"] || p.id || "";
       const barcode = p["Barcode"] || p.barcode || "";
       const name = p["Nama Produk"] || p.name || "";
       const cat = p["Kategori"] || p.category || "";
       const unit = p["Satuan Dasar"] || p["Satuan"] || "Pcs";
       const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
-      const systemStock = readCurrentStock(code);
+      const systemStock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
 
       rows.push([
         idx + 1,
@@ -277,15 +320,31 @@ async function handleExportStockOpname() {
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [
+      { wch: 6 },  // No
+      { wch: 18 }, // Kode Produk Internal
+      { wch: 16 }, // Barcode
+      { wch: 38 }, // Nama Produk
+      { wch: 18 }, // Kategori
+      { wch: 14 }, // Satuan Dasar
+      { wch: 18 }, // Harga Beli Terakhir
+      { wch: 14 }, // Stok Sistem
+      { wch: 14 }, // Stok Fisik
+      { wch: 24 }  // Alasan
+    ];
     XLSX.utils.book_append_sheet(wb, ws, "STOCK_OPNAME");
 
     const today = new Date().toISOString().slice(0, 10);
-    const fileName = `Stock_Opname_Sistem_${today}.xlsx`;
+    const fileName = `Stock_Opname_${fileSuffix}_${today}.xlsx`;
     XLSX.writeFile(wb, fileName);
 
+    // Tutup modal pilihan scope jika terbuka
+    const modal = $("modal-choose-opname-scope");
+    if (modal) modal.style.display = "none";
+
     window.KasirProDialog?.success(
-      "Export Stok Sistem Berhasil",
-      `Lembar hitung fisik (${prods.length} produk) berhasil diekspor ke file:\n${fileName}\n\nLangkah selanjutnya:\n1. Buka file Excel dan isi kolom 'Stok Fisik' sesuai hasil hitung fisik gudang/rak.\n2. Jika ada selisih, isi kolom 'Alasan'.\n3. Unggah file kembali menggunakan tombol 'Import Hasil Opname'.`
+      `Export ${scopeLabel} Berhasil`,
+      `Lembar hitung fisik (${targetProds.length} produk - ${scopeLabel}) berhasil diekspor ke file:\n${fileName}\n\nLangkah selanjutnya:\n1. Buka file Excel dan isi kolom 'Stok Fisik' sesuai hasil hitung fisik rak.\n2. Jika ada selisih, isi kolom 'Alasan'.\n3. Unggah file kembali menggunakan tombol 'Import Hasil Opname'.`
     );
   } catch (err) {
     console.error("[StockOpname] Error exporting system stock:", err);

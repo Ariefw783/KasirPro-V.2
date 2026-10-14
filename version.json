@@ -1,14 +1,14 @@
 {
-  "version": "2.2.82",
-  "build": "20261014.02",
+  "version": "2.2.83",
+  "build": "20261014.03",
   "releaseDate": "14 Oktober 2026",
-  "title": "Responsive 2-Column Card Grid & Physical Check Export",
-  "description": "Tampilan grid responsif 2-kolom pada PC/Tablet untuk kartu data serta fitur ekspor lembar cek fisik stok opname rak sesuai filter aktif.",
+  "title": "Dual-Scope Stock Opname & Conditional Active Product Export",
+  "description": "Dua opsi cakupan ekspor stock opname (produk berstok vs seluruh master) dan ekspor kondisional produk siap jual pada filter aktif.",
   "changelog": [
-    "Add responsive two column grid",
-    "Add physical stock check export",
-    "Include automated formula check sheet",
-    "Optimize tablet and desktop layout",
-    "Updated PWA cache to v123"
+    "Add dual scope stock opname",
+    "Filter active ready product export",
+    "Conditional export button on filter",
+    "Standardize multi unit price export",
+    "Updated PWA cache to v124"
   ]
 }

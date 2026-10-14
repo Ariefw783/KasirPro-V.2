@@ -2504,8 +2504,8 @@ assert(revisedDownResult === 40, "Simulasi Koreksi: Produk Terkoreksi Turun (50 
 const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
 const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
 
-assert(versionJson.version === "2.2.82", "Versioning: Versi Sistem Tepat v2.2.82");
-assert(swJsContent.includes("v123"), "Service Worker: Cache PWA Terbarui ke v123");
+assert(versionJson.version === "2.2.83", "Versioning: Versi Sistem Tepat v2.2.83");
+assert(swJsContent.includes("v124"), "Service Worker: Cache PWA Terbarui ke v124");
 
 // Verifikasi aturan changelog <= 5 kata bahasa Inggris
 if (Array.isArray(versionJson.changelog)) {
@@ -2515,7 +2515,7 @@ if (Array.isArray(versionJson.changelog)) {
   });
 }
 
-console.log("\n📐 BAGIAN 31: PENGUJIAN RESPONSIVE CARD GRID 2-KOLOM (PC/TABLET) & EXPORT CEK FISIK");
+console.log("\n📐 BAGIAN 31: PENGUJIAN RESPONSIVE CARD GRID 2-KOLOM & 2 OPSI STOCK OPNAME & EXPORT PRODUK SIAP JUAL");
 
 // 1. Verifikasi Responsive Grid CSS
 const mgmtCssContent = fs.readFileSync(path.join(rootDir, "management/management.css"), "utf8");
@@ -2531,31 +2531,57 @@ assert(
   "Responsive Grid: Pesan Kosong / Single Child Terproteksi Membentang Penuh 2 Kolom"
 );
 
-// 2. Verifikasi Tombol & DOM Export Cek Fisik
+// 2. Verifikasi Tombol & DOM Export Produk Siap Jual
 const currentHtmlContent = fs.readFileSync(path.join(rootDir, "management/index.html"), "utf8");
 assert(
-  currentHtmlContent.includes('id="btn-export-physical-check"') &&
-  currentHtmlContent.includes("Export Cek Fisik"),
-  "DOM Produk: Tombol Export Cek Fisik Terintegrasi pada Toolbar Filter Produk"
+  currentHtmlContent.includes('id="btn-export-active-products"') &&
+  currentHtmlContent.includes("Export Produk Siap Jual"),
+  "DOM Produk: Tombol Export Produk Siap Jual Terpasang pada Toolbar Filter Produk"
 );
 
-// 3. Verifikasi Logika Handler Export Cek Fisik di Management Products
+// 3. Verifikasi Logika Kondisional Tombol Export Produk Siap Jual (Hanya Saat Filter Aktif)
 const mgmtProductsContent = fs.readFileSync(path.join(rootDir, "management/management-products.js"), "utf8");
 assert(
-  mgmtProductsContent.includes("exportPhysicalCheckWorkbook") &&
-  mgmtProductsContent.includes("handleExportPhysicalCheck") &&
-  mgmtProductsContent.includes('btn-export-physical-check'),
-  "Produk Module: Handler handleExportPhysicalCheck Terhubung dengan Filter Aktif dan Tombol Export"
+  mgmtProductsContent.includes("updateActiveProductsExportButton") &&
+  mgmtProductsContent.includes('btn.style.display = (currentVal === "aktif") ? "inline-flex" : "none"'),
+  "Produk Module: Tombol Export Produk Siap Jual Bersifat Kondisional (Hanya Muncul di Filter Aktif)"
 );
 
-// 4. Verifikasi Fitur Excel Service exportPhysicalCheckWorkbook
 assert(
-  excelServiceContent.includes("exportPhysicalCheckWorkbook") &&
-  excelServiceContent.includes("CEK_FISIK_STOK") &&
-  excelServiceContent.includes("Stok Fisik (Ceklis Rak)") &&
-  excelServiceContent.includes("formulaSelisih") &&
-  excelServiceContent.includes("PETUNJUK_AUDIT"),
-  "Excel Service: Fungsi exportPhysicalCheckWorkbook Dikonfigurasi Lengkap dengan Rumus Otomatis Selisih"
+  mgmtProductsContent.includes("exportActiveProductsWorkbook") &&
+  mgmtProductsContent.includes("handleExportActiveProducts") &&
+  mgmtProductsContent.includes('btn-export-active-products'),
+  "Produk Module: Handler handleExportActiveProducts Terhubung dengan Tombol dan Service Ekspor"
+);
+
+// 4. Verifikasi Fitur Excel Service exportActiveProductsWorkbook
+const freshExcelService = fs.readFileSync(path.join(rootDir, "modules/excel/excel-service.js"), "utf8");
+assert(
+  freshExcelService.includes("exportActiveProductsWorkbook") &&
+  freshExcelService.includes("PRODUK_SIAP_JUAL") &&
+  freshExcelService.includes("Harga Beli Faktur") &&
+  freshExcelService.includes("Harga Kemasan A") &&
+  freshExcelService.includes("Harga Kemasan B") &&
+  freshExcelService.includes("Stok Aktual"),
+  "Excel Service: Fungsi exportActiveProductsWorkbook Memuat Struktur Lengkap Serupa Perlu Harga Jual"
+);
+
+// 5. Verifikasi Modal & 2 Opsi Cakupan Stock Opname
+assert(
+  currentHtmlContent.includes('id="modal-choose-opname-scope"') &&
+  currentHtmlContent.includes('id="btn-export-opname-active"') &&
+  currentHtmlContent.includes('id="btn-export-opname-all"'),
+  "DOM Opname: Modal Pemilihan 2 Cakupan Stock Opname (Produk Berstok vs Seluruh Master) Terpasang"
+);
+
+const mgmtOpnameContent = fs.readFileSync(path.join(rootDir, "management/management-stock-opname.js"), "utf8");
+assert(
+  mgmtOpnameContent.includes('handleExportStockOpname("active")') &&
+  mgmtOpnameContent.includes('handleExportStockOpname("all")') &&
+  mgmtOpnameContent.includes('handleExportStockOpname("prompt")') &&
+  mgmtOpnameContent.includes('fileSuffix = "Produk_Berstok"') &&
+  mgmtOpnameContent.includes('fileSuffix = "Seluruh_Master"'),
+  "Opname Module: Handler Mendukung 2 Opsi Ekspor (Produk Berstok dan Seluruh Master) Lengkap"
 );
 
 console.log("\n========================================================");

@@ -16,7 +16,7 @@
 import { $, num, text, norm, rupiah, formatNumber, escapeHtml } from "../modules/core/utils.js";
 import { STORE_KEYS, readStore, writeMasterDelta, deleteMasterProduct, readCurrentStock } from "../modules/database/database-store.js";
 import { indexedDBStore, STORES } from "../modules/local/indexeddb-store.js";
-import { exportMasterData, parseMasterWorkbook, exportPricingWorkbook, parsePricingWorkbook, exportPhysicalCheckWorkbook } from "../modules/excel/excel-service.js";
+import { exportMasterData, parseMasterWorkbook, exportPricingWorkbook, parsePricingWorkbook, exportActiveProductsWorkbook } from "../modules/excel/excel-service.js";
 import { openStockHistoryModal } from "./management-stock.js";
 
 const PAGE_SIZE = 25;
@@ -110,8 +110,8 @@ function bindEvents() {
   const exportBtn = $("export-master-button") || $("export-products");
   exportBtn?.addEventListener("click", handleExportMaster);
 
-  // Tombol Export Lembar Cek Fisik / Opname Rak (Sesuai Filter Aktif)
-  $("btn-export-physical-check")?.addEventListener("click", handleExportPhysicalCheck);
+  // Tombol Export Produk Siap Jual (Aktif di Kasir POS)
+  $("btn-export-active-products")?.addEventListener("click", handleExportActiveProducts);
 
   // Tombol Ekspor & Impor Khusus Perlu Harga Jual
   $("btn-export-pricing-excel")?.addEventListener("click", handleExportPricingExcel);
@@ -245,6 +245,18 @@ function syncProductStatusPills() {
     btn.classList.toggle("active", s === currentVal);
   });
   updatePricingActionBar();
+  updateActiveProductsExportButton();
+}
+
+/**
+ * Atur visibilitas kondisional tombol Export Produk Siap Jual
+ * HANYA muncul ketika pengguna memilih filter "Aktif (Siap Jual)"
+ */
+export function updateActiveProductsExportButton() {
+  const currentVal = norm($("product-status-filter")?.value || "");
+  const btn = $("btn-export-active-products");
+  if (!btn) return;
+  btn.style.display = (currentVal === "aktif") ? "inline-flex" : "none";
 }
 
 function populateFilterDropdowns(master) {
@@ -810,10 +822,10 @@ export function handleExportMaster() {
 }
 
 /**
- * Handle Export Lembar Cek Fisik Stok (Sesuai Filter & Pencarian Aktif)
- * Format One-Way Export untuk monitoring & stock opname fisik etalase/rak.
+ * Handle Export Excel Khusus Produk Siap Jual (Aktif di Kasir POS)
+ * Format selaras dengan template "Perlu Harga Jual" (Kode, Nama, Modal Beli, Kemasan A, Harga A, Kemasan B, Harga B, Stok).
  */
-export function handleExportPhysicalCheck() {
+export function handleExportActiveProducts() {
   try {
     const invoiceLookup = getInvoiceLookupMap();
     const sourceList = Array.isArray(filteredProducts) && filteredProducts.length ? filteredProducts : currentProducts;
@@ -823,6 +835,7 @@ export function handleExportPhysicalCheck() {
       const stock = Math.max(readCurrentStock(code), num(p["Stok Awal"] ?? p.stock ?? 0));
       return {
         ...p,
+        "Harga Beli Terakhir": invData.buyPrice || p["Harga Beli Terakhir"] || p["Harga Beli"] || 0,
         "Kemasan Beli": invData.purchaseUnit || p["Kemasan Beli"] || p["Satuan Pembelian"] || p["Satuan Dasar"] || "Pcs",
         "Konversi": num(invData.conversionRatio) || num(p["Konversi"]) || 1,
         "Satuan Dasar": invData.baseUnit || p["Satuan Dasar"] || p["Satuan"] || "Pcs",
@@ -831,20 +844,22 @@ export function handleExportPhysicalCheck() {
     });
 
     if (!itemsToExport.length) {
-      window.KasirProDialog?.warning("Tidak Ada Produk", "Tidak ada produk yang sesuai dengan filter aktif untuk diekspor ke lembar cek fisik.");
+      window.KasirProDialog?.warning("Tidak Ada Produk", "Tidak ada produk siap jual yang dapat diekspor.");
       return;
     }
 
-    const res = exportPhysicalCheckWorkbook(itemsToExport);
+    const res = exportActiveProductsWorkbook(itemsToExport);
     window.KasirProDialog?.success(
-      "Export Cek Fisik Berhasil",
-      `Berhasil mengekspor ${res.count} produk (sesuai filter aktif) ke file:\n${res.fileName}\n\nFile siap digunakan untuk audit/monitoring fisik di rak toko.`
+      "Export Produk Siap Jual Berhasil",
+      `Berhasil mengekspor ${res.count} produk siap jual ke file:\n${res.fileName}\n\nFormat file memuat modal beli, harga kemasan eceran & sedang, serta stok aktual kasir POS.`
     );
   } catch (err) {
-    console.error("[ExportPhysicalCheck] Error:", err);
-    window.KasirProDialog?.error("Gagal Export Cek Fisik", err.message || "Terjadi kesalahan saat membuat file Excel.");
+    console.error("[ExportActiveProducts] Error:", err);
+    window.KasirProDialog?.error("Gagal Export", err.message || "Terjadi kesalahan saat mengekspor produk siap jual.");
   }
 }
+
+export const handleExportPhysicalCheck = handleExportActiveProducts;
 
 /**
  * Update UI dan Status Action Bar Khusus Perlu Harga Jual Excel

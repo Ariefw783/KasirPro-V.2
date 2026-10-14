@@ -1120,100 +1120,110 @@ function formatExcelDate(val) {
 }
 
 /**
- * Export Lembar Cek Fisik Stok / Stock Opname Rak (Excel)
- * Sifat: One-Way Export untuk monitoring & audit fisik mandiri.
- * Mengikuti filter aktif (misal khusus produk Aktif Siap Jual / supplier tertentu).
+ * Export Excel Khusus Produk Siap Jual (Aktif di Kasir POS)
+ * Format selaras dengan template "Perlu Harga Jual" (Kode, Nama, Modal Beli, Kemasan A, Harga A, Kemasan B, Harga B, Stok).
+ * Sifat: Monitoring daftar harga & ketersediaan stok fisik siap jual.
  */
-export function exportPhysicalCheckWorkbook(items = [], filterInfo = {}) {
+export function exportActiveProductsWorkbook(items = []) {
   const XLSX = getXLSX();
   const wb = XLSX.utils.book_new();
 
   const ts = getTimestampString();
-  const fileName = `Lembar_Cek_Fisik_Stok_${ts}.xlsx`;
+  const fileName = `Daftar_Produk_Siap_Jual_${ts}.xlsx`;
 
-  // Sheet 1: CEK_FISIK_STOK
   const headers = [
-    "No",
     "Kode Produk",
     "Barcode",
     "Nama Produk",
     "Kategori",
     "Supplier",
-    "Kemasan Beli",
-    "Konversi (Isi)",
-    "Satuan Dasar",
-    "Stok Sistem",
-    "Stok Fisik (Ceklis Rak)",
-    "Selisih (+/-)",
-    "Kondisi / Catatan ED"
+    "Harga Beli Faktur",
+    "Jenis Kemasan A",
+    "Harga Kemasan A",
+    "Jenis Kemasan B",
+    "Harga Kemasan B",
+    "Stok Aktual",
+    "Status"
   ];
 
   const rows = [headers];
 
-  items.forEach((p, idx) => {
+  items.forEach(p => {
     const code = p["Kode Produk"] || p["Kode Produk Internal"] || p.id || "";
     const barcode = p["Barcode"] || p.barcode || "";
     const name = p["Nama Produk"] || p.name || "";
     const cat = p["Kategori"] || p.category || "";
     const sup = p["Supplier"] || p.supplier || "";
-    const buyUnit = p["Kemasan Beli"] || p["Satuan Pembelian"] || p.purchaseUnit || "";
-    const conv = num(p["Isi Kemasan"] ?? p["Konversi"] ?? p.conversionRatio ?? 1);
-    const baseUnit = p["Satuan Dasar"] || p["Satuan"] || p.baseUnit || "Pcs";
-    const stock = num(p._stockAktual ?? p.currentStock ?? p["Stok Awal"] ?? p.stock ?? 0);
 
-    const rowNum = idx + 2; // Data row index di excel (baris 1 = header)
-    const formulaSelisih = { f: `IF(ISBLANK(K${rowNum}),"",K${rowNum}-J${rowNum})` };
+    const baseUnit = String(p["Satuan Dasar"] || p["Satuan"] || "Pcs").trim();
+    const midUnit = String(p["Satuan Antara"] || "").trim();
+    const midQty = num(p["Isi Satuan Antara"] || 1);
+    const buyUnit = String(p["Kemasan Beli"] || p["Satuan Pembelian"] || baseUnit).trim();
+
+    const hasMid = Boolean(midUnit && norm(midUnit) !== norm(baseUnit) && midQty > 1);
+
+    const buyPrice = num(p["Harga Beli Terakhir"] ?? p["Harga Beli"] ?? 0);
+    const safeBuyUnit = (buyUnit || baseUnit || "PCS").replace(/"/g, "").toUpperCase();
+    const cellBuyPrice = { t: "n", v: buyPrice, z: '"Rp "#,##0" / ' + safeBuyUnit + '"' };
+
+    const sellPriceA = num(p["Harga Jual"] ?? p.sellPrice ?? 0);
+    const cellSellPriceA = { t: "n", v: sellPriceA, z: '"Rp "#,##0' };
+
+    const sellPriceB = num(p["Harga Jual Satuan Sedang"] ?? 0);
+    const effectiveSellPriceB = sellPriceB > 0 ? sellPriceB : (hasMid ? Math.round(sellPriceA * midQty) : 0);
+    const cellSellPriceB = hasMid ? { t: "n", v: effectiveSellPriceB, z: '"Rp "#,##0' } : "-";
+
+    const stock = num(p._stockAktual ?? p.currentStock ?? p["Stok Awal"] ?? p.stock ?? 0);
+    const cellStock = { t: "n", v: stock, z: '#,##0" ' + baseUnit + '"' };
 
     rows.push([
-      idx + 1,
       code,
       barcode,
       name,
       cat,
       sup,
-      buyUnit || baseUnit,
-      conv,
+      cellBuyPrice,
       baseUnit,
-      stock,
-      "", // Kolom kosong untuk ceklis manual staf
-      formulaSelisih,
-      ""  // Kolom kosong untuk catatan kondisi / expired date
+      cellSellPriceA,
+      hasMid ? `${midUnit} (${midQty} ${baseUnit})` : "-",
+      cellSellPriceB,
+      cellStock,
+      "Aktif (Siap Jual)"
     ]);
   });
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws["!cols"] = [
-    { wch: 6 },  // No
-    { wch: 18 }, // Kode Produk
+    { wch: 18 }, // Kode
     { wch: 16 }, // Barcode
     { wch: 38 }, // Nama Produk
     { wch: 18 }, // Kategori
     { wch: 22 }, // Supplier
-    { wch: 14 }, // Kemasan Beli
-    { wch: 14 }, // Konversi (Isi)
-    { wch: 14 }, // Satuan Dasar
-    { wch: 14 }, // Stok Sistem
-    { wch: 22 }, // Stok Fisik (Ceklis Rak)
-    { wch: 14 }, // Selisih (+/-)
-    { wch: 24 }  // Kondisi / Catatan ED
+    { wch: 22 }, // Harga Beli Faktur
+    { wch: 18 }, // Kemasan A
+    { wch: 18 }, // Harga Kemasan A
+    { wch: 22 }, // Kemasan B
+    { wch: 18 }, // Harga Kemasan B
+    { wch: 16 }, // Stok Aktual
+    { wch: 18 }  // Status
   ];
 
-  XLSX.utils.book_append_sheet(wb, ws, "CEK_FISIK_STOK");
+  XLSX.utils.book_append_sheet(wb, ws, "PRODUK_SIAP_JUAL");
 
-  // Sheet 2: PETUNJUK_AUDIT
   const guideRows = [
-    ["LEMBAR PANDUAN AUDIT CEK FISIK / STOCK OPNAME KASIRPRO"],
+    ["LEMBAR MONITORING PRODUK SIAP JUAL (KASIRPRO)"],
     [""],
-    ["NO", "LANGKAH KERJA", "PENJELASAN"],
-    [1, "Cetak / Buka File", "Gunakan file Excel ini di tablet/laptop atau cetak sebagai lembar kerja pengecekan fisik di etalase rak toko."],
-    [2, "Hitung Fisik", "Isi jumlah stok fisik nyata yang ditemukan di rak pada Kolom K (Stok Fisik). Gunakan satuan dasar terkecil (misal tablet/botol/pcs)."],
-    [3, "Lihat Selisih", "Kolom L (Selisih) otomatis menghitung selisih antara stok fisik nyata dengan stok sistem KasirPro."],
-    [4, "Catatan Khusus", "Tuliskan tanggal kedaluwarsa (ED) yang mendekati atau kondisi kemasan rusak pada Kolom M."],
-    [5, "Sifat Berkas", "File ini bersifat One-Way Export (khusus audit fisik mandiri) sehingga tidak akan mengubah atau mengacaukan database master KasirPro."]
+    ["NO", "KOLOM", "DESKRIPSI / KEGUNAAN"],
+    [1, "Kode & Barcode", "Identitas unik produk yang digunakan saat scan di POS kasir."],
+    [2, "Harga Beli Faktur", "Modal perolehan resmi dari faktur pembelian terakhir."],
+    [3, "Kemasan A (Eceran)", "Satuan dasar transaksi terkecil dengan harga eceran toko."],
+    [4, "Kemasan B (Sedang)", "Satuan sedang (Strip/Pack) sebagai default satuan transaksi POS kasir."],
+    [5, "Stok Aktual", "Sisa stok barang fisik yang tercatat aktif di sistem dan siap dijual."],
+    [6, "Tujuan File", "Digunakan oleh Owner / Supervisor untuk memonitor margin harga jual dan ketersediaan barang aktif."]
   ];
   const wsGuide = XLSX.utils.aoa_to_sheet(guideRows);
-  wsGuide["!cols"] = [{ wch: 6 }, { wch: 24 }, { wch: 60 }];
-  XLSX.utils.book_append_sheet(wb, wsGuide, "PETUNJUK_AUDIT");
+  wsGuide["!cols"] = [{ wch: 6 }, { wch: 22 }, { wch: 65 }];
+  XLSX.utils.book_append_sheet(wb, wsGuide, "PANDUAN_INFO");
 
   if (typeof XLSX.writeFile === "function") {
     XLSX.writeFile(wb, fileName);
@@ -1221,3 +1231,6 @@ export function exportPhysicalCheckWorkbook(items = [], filterInfo = {}) {
 
   return { fileName, count: items.length };
 }
+
+export const exportPhysicalCheckWorkbook = exportActiveProductsWorkbook;
+
