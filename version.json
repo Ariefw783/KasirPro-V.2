@@ -1,14 +1,14 @@
 {
-  "version": "2.2.85",
-  "build": "20261014.05",
+  "version": "2.2.86",
+  "build": "20261014.06",
   "releaseDate": "14 Oktober 2026",
-  "title": "Colored Active Products Export & Minimalist Pricing Buttons",
-  "description": "Format ekspor Excel produk siap jual ditingkatkan menggunakan ExcelJS dengan pewarnaan tema, serta tombol export & import harga jual dibuat minimalis pada toolbar filter.",
+  "title": "Enterprise Visual Redesign & Ergonomics",
+  "description": "Peningkatan menyeluruh desain visual, ergonomi tipografi kasir POS, harmonisasi palet warna, dan tabel responsif.",
   "changelog": [
-    "Colored Excel ready products export",
-    "Add ExcelJS styling ready products",
-    "Minimalist pricing toolbar buttons added",
-    "Conditional toolbar buttons on filter",
-    "Updated PWA cache to v126"
+    "POS ergonomics and typography upgrade",
+    "Unified enterprise color palette implemented",
+    "Enhanced login card visual polish",
+    "Responsive data table readability improvements",
+    "Updated PWA cache to v127"
   ]
 }

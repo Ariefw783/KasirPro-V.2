@@ -2504,8 +2504,8 @@ assert(revisedDownResult === 40, "Simulasi Koreksi: Produk Terkoreksi Turun (50 
 const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
 const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
 
-assert(versionJson.version === "2.2.85", "Versioning: Versi Sistem Tepat v2.2.85");
-assert(swJsContent.includes("v126"), "Service Worker: Cache PWA Terbarui ke v126");
+assert(versionJson.version === "2.2.86", "Versioning: Versi Sistem Tepat v2.2.86");
+assert(swJsContent.includes("v127"), "Service Worker: Cache PWA Terbarui ke v127");
 
 // Verifikasi aturan changelog <= 5 kata bahasa Inggris
 if (Array.isArray(versionJson.changelog)) {

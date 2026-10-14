@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v126-colored-export-and-minimal-toolbar-buttons";
+const CACHE_VERSION = "kasirpro-pwa-v127-visual-redesign-and-pos-ergonomics";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [
