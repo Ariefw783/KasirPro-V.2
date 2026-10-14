@@ -1545,8 +1545,9 @@ export async function writeStockTransaction(entries = []) {
       let delta = num(m.delta ?? m.quantity ?? m.qty);
       const type = norm(m.type);
 
-      // Jika jenis mutasi adalah penjualan, delta memotong stok
-      if (type === "sale" || type === "penjualan") {
+      // Jika jenis mutasi adalah penjualan atau pembalikan/reversal faktur, delta memotong stok
+      const isDeduction = type === "sale" || type === "penjualan" || type.includes("reversal") || type.includes("retur");
+      if (isDeduction) {
         if (delta > 0) delta = -delta;
         // Rekonsiliasi fallback: jika remote stok belum sinkron / bernilai 0 tapi master/m.stockBefore cukup
         if (currentQty < Math.abs(delta) && num(m.stockBefore) >= Math.abs(delta)) {

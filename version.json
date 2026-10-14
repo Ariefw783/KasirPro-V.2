@@ -1,14 +1,14 @@
 {
-  "version": "2.2.80",
-  "build": "20261013.03",
-  "releaseDate": "13 Oktober 2026",
-  "title": "2 Active POS Transaction Units Architecture & Invoice Payment Sync Fix",
-  "description": "Penyederhanaan 2 satuan transaksi aktif POS (Sedang & Eceran) dengan satuan besar sebagai arsip pembelian, serta perbaikan sinkronisasi cloud status pelunasan faktur.",
+  "version": "2.2.81",
+  "build": "20261014.01",
+  "releaseDate": "14 Oktober 2026",
+  "title": "Atomic Invoice Correction Reversal & Stock Accumulation Fix",
+  "description": "Perbaikan pembalikan (reversal) stok atomik saat koreksi/pembaruan faktur agar produk yang tidak terkoreksi tidak terakumulasi ganda.",
   "changelog": [
-    "2 Satuan Transaksi Aktif POS (Sedang & Terkecil) dengan Sedang sebagai unit default",
-    "Satuan Besar (Box/Karton) dialihkan murni sebagai data arsip pembelian & acuan HPP",
-    "Sinkronisasi Cloud Firestore status pelunasan faktur (Sudah Bayar & Batalkan)",
-    "Proteksi pelunasan faktur lokal dari overwriting data remote saat initial sync",
-    "Pembaruan PWA Cache ke v121"
+    "Fixed invoice correction stock accumulation",
+    "Atomic reversal for edited invoices",
+    "Accurate Firestore stock deduction sync",
+    "Preserved uncorrected product stock balance",
+    "Updated PWA cache to v122"
   ]
 }

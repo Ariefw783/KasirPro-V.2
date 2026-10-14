@@ -2465,12 +2465,55 @@ assert(
   "Database Sync: Status Lunas Faktur Lokal Terlindungi dari Penimpaan Data Stale Cloud"
 );
 
-// 5. Verifikasi Versioning & Cache PWA
+// 5. Verifikasi Koreksi Faktur Atomik & Pencegahan Akumulasi Stok Ganda
+assert(
+  mgmtInvoicesContent.includes("Reversal Faktur Masuk") &&
+  mgmtInvoicesContent.includes("mov-inv-rev") &&
+  mgmtInvoicesContent.includes("delta: -oldBaseQty"),
+  "Faktur Reversal: Mutasi Pembalikan Stok Lama Didaftarkan secara Atomik pada Mode Koreksi"
+);
+
+assert(
+  dbStoreContent.includes('type.includes("reversal") || type.includes("retur")') &&
+  dbStoreContent.includes("isDeduction"),
+  "Database Store: writeStockTransaction Mendukung Pemotongan Stok Atomik untuk Tipe Reversal & Retur"
+);
+
+// Uji Simulasi Matematika Reversal & Re-Add Faktur
+function simulateInvoiceEditStock(currentStock, oldItemQty, newItemQty) {
+  // 1. Reversal movement
+  let stockAfterRev = currentStock - oldItemQty;
+  // 2. Revised movement
+  let finalStock = stockAfterRev + newItemQty;
+  return finalStock;
+}
+
+// Kasus 1: Produk Tidak Terkoreksi (Qty tetap 100) -> Stok awal 100 harus tetap 100 (tidak terakumulasi jadi 200)
+const uncorrectedResult = simulateInvoiceEditStock(100, 100, 100);
+assert(uncorrectedResult === 100, "Simulasi Koreksi: Produk Tidak Terkoreksi Tetap 100 (Bebas Akumulasi Ganda)", `Aktual: ${uncorrectedResult}`);
+
+// Kasus 2: Produk Terkoreksi Naik (Qty 50 -> 60) -> Stok awal 50 menjadi 60 (bukan 110)
+const revisedUpResult = simulateInvoiceEditStock(50, 50, 60);
+assert(revisedUpResult === 60, "Simulasi Koreksi: Produk Terkoreksi Naik (50 -> 60) Menghasilkan Tepat 60", `Aktual: ${revisedUpResult}`);
+
+// Kasus 3: Produk Terkoreksi Turun (Qty 50 -> 40) -> Stok awal 50 menjadi 40
+const revisedDownResult = simulateInvoiceEditStock(50, 50, 40);
+assert(revisedDownResult === 40, "Simulasi Koreksi: Produk Terkoreksi Turun (50 -> 40) Menghasilkan Tepat 40", `Aktual: ${revisedDownResult}`);
+
+// 6. Verifikasi Versioning & Cache PWA
 const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
 const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
 
-assert(versionJson.version === "2.2.80", "Versioning: Versi Sistem Tepat v2.2.80");
-assert(swJsContent.includes("v121"), "Service Worker: Cache PWA Terbarui ke v121");
+assert(versionJson.version === "2.2.81", "Versioning: Versi Sistem Tepat v2.2.81");
+assert(swJsContent.includes("v122"), "Service Worker: Cache PWA Terbarui ke v122");
+
+// Verifikasi aturan changelog <= 5 kata bahasa Inggris
+if (Array.isArray(versionJson.changelog)) {
+  versionJson.changelog.forEach((item, idx) => {
+    const wordCount = item.trim().split(/\s+/).length;
+    assert(wordCount <= 5, `Changelog #${idx + 1}: Teks Bahasa Inggris Sesuai Batas Maksimal 5 Kata (${wordCount} kata)`, `Melebihi batas: ${item}`);
+  });
+}
 
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);

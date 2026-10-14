@@ -909,19 +909,30 @@ export async function executeConfirmInvoice(inv) {
     const now = nowIso();
     const user = "Admin";
 
-    // 0. Jika sedang mengedit faktur, balikkan (reversal) stok versi lama terlebih dahulu
+    // 0. Jika sedang mengedit faktur, balikkan (reversal) stok versi lama terlebih dahulu secara atomik
     if (isEditMode && Array.isArray(editingInvoice.items)) {
       for (const oldItem of editingInvoice.items) {
         const oldConv = num(oldItem.conversionRatio) || num(oldItem.conversion) || 1;
         const oldBaseQty = (num(oldItem.qty) || 1) * oldConv;
         const oldCode = norm(oldItem.matchedProductCode || oldItem.productCode || oldItem.code);
-        const prod = products.find(p => norm(p["Kode Produk"]) === oldCode || norm(p["Nama Produk"]) === norm(oldItem.name));
-        if (prod) {
-          const curStock = readCurrentStock(prod["Kode Produk"]);
-          const revertedStock = Math.max(0, curStock - oldBaseQty);
-          setActiveStock(prod["Kode Produk"], revertedStock);
-          prod["Stok Awal"] = revertedStock;
+        const prod = products.find(p => (oldCode && norm(p["Kode Produk"]) === oldCode) || norm(p["Nama Produk"]) === norm(oldItem.name));
+        if (prod && oldBaseQty > 0) {
           touchedProducts.set(norm(prod["Kode Produk"]), prod);
+
+          // Masukkan mutasi pembalikan stok ke movements agar dieksekusi atomik oleh writeStockTransaction
+          movements.push({
+            id: uid("mov-inv-rev"),
+            productCode: prod["Kode Produk"],
+            productName: prod["Nama Produk"],
+            type: "Reversal Faktur Masuk",
+            delta: -oldBaseQty,
+            quantity: oldBaseQty,
+            source: "Koreksi Faktur",
+            reference: editingInvoice.invoiceNumber || inv.invoiceNumber,
+            user,
+            notes: `Reversal stok sebelum pembaruan Faktur #${editingInvoice.invoiceNumber || inv.invoiceNumber}`,
+            createdAt: now
+          });
         }
       }
     }
@@ -955,6 +966,16 @@ export async function executeConfirmInvoice(inv) {
       });
 
       let targetProd = null;
+      if (prodIdx < 0 && isEditMode && Array.isArray(editingInvoice?.items)) {
+        const matchingOldItem = editingInvoice.items.find(oi => norm(oi.name) === norm(item.name));
+        if (matchingOldItem) {
+          const oldCode = norm(matchingOldItem.productCode || matchingOldItem.matchedProductCode || matchingOldItem.code);
+          if (oldCode) {
+            prodIdx = products.findIndex(p => norm(p["Kode Produk"]) === oldCode);
+          }
+        }
+      }
+
       if (prodIdx >= 0) {
         targetProd = products[prodIdx];
 
@@ -1009,7 +1030,7 @@ export async function executeConfirmInvoice(inv) {
       targetProd["Harga Beli Terakhir"] = num(item.buyPrice);
       targetProd["Harga Beli"] = num(item.buyPrice);
       targetProd["Supplier"] = inv.supplierName;
-      touchedProducts.set(targetProd["Kode Produk"], targetProd);
+      touchedProducts.set(norm(targetProd["Kode Produk"]), targetProd);
 
       // Catat mutasi stok
       const movementId = uid("mov-inv");
@@ -1061,15 +1082,7 @@ export async function executeConfirmInvoice(inv) {
       nextInvoices = [...existingInvoices, confirmedInvoice];
     }
 
-    if (isEditMode) {
-      const oldRef = norm(editingInvoice.invoiceNumber);
-      const oldId = norm(editingInvoice.id);
-      const curMovs = readStore(STORE_KEYS.movements, []);
-      const keptMovs = curMovs.filter(m => norm(m.reference) !== oldRef && norm(m.reference) !== oldId);
-      await writeStore(STORE_KEYS.movements, keptMovs);
-    }
-
-    // Eksekusi transaksi atomik
+    // Eksekusi transaksi atomik (Reversal stok lama + Penambahan stok revisi dieksekusi bersamaan)
     await writeStockTransaction([
       { key: STORE_KEYS.invoices, records: [confirmedInvoice] },
       { key: STORE_KEYS.movements, records: movements }
@@ -1077,7 +1090,7 @@ export async function executeConfirmInvoice(inv) {
 
     // Ambil stok terbaru
     for (const [code, prod] of touchedProducts) {
-      prod["Stok Awal"] = readCurrentStock(code);
+      prod["Stok Awal"] = readCurrentStock(prod["Kode Produk"] || code);
     }
 
     await writeMasterDelta({
