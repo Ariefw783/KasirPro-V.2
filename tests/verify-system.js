@@ -35,7 +35,6 @@ function num(val) {
   return Number(s.replace(/[^0-9.-]/g, "")) || 0;
 }
 
-console.log("\n========================================================");
 console.log("   KASIRPRO V2 FULL SYSTEM AUDIT & VERIFICATION SUITE   ");
 console.log("========================================================\n");
 
@@ -2504,8 +2503,8 @@ assert(revisedDownResult === 40, "Simulasi Koreksi: Produk Terkoreksi Turun (50 
 const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
 const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
 
-assert(versionJson.version === "2.2.86", "Versioning: Versi Sistem Tepat v2.2.86");
-assert(swJsContent.includes("v127"), "Service Worker: Cache PWA Terbarui ke v127");
+assert(versionJson.version === "2.2.87", "Versioning: Versi Sistem Tepat v2.2.87");
+assert(swJsContent.includes("v128"), "Service Worker: Cache PWA Terbarui ke v128");
 
 // Verifikasi aturan changelog <= 5 kata bahasa Inggris
 if (Array.isArray(versionJson.changelog)) {
@@ -2646,6 +2645,42 @@ assert(
   mgmtProductsContent.includes('btnExportPricing.style.display = isPerluHargaJual ? "inline-flex" : "none"') &&
   mgmtProductsContent.includes('btnImportPricing.style.display = isPerluHargaJual ? "inline-flex" : "none"'),
   "Toolbar Logic: updatePricingActionBar Mengontrol Visibilitas Tombol Minimalis Sesuai Filter Perlu Harga Jual"
+);
+
+console.log("\n🛍️ BAGIAN 34: PENGUJIAN ITEM MANUAL NON-KATALOG & TRANSAKSI LAMPAU (BACKDATE) POS");
+
+const posHtmlContent = fs.readFileSync(path.join(rootDir, "pos/index.html"), "utf8");
+const freshPosCoreJs = fs.readFileSync(path.join(rootDir, "pos/pos-at07-core.js"), "utf8");
+
+// 1. Verifikasi Elemen DOM POS untuk Item Manual & Backdate
+assert(
+  posHtmlContent.includes('id="btn-open-manual-item"') &&
+  posHtmlContent.includes('id="manual-item-overlay"') &&
+  posHtmlContent.includes('id="manual-item-name"') &&
+  posHtmlContent.includes('id="manual-item-price"') &&
+  posHtmlContent.includes('id="btn-submit-manual-item"'),
+  "DOM POS: Modal Dialog dan Tombol Item Manual Non-Katalog Terpasang Lengkap"
+);
+
+assert(
+  posHtmlContent.includes('id="payment-date"') &&
+  posHtmlContent.includes("Tanggal Transaksi (Backdate)"),
+  "DOM POS: Input Tanggal Transaksi (Backdate) Terpasang pada Dialog Pembayaran"
+);
+
+// 2. Verifikasi Fungsi addManualItem di pos-at07-core.js
+assert(
+  freshPosCoreJs.includes("addManualItem") &&
+  freshPosCoreJs.includes('code: "NON-KATALOG"') &&
+  freshPosCoreJs.includes("isManual: true"),
+  "POS Core: Fungsi addManualItem Terdefinisi dengan Status isManual & Non-Katalog"
+);
+
+// 3. Verifikasi Logika Bypass Stok untuk Item Manual pada completeSale & voidSale
+assert(
+  freshPosCoreJs.includes("if(item.isManual) continue;") &&
+  freshPosCoreJs.includes("isBackdate = Boolean(selectedDate"),
+  "POS Core: Transaksi Melewati Pemotongan Stok untuk Item Manual & Mendukung Opsi Backdate"
 );
 
 console.log("\n========================================================");

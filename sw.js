@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v127-visual-redesign-and-pos-ergonomics";
+const CACHE_VERSION = "kasirpro-pwa-v128-pos-manual-item-backdate";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

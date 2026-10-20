@@ -307,11 +307,41 @@ function addProduct(p){
     renderCart();
 }
 
+export function addManualItem(name, unit, qty, price) {
+    const cleanName = text(name);
+    const cleanUnit = text(unit || "Pcs");
+    const numQty = Math.max(1, parseInt(qty, 10) || 1);
+    const numPrice = Math.max(0, parseInt(price, 10) || 0);
+
+    if (!cleanName) {
+        return window.KasirProDialog?.warning("Nama Diperlukan", "Silakan masukkan nama produk / obat.");
+    }
+
+    const manualId = `MANUAL-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    cart.push({
+        code: "NON-KATALOG",
+        manualId,
+        name: cleanName,
+        price: numPrice,
+        buyPrice: 0,
+        qty: numQty,
+        stock: 999999,
+        baseUnit: cleanUnit,
+        availableUnits: [{ level: "base", name: cleanUnit, multiplier: 1, price: numPrice }],
+        selectedUnit: { level: "base", name: cleanUnit, multiplier: 1, price: numPrice },
+        isManual: true
+    });
+
+    renderCart();
+}
+
 function changeUnit(i, unitName){
     const x=cart[i];
-    if(!x)return;
+    if(!x || x.isManual)return;
     const targetUnit=(x.availableUnits||[]).find(u=>norm(u.name)===norm(unitName));
     if(!targetUnit)return;
+
+
 
     const store=master();
     const plist=Array.isArray(store.produk)?store.produk:[];
@@ -349,13 +379,19 @@ function renderCart(){
     const box=$("cart-items");
 
     box.innerHTML=cart.length?cart.map((x,i)=>{
-        const hasMultiUnits = Array.isArray(x.availableUnits) && x.availableUnits.length > 1;
+        const hasMultiUnits = !x.isManual && Array.isArray(x.availableUnits) && x.availableUnits.length > 1;
         return `
         <div class="sale-line">
             <div class="line-product">
                 <strong>${escapeHtml(x.name)}</strong>
                 <div style="display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap;">
-                    <small style="color:#64748b;">${escapeHtml(x.code||"Tanpa kode")}</small>
+                    ${x.isManual ? `
+                        <span style="font-size:10px;font-weight:700;padding:2px 6px;background:#fef3c7;border:1px solid #fde68a;border-radius:4px;color:#b45309;">
+                            <i class="fa-solid fa-pen-nib"></i> Non-Katalog
+                        </span>
+                    ` : `
+                        <small style="color:#64748b;">${escapeHtml(x.code||"Tanpa kode")}</small>
+                    `}
                     ${hasMultiUnits ? `
                         <select class="cart-unit-select" data-cart-unit="${i}" style="padding:2px 6px;font-size:11px;font-weight:700;border:1px solid #0284c7;border-radius:4px;background:#f0f9ff;color:#0369a1;cursor:pointer;">
                             ${x.availableUnits.map(u => `
@@ -412,6 +448,11 @@ function changeQty(i,d){
         renderCart();
         return;
     }
+    if(x.isManual){
+        x.qty=next;
+        renderCart();
+        return;
+    }
 
     const store=master();
     const plist=Array.isArray(store.produk)?store.produk:[];
@@ -446,6 +487,11 @@ function openPayment(){
     const c=calc();
     $("payment-total").textContent=rupiah(c.total);
     $("cash-paid").value=Math.ceil(c.total);
+
+    const now = new Date();
+    const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    if ($("payment-date")) $("payment-date").value = localIso;
+
     updateChange();
     renderQuickCash(c.total);
     $("payment-overlay").hidden=false;
@@ -476,7 +522,8 @@ function transactionNo(){
 }
 
 function findProductForCartItem(plist,item){
-    if(item.code){
+    if(item.isManual) return null;
+    if(item.code && item.code !== "NON-KATALOG"){
         return plist.find(x=>norm(x["Kode Produk"])===norm(item.code));
     }
     return plist.find(x=>!text(x["Kode Produk"])&&norm(x["Nama Produk"])===norm(item.name));
@@ -497,6 +544,7 @@ async function completeSale(){
     const store=master(),plist=Array.isArray(store.produk)?store.produk:[],moves=movements(),number=transactionNo();
 
     for(const item of cart){
+        if(item.isManual) continue;
         const p=findProductForCartItem(plist,item);
         const mult = item.selectedUnit?.multiplier || 1;
         const requiredBase = item.qty * mult;
@@ -508,9 +556,12 @@ async function completeSale(){
         }
     }
 
-    const saleAt=new Date().toISOString();
+    const selectedDate = $("payment-date")?.value;
+    const saleAt = selectedDate ? new Date(selectedDate).toISOString() : new Date().toISOString();
     for(const [itemIndex,item] of cart.entries()){
+        if(item.isManual) continue;
         const p=findProductForCartItem(plist,item);
+        if(!p) continue;
         const mult = item.selectedUnit?.multiplier || 1;
         const totalDeduct = item.qty * mult;
         const before=num(p["Stok Awal"]);
@@ -538,14 +589,17 @@ async function completeSale(){
 
     const customNote = text($("payment-custom-note")?.value);
     const recordedPaymentMethod = (method === "Lainnya" && customNote) ? `Lainnya (${customNote})` : (method || "Cash");
+    const isBackdate = Boolean(selectedDate && new Date(selectedDate).toDateString() !== new Date().toDateString());
 
     lastSale={
         id:`SALE-${Date.now()}-${String(session.username||"kasir").toLowerCase()}`,
         number,
         at:saleAt,
+        createdAt:saleAt,
         cashier:session.name||session.username||"Kasir",
         role:session.role||"kasir",
         status:"SELESAI",
+        isBackdate,
         items:cart.map(x=>({
             code:String(x.code||""),
             name:String(x.name||""),
@@ -554,7 +608,8 @@ async function completeSale(){
             qty:num(x.qty),
             unitName:String(x.selectedUnit?.name || x.baseUnit || "item"),
             unitMultiplier:num(x.selectedUnit?.multiplier || 1),
-            subtotal:num(x.subtotal || (num(x.price) * num(x.qty)))
+            subtotal:num(x.subtotal || (num(x.price) * num(x.qty))),
+            isManual: Boolean(x.isManual)
         })),
         discountMode:$("cart-discount-mode")?.value || "percent",
         discountValue:num($("cart-discount-value")?.value),
@@ -837,6 +892,7 @@ async function voidSelectedSale(){
     const store=master(),plist=Array.isArray(store.produk)?store.produk:[],items=Array.isArray(sale.items)?sale.items:[];
 
     for(const item of items){
+        if(item.isManual) continue;
         const p=findProductForCartItem(plist,item);
         if(!p)return window.KasirProDialog?.error("Validasi VOID Gagal", `Produk ${item.name} tidak ditemukan pada master. VOID dibatalkan agar stok tidak berubah sebagian.`);
     }
@@ -844,7 +900,10 @@ async function voidSelectedSale(){
     const moves=movements(),voidAt=new Date().toISOString(),voidBy=session.name||session.username||"Admin";
 
     for(const item of items){
-        const p=findProductForCartItem(plist,item),before=num(p["Stok Awal"]),after=before+num(item.qty);
+        if(item.isManual) continue;
+        const p=findProductForCartItem(plist,item);
+        if(!p) continue;
+        const before=num(p["Stok Awal"]),after=before+num(item.qty);
         p["Stok Awal"]=after;
         moves.unshift({
             id:`MOV-${Date.now()}-${Math.random()}`,
@@ -904,6 +963,54 @@ function bind(){
     });
 
     $("clear-pos-search").onclick=()=>{search.value="";closeSearchResults();search.focus()};
+
+    function openManualItemModal() {
+        if ($("manual-item-name")) $("manual-item-name").value = "";
+        if ($("manual-item-unit")) $("manual-item-unit").value = "Pcs";
+        if ($("manual-item-qty")) $("manual-item-qty").value = "1";
+        if ($("manual-item-price")) $("manual-item-price").value = "";
+        if ($("manual-item-subtotal")) $("manual-item-subtotal").textContent = "Rp0";
+        if ($("manual-item-overlay")) $("manual-item-overlay").hidden = false;
+        setTimeout(() => $("manual-item-name")?.focus(), 50);
+    }
+
+    function closeManualItemModal() {
+        if ($("manual-item-overlay")) $("manual-item-overlay").hidden = true;
+    }
+
+    function updateManualItemSubtotal() {
+        const q = Math.max(1, parseInt($("manual-item-qty")?.value, 10) || 1);
+        const p = parseInt(String($("manual-item-price")?.value || "").replace(/[^0-9]/g, ""), 10) || 0;
+        if ($("manual-item-subtotal")) $("manual-item-subtotal").textContent = rupiah(q * p);
+    }
+
+    function submitManualItem() {
+        const name = text($("manual-item-name")?.value);
+        const unit = text($("manual-item-unit")?.value) || "Pcs";
+        const qty = Math.max(1, parseInt($("manual-item-qty")?.value, 10) || 1);
+        const price = parseInt(String($("manual-item-price")?.value || "").replace(/[^0-9]/g, ""), 10) || 0;
+
+        if (!name) {
+            return window.KasirProDialog?.warning("Nama Diperlukan", "Silakan ketik nama obat / produk manual.");
+        }
+        if (price < 0) {
+            return window.KasirProDialog?.warning("Harga Tidak Valid", "Harga jual tidak boleh bernilai negatif.");
+        }
+
+        addManualItem(name, unit, qty, price);
+        closeManualItemModal();
+    }
+
+    $("btn-open-manual-item")?.addEventListener("click", openManualItemModal);
+    $("close-manual-item")?.addEventListener("click", closeManualItemModal);
+    $("manual-item-overlay")?.addEventListener("click", e => { if (e.target === $("manual-item-overlay")) closeManualItemModal(); });
+    $("manual-item-qty")?.addEventListener("input", updateManualItemSubtotal);
+    $("manual-item-price")?.addEventListener("input", updateManualItemSubtotal);
+    $("btn-submit-manual-item")?.addEventListener("click", submitManualItem);
+    $("form-manual-item")?.addEventListener("submit", (e) => {
+        e.preventDefault();
+        submitManualItem();
+    });
 
     document.addEventListener("pointerdown",e=>{
         if(!e.target.closest(".search-autocomplete"))closeSearchResults();

@@ -97,7 +97,7 @@
                 </div>
 
                 <div class="pos-shortcut-chips" aria-label="Shortcut keyboard POS">
-                    <span><kbd>F2</kbd> Cari</span><span><kbd>F4</kbd> Bayar</span><span><kbd>Ctrl</kbd> + <kbd>Enter</kbd> Selesaikan</span><span><kbd>Ctrl</kbd> + <kbd>H</kbd> Riwayat</span>
+                    <span><kbd>F2</kbd> Cari</span><span><kbd>F4</kbd> Bayar</span><span><kbd>F7</kbd> Item Manual</span><span><kbd>Ctrl</kbd> + <kbd>Enter</kbd> Selesaikan</span><span><kbd>Ctrl</kbd> + <kbd>H</kbd> Riwayat</span>
                 </div>
             </div>
 
@@ -108,7 +108,10 @@
                         <h1>Transaksi Penjualan</h1>
                     </div>
 
-                    <div class="sale-head-actions">
+                    <div class="sale-head-actions" style="display:flex;align-items:center;gap:8px;">
+                        <button id="btn-open-manual-item" type="button" class="button button-small" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:12px;padding:5px 10px;border-radius:6px;font-weight:600;display:inline-flex;align-items:center;gap:5px;cursor:pointer;" title="Tambah item manual / non-katalog tanpa potong stok (F7)">
+                            <i class="fa-solid fa-plus-circle"></i> + Item Manual
+                        </button>
                         <span id="cart-count" class="item-counter">0 item</span>
                         <button id="clear-cart" type="button" class="text-danger">
                             <i class="fa-solid fa-trash"></i> Kosongkan
@@ -171,6 +174,56 @@
     </main>
 </div>
 
+<div id="manual-item-overlay" class="overlay" hidden>
+    <section class="payment-dialog" style="max-width: 440px;">
+        <header>
+            <div>
+                <span class="section-kicker" style="color: #047857;"><i class="fa-solid fa-pen-to-square"></i> NON-KATALOG</span>
+                <h2 style="font-size: 1.15rem; margin-top: 2px;">Tambah Item Manual</h2>
+            </div>
+            <button id="close-manual-item" type="button"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+
+        <form id="form-manual-item" class="payment-body" style="gap: 12px;" onsubmit="return false;">
+            <label>
+                Nama Produk / Obat <span class="text-danger">*</span>
+                <input id="manual-item-name" type="text" placeholder="Contoh: Amox 500 tab, Salep racik..." required autocomplete="off">
+            </label>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <label>
+                    Satuan Jual
+                    <input id="manual-item-unit" type="text" placeholder="Pcs / Strip / Tablet" value="Pcs" autocomplete="off">
+                </label>
+                <label>
+                    Jumlah (Qty) <span class="text-danger">*</span>
+                    <input id="manual-item-qty" type="number" min="1" step="1" value="1" inputmode="numeric" required>
+                </label>
+            </div>
+
+            <label>
+                Harga Jual Satuan (Rp) <span class="text-danger">*</span>
+                <input id="manual-item-price" type="number" min="0" step="100" placeholder="0" inputmode="numeric" required>
+            </label>
+
+            <div class="change-box" style="margin-top: 4px;">
+                <span>Subtotal Item</span>
+                <strong id="manual-item-subtotal">Rp0</strong>
+            </div>
+
+            <p style="font-size: 11px; color: #64748b; margin: 0; line-height: 1.4;">
+                <i class="fa-solid fa-circle-info" style="color: #0284c7;"></i> Item manual langsung masuk keranjang kasir dan <strong>tidak memotong kartu stok</strong>.
+            </p>
+        </form>
+
+        <footer>
+            <button id="btn-submit-manual-item" type="button" class="pay-button" style="background: #059669;">
+                <i class="fa-solid fa-plus"></i> Masukkan ke Keranjang
+            </button>
+        </footer>
+    </section>
+</div>
+
 <div id="payment-overlay" class="overlay" hidden>
     <section class="payment-dialog">
         <header>
@@ -191,6 +244,12 @@
             <label id="payment-custom-note-label" hidden>
                 Keterangan Pembayaran
                 <input id="payment-custom-note" type="text" placeholder="Contoh: Debit Mandiri, Giro, dsb.">
+            </label>
+
+            <label id="payment-date-label">
+                <span>Tanggal Transaksi (Backdate)</span>
+                <input id="payment-date" type="datetime-local" style="font-size:13px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;width:100%;margin-top:4px;">
+                <small style="color:#64748b;font-size:11px;margin-top:2px;display:block;">Default waktu sekarang. Ubah tanggal jika menginput nota manual lampau.</small>
             </label>
 
             <label id="cash-paid-label">

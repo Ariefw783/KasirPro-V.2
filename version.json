@@ -1,14 +1,14 @@
 {
-  "version": "2.2.86",
-  "build": "20261014.06",
-  "releaseDate": "14 Oktober 2026",
-  "title": "Enterprise Visual Redesign & Ergonomics",
-  "description": "Peningkatan menyeluruh desain visual, ergonomi tipografi kasir POS, harmonisasi palet warna, dan tabel responsif.",
+  "version": "2.2.87",
+  "build": "20261020.01",
+  "releaseDate": "20 Oktober 2026",
+  "title": "POS Manual Item and Backdate",
+  "description": "Dukungan input item manual non-katalog tanpa potong stok dan opsi tanggal transaksi lampau di kasir POS.",
   "changelog": [
-    "POS ergonomics and typography upgrade",
-    "Unified enterprise color palette implemented",
-    "Enhanced login card visual polish",
-    "Responsive data table readability improvements",
-    "Updated PWA cache to v127"
+    "Add manual item POS modal",
+    "Bypass inventory for manual items",
+    "Add transaction backdate support option",
+    "Support historical manual receipts input",
+    "Updated PWA cache to v128"
   ]
 }
