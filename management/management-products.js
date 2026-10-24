@@ -610,6 +610,9 @@ function renderTable() {
               <button type="button" class="btn-product-stock-card button button-small button-secondary" data-code="${escapeHtml(code)}" title="Lihat Kartu Stok & Riwayat Mutasi">
                 <i class="fa-solid fa-clipboard-list" style="color:#0284c7;"></i>
               </button>
+              <button type="button" class="btn-edit-product button button-small button-secondary" data-code="${escapeHtml(code)}" title="Edit Data Master Produk">
+                <i class="fa-solid fa-pen-to-square" style="color:#0f766e;"></i>
+              </button>
               <button type="button" class="btn-delete-product button button-small button-danger" data-code="${escapeHtml(code)}" title="Hapus Produk">
                 <i class="fa-solid fa-trash"></i>
               </button>
@@ -718,6 +721,9 @@ function renderTable() {
                 <button type="button" class="btn-product-stock-card button button-small button-secondary" data-code="${escapeHtml(code)}" title="Lihat Kartu Stok & Riwayat Mutasi">
                   <i class="fa-solid fa-clipboard-list" style="color:#0284c7;"></i> Kartu Stok
                 </button>
+                <button type="button" class="btn-edit-product button button-small button-secondary" data-code="${escapeHtml(code)}" title="Edit Data Master Produk">
+                  <i class="fa-solid fa-pen-to-square" style="color:#0f766e;"></i> Edit Produk
+                </button>
                 ${stock > 0 ? `
                   <button type="button" class="btn-edit-price button button-small button-primary" data-code="${escapeHtml(code)}">
                     <i class="fa-solid fa-pen"></i> Atur Harga Jual
@@ -752,6 +758,15 @@ function renderTable() {
           e.stopPropagation();
           const code = btn.dataset.code;
           openStockHistoryModal(code);
+        });
+      });
+
+      pContainer.querySelectorAll(".btn-edit-product").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const code = btn.dataset.code;
+          const prod = currentProducts.find(p => norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id) === norm(code));
+          if (prod) openEditProductModal(prod);
         });
       });
 
@@ -1825,11 +1840,51 @@ function setupChainedUnitConversionEvents() {
 }
 
 let activeProductSavedCallback = null;
+let activeEditingProductTarget = null;
+
+export function openEditProductModal(prod) {
+  if (!prod) return;
+  activeEditingProductTarget = prod;
+
+  const conv = Math.max(1, num(prod["Konversi"] ?? prod["Isi Kemasan"]) || 1);
+  const baseQ = Math.max(1, num(prod["Isi Satuan Antara"] ?? prod["Isi Satuan Dasar"]) || 1);
+  const midQ = Math.max(1, Math.round(conv / baseQ));
+
+  openProductModal({
+    isEdit: true,
+    code: prod["Kode Produk"] || prod["Kode Produk Internal"] || prod.id,
+    name: prod["Nama Produk"] || prod.name || "",
+    barcode: prod["Barcode"] || prod.barcode || "",
+    supplier: prod["Supplier"] || prod.supplier || "",
+    category: prod["Kategori"] || prod.category || "",
+    buyUnit: prod["Kemasan Beli"] || prod["Satuan Pembelian"] || "Box",
+    midUnit: prod["Satuan Antara"] || "",
+    baseUnit: prod["Satuan Dasar"] || prod["Satuan"] || "Pcs",
+    midQty: midQ,
+    baseQty: baseQ,
+    conversion: conv,
+    buyPrice: prod["Harga Beli Terakhir"] ?? prod["Harga Beli"] ?? 0
+  });
+}
 
 export function openProductModal(prefill = {}, callback = null) {
   activeProductSavedCallback = typeof callback === "function" ? callback : null;
   const modal = $("modal-product-form");
   if (!modal) return;
+
+  const isEdit = Boolean(prefill.isEdit || activeEditingProductTarget);
+  const titleEl = modal.querySelector("header h2");
+  if (titleEl) {
+    titleEl.innerHTML = isEdit
+      ? '<i class="fa-solid fa-pen-to-square" style="color:#0284c7;margin-right:6px;"></i> Edit Master Produk'
+      : '<i class="fa-solid fa-box-open" style="color:#0284c7;margin-right:6px;"></i> Tambah Master Produk Baru';
+  }
+  const saveBtnEl = $("save-product-form");
+  if (saveBtnEl) {
+    saveBtnEl.innerHTML = isEdit
+      ? '<i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan'
+      : '<i class="fa-solid fa-floppy-disk"></i> Simpan Produk';
+  }
 
   const master = readStore(STORE_KEYS.master, {});
   const sups = Array.isArray(master.supplier) ? master.supplier : [];
@@ -1869,7 +1924,21 @@ export function openProductModal(prefill = {}, callback = null) {
 
   // Populate form inputs
   const targetSupplier = prefill.supplier || supSelect?.value || "";
-  $("input-prod-code").value = prefill.code || (targetSupplier ? generateAutoProductCode(targetSupplier) : "");
+  const cInput = $("input-prod-code");
+  if (cInput) {
+    cInput.value = prefill.code || (targetSupplier ? generateAutoProductCode(targetSupplier) : "");
+    if (isEdit) {
+      cInput.readOnly = true;
+      cInput.style.background = "#f1f5f9";
+      cInput.style.cursor = "not-allowed";
+      cInput.title = "Kode produk tidak dapat diubah (kunci utama)";
+    } else {
+      cInput.readOnly = false;
+      cInput.style.background = "#f8fafc";
+      cInput.style.cursor = "text";
+      cInput.title = "";
+    }
+  }
   $("input-prod-name").value = prefill.name || "";
   $("input-prod-barcode").value = prefill.barcode || "";
 
@@ -1909,12 +1978,29 @@ export function openProductModal(prefill = {}, callback = null) {
 
 if (typeof window !== "undefined") {
   window.openProductModal = openProductModal;
+  window.openEditProductModal = openEditProductModal;
 }
 
 export function closeProductModal() {
   const modal = $("modal-product-form");
   if (modal) modal.hidden = true;
   activeProductSavedCallback = null;
+  activeEditingProductTarget = null;
+  const titleEl = modal?.querySelector("header h2");
+  if (titleEl) {
+    titleEl.innerHTML = '<i class="fa-solid fa-box-open" style="color:#0284c7;margin-right:6px;"></i> Tambah Master Produk Baru';
+  }
+  const saveBtnEl = $("save-product-form");
+  if (saveBtnEl) {
+    saveBtnEl.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Produk';
+  }
+  const cInput = $("input-prod-code");
+  if (cInput) {
+    cInput.readOnly = false;
+    cInput.style.background = "#f8fafc";
+    cInput.style.cursor = "text";
+    cInput.title = "";
+  }
 }
 
 async function handleSaveProductModal() {
@@ -1962,6 +2048,61 @@ async function handleSaveProductModal() {
   const sups = Array.isArray(master.supplier) ? master.supplier : [];
   const cats = Array.isArray(master.kategori) ? master.kategori : [];
 
+  if (activeEditingProductTarget) {
+    // Mode EDIT MASTER PRODUK
+    const targetCode = activeEditingProductTarget["Kode Produk"] || activeEditingProductTarget["Kode Produk Internal"] || activeEditingProductTarget.id;
+    const target = prods.find(p => norm(p["Kode Produk"] || p["Kode Produk Internal"] || p.id) === norm(targetCode));
+    if (!target) {
+      window.KasirProDialog?.error?.("Gagal Memperbarui", "Data produk tidak ditemukan di Master.");
+      return;
+    }
+
+    target["Nama Produk"] = name;
+    target["Barcode"] = barcode;
+    target["Supplier"] = supplier;
+    target["Produsen"] = supplier;
+    target["Kategori"] = category;
+    target["Kemasan Beli"] = buyUnit;
+    target["Satuan Pembelian"] = buyUnit;
+    target["Satuan Antara"] = midUnit || baseUnit;
+    target["Satuan Dasar"] = baseUnit;
+    target["Satuan"] = baseUnit;
+    target["Konversi"] = conversion;
+    target["Isi Kemasan"] = conversion;
+    target["Isi Satuan Antara"] = (midUnit && norm(midUnit) !== norm(baseUnit)) ? baseQty : 1;
+    target["Isi Satuan Dasar"] = baseQty || 1;
+
+    // Sinkronkan harga jual bertingkat jika harga jual sudah ditentukan
+    const curSellPrice = num(target["Harga Jual"]);
+    if (curSellPrice > 0) {
+      target["Harga Jual Satuan Sedang"] = (midUnit && norm(midUnit) !== norm(baseUnit)) ? Math.round(curSellPrice * target["Isi Satuan Antara"]) : 0;
+      target["Harga Jual Satuan Besar"] = Math.round(curSellPrice * conversion);
+      target["Opsi Jual"] = (midUnit && norm(midUnit) !== norm(baseUnit)) ? "2" : "1";
+      target["Satuan Dijual"] = (midUnit && norm(midUnit) !== norm(baseUnit)) ? ["mid", "base"] : ["base"];
+    }
+
+    const saveBtn = $("save-product-form");
+    if (saveBtn) saveBtn.disabled = true;
+
+    try {
+      await writeMasterDelta({ produk: [target] });
+      closeProductModal();
+      renderProducts();
+      window.KasirProDialog?.success?.(
+        "Master Produk Diperbarui",
+        `Master data produk "${name}" (${targetCode}) berhasil diperbarui.`
+      );
+      if (typeof activeProductSavedCallback === "function") {
+        try { activeProductSavedCallback(target); } catch(e) {}
+      }
+    } catch(err) {
+      window.KasirProDialog?.error?.("Gagal Menyimpan", err.message);
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
+    return;
+  }
+
   if (prods.some(p => norm(p["Kode Produk"] || p["Kode Produk Internal"]) === norm(code))) {
     window.KasirProDialog?.warning("Perhatian", `Kode produk "${code}" sudah terdaftar dalam sistem. Gunakan kode lain.`);
     return;
@@ -1989,7 +2130,7 @@ async function handleSaveProductModal() {
     "Satuan Dasar": baseUnit,
     "Satuan": baseUnit,
     "Satuan Antara": midUnit || baseUnit,
-    "Isi Satuan Antara": midQty || 1,
+    "Isi Satuan Antara": (midUnit && norm(midUnit) !== norm(baseUnit)) ? baseQty : 1,
     "Isi Satuan Dasar": baseQty || 1,
     "Stok Minimum": minStock,
     "Stok Awal": 0,

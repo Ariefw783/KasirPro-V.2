@@ -1,14 +1,14 @@
 {
-  "version": "2.2.87",
-  "build": "20261020.01",
-  "releaseDate": "20 Oktober 2026",
-  "title": "POS Manual Item and Backdate",
-  "description": "Dukungan input item manual non-katalog tanpa potong stok dan opsi tanggal transaksi lampau di kasir POS.",
+  "version": "2.2.88",
+  "build": "20261024.01",
+  "releaseDate": "24 Oktober 2026",
+  "title": "Product Packaging and Catalog Refinement",
+  "description": "Penyempurnaan data kemasan master produk RNA-00105 serta penambahan fitur edit master produk di manajemen.",
   "changelog": [
-    "Add manual item POS modal",
-    "Bypass inventory for manual items",
-    "Add transaction backdate support option",
-    "Support historical manual receipts input",
-    "Updated PWA cache to v128"
+    "Refined product RNA-00105 catalog units",
+    "Support multi-unit packaging tier conversion",
+    "Add master product edit feature",
+    "Sync prices across packaging tiers",
+    "Updated PWA cache to v129"
   ]
 }

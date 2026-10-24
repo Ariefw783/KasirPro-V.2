@@ -2503,8 +2503,8 @@ assert(revisedDownResult === 40, "Simulasi Koreksi: Produk Terkoreksi Turun (50 
 const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
 const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
 
-assert(versionJson.version === "2.2.87", "Versioning: Versi Sistem Tepat v2.2.87");
-assert(swJsContent.includes("v128"), "Service Worker: Cache PWA Terbarui ke v128");
+assert(versionJson.version === "2.2.88", "Versioning: Versi Sistem Tepat v2.2.88");
+assert(swJsContent.includes("v129"), "Service Worker: Cache PWA Terbarui ke v129");
 
 // Verifikasi aturan changelog <= 5 kata bahasa Inggris
 if (Array.isArray(versionJson.changelog)) {
@@ -2682,6 +2682,48 @@ assert(
   freshPosCoreJs.includes("isBackdate = Boolean(selectedDate"),
   "POS Core: Transaksi Melewati Pemotongan Stok untuk Item Manual & Mendukung Opsi Backdate"
 );
+
+
+console.log("\n📦 BAGIAN 35: PENGUJIAN PERBAIKAN DATA MASTER RNA-00105 & FITUR EDIT MASTER PRODUK");
+
+const updatedMgmtProducts = fs.readFileSync(path.join(rootDir, "management/management-products.js"), "utf8");
+
+// 1. Verifikasi Tombol Edit Produk di Tabel & Kartu
+assert(
+  updatedMgmtProducts.includes('btn-edit-product') &&
+  updatedMgmtProducts.includes('openEditProductModal') &&
+  updatedMgmtProducts.includes('window.openEditProductModal = openEditProductModal'),
+  "DOM Produk: Tombol dan Fungsi openEditProductModal Terpasang Lengkap di Manajemen"
+);
+
+// 2. Verifikasi Logika Edit Produk (Update Target Existing & Preservasi Kunci Utama)
+assert(
+  updatedMgmtProducts.includes('activeEditingProductTarget') &&
+  updatedMgmtProducts.includes('Kode produk tidak dapat diubah') &&
+  updatedMgmtProducts.includes('Master data produk'),
+  "Logika Produk: Mode Edit Memproteksi Kode Utama dan Memperbarui Data Master secara Atomik"
+);
+
+// 3. Verifikasi Logika Multi-Satuan Produk ANDALAN PIL KB BIRU (RNA-00105)
+// Spesifikasi: 1 box isi 15 kotak, 1 kotak isi 2 papan. 1 kotak 16rb, 1 papan 8rb.
+const rnaProductMock = {
+  "Kode Produk": "RNA-00105",
+  "Nama Produk": "ANDALAN PIL KB BIRU",
+  "Kemasan Beli": "BOX",
+  "Konversi": 30, // 15 kotak x 2 papan
+  "Satuan Antara": "KOTAK",
+  "Isi Satuan Antara": 2, // 1 kotak = 2 papan
+  "Satuan Dasar": "PAPAN",
+  "Harga Jual": 8000,
+  "Harga Jual Satuan Sedang": 16000
+};
+
+// Hitung unit transaksi POS untuk RNA-00105
+const testRnaUnits = testGetAvailableUnits(rnaProductMock, mockText, mockNum, mockNorm);
+assert(testRnaUnits.length === 2, "Katalog RNA-00105: Menghasilkan Tepat 2 Satuan Transaksi Aktif (Kotak & Papan)");
+assert(testRnaUnits[0].name === "KOTAK" && testRnaUnits[0].multiplier === 2 && testRnaUnits[0].price === 16000, "Katalog RNA-00105: Satuan Sedang Kotak Isi 2 Papan dengan Harga Rp 16.000");
+assert(testRnaUnits[1].name === "PAPAN" && testRnaUnits[1].multiplier === 1 && testRnaUnits[1].price === 8000, "Katalog RNA-00105: Satuan Dasar Papan dengan Harga Rp 8.000");
+assert(rnaProductMock["Konversi"] === 30, "Katalog RNA-00105: Total Konversi 1 Box Pembelian Adalah 30 Papan (15 Kotak x 2 Papan)");
 
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);
