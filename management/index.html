@@ -147,6 +147,16 @@
                 <button
                     type="button"
                     class="nav-item"
+                    data-view="customers"
+                    data-title="Pelanggan &amp; Loyalty Poin"
+                >
+                    <i class="fa-solid fa-award"></i>
+                    <span>Pelanggan &amp; Poin</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="nav-item"
                     data-view="users"
                     data-title="Kelola Pengguna"
                 >
@@ -2237,6 +2247,93 @@
                     <p class="report-footnote"><i class="fa-solid fa-circle-info"></i> Estimasi laba kotor dihitung dari penjualan sebelum pajak dikurangi HPP yang tersimpan pada transaksi. Nilai dapat berubah jika harga beli produk tidak tersedia.</p>
                 </div>
             </section>
+            <!-- MASTER PELANGGAN & LOYALTY POIN -->
+            <section class="view-section" data-view-section="customers" hidden>
+                <div class="import-page">
+                    <header class="module-header">
+                        <div>
+                            <h2>Pelanggan &amp; Loyalty Poin</h2>
+                            <p>Kelola data member pelanggan, perolehan poin belanja (Rp 1.000 = 1 Poin), katalog hadiah, dan broadcast promo WhatsApp.</p>
+                        </div>
+                        <div class="module-header-actions" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <button type="button" id="btn-export-customers-excel" class="button button-secondary" style="font-size:12px;">
+                                <i class="fa-solid fa-file-excel" style="color:#059669;"></i> Ekspor Excel
+                            </button>
+                            <button type="button" id="btn-open-rewards-catalog" class="button button-secondary" style="font-size:12px;">
+                                <i class="fa-solid fa-gift" style="color:#f59e0b;"></i> Katalog Hadiah
+                            </button>
+                            <button type="button" id="btn-open-broadcast-modal" class="button button-secondary" style="font-size:12px;background:#ecfdf5;color:#047857;border-color:#a7f3d0;">
+                                <i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> Broadcast Promo WA
+                            </button>
+                            <button type="button" id="btn-open-create-customer" class="button button-primary" style="font-size:12px;">
+                                <i class="fa-solid fa-user-plus"></i> + Tambah Member
+                            </button>
+                        </div>
+                    </header>
+
+                    <!-- KPI Cards Ringkasan Member & Poin -->
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;margin-bottom:16px;">
+                        <div class="ops-card" style="padding:14px 18px;display:flex;align-items:center;gap:14px;border-radius:10px;">
+                            <div style="width:42px;height:42px;border-radius:10px;background:#e0f2fe;color:#0284c7;display:flex;align-items:center;justify-content:center;font-size:18px;">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                            <div>
+                                <span style="font-size:11.5px;color:#64748b;font-weight:700;">TOTAL MEMBER</span>
+                                <div id="cust-kpi-total-members" style="font-size:20px;font-weight:800;color:#0f2a43;">0</div>
+                            </div>
+                        </div>
+
+                        <div class="ops-card" style="padding:14px 18px;display:flex;align-items:center;gap:14px;border-radius:10px;">
+                            <div style="width:42px;height:42px;border-radius:10px;background:#fef3c7;color:#d97706;display:flex;align-items:center;justify-content:center;font-size:18px;">
+                                <i class="fa-solid fa-coins"></i>
+                            </div>
+                            <div>
+                                <span style="font-size:11.5px;color:#64748b;font-weight:700;">TOTAL POIN BEREDAR</span>
+                                <div id="cust-kpi-total-points" style="font-size:20px;font-weight:800;color:#b45309;">0</div>
+                            </div>
+                        </div>
+
+                        <div class="ops-card" style="padding:14px 18px;display:flex;align-items:center;gap:14px;border-radius:10px;">
+                            <div style="width:42px;height:42px;border-radius:10px;background:#ecfdf5;color:#059669;display:flex;align-items:center;justify-content:center;font-size:18px;">
+                                <i class="fa-solid fa-basket-shopping"></i>
+                            </div>
+                            <div>
+                                <span style="font-size:11.5px;color:#64748b;font-weight:700;">TOTAL BELANJA MEMBER</span>
+                                <div id="cust-kpi-total-spent" style="font-size:20px;font-weight:800;color:#047857;">Rp0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Toolbar Pencarian Member -->
+                    <div class="ops-card" style="padding:12px 16px;margin-bottom:14px;border-radius:10px;display:flex;align-items:center;gap:12px;">
+                        <div style="position:relative;flex:1;">
+                            <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:12px;top:11px;color:#94a3b8;font-size:13px;"></i>
+                            <input type="search" id="input-search-customers" placeholder="Cari nama member atau nomor WhatsApp..." style="width:100%;height:36px;padding:6px 12px 6px 36px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;">
+                        </div>
+                    </div>
+
+                    <!-- Tabel Member (Desktop) -->
+                    <div class="table-wrapper desktop-only-table" style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama Member / No. HP</th>
+                                    <th>Saldo Poin</th>
+                                    <th>Total Belanja</th>
+                                    <th style="text-align:center;">Kunjungan</th>
+                                    <th>Terakhir Belanja</th>
+                                    <th style="width:280px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-customers-tbody"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- List Kartu Member (Mobile/Tablet) -->
+                    <div id="card-list-customers" class="responsive-card-list"></div>
+                </div>
+            </section>
+
             <!-- MASTER PENGGUNA -->
             <section class="view-section" data-view-section="users" hidden>
                 <div class="import-page">
@@ -2761,6 +2858,218 @@
     type="module"
     src="management.js?v=20261012.01"
 ></script>
+
+
+    <!-- MODAL 1: FORM TAMBAH / EDIT MEMBER -->
+    <div id="modal-customer-form" class="product-detail-overlay" hidden>
+        <section class="product-detail-panel" role="dialog" aria-modal="true" style="max-width:480px;border-radius:14px;">
+            <header class="product-detail-header" style="background:#ffffff;border-bottom:1px solid #e2e8f0;">
+                <div>
+                    <span class="product-detail-label">Pelanggan</span>
+                    <h2 id="modal-cust-form-title" style="font-size:16px;">Tambah Member Baru</h2>
+                </div>
+                <button type="button" id="btn-close-customer-form" class="product-detail-close"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form id="form-customer-detail" class="product-detail-body" style="padding:16px 20px;display:flex;flex-direction:column;gap:12px;">
+                <div>
+                    <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Nama Lengkap Member <span class="text-danger">*</span></label>
+                    <input type="text" id="input-cust-name" required placeholder="Contoh: Ibu Rina Marlina" style="width:100%;height:38px;padding:6px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;">
+                </div>
+                <div>
+                    <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Nomor WhatsApp / HP <span class="text-danger">*</span></label>
+                    <input type="tel" id="input-cust-phone" required placeholder="Contoh: 081234567890" inputmode="tel" style="width:100%;height:38px;padding:6px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;">
+                    <small style="color:#64748b;font-size:11px;margin-top:2px;display:block;">Identitas utama member untuk perolehan poin dan WhatsApp blast promo.</small>
+                </div>
+                <div id="box-cust-initial-points">
+                    <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Bonus Poin Awal (Opsional)</label>
+                    <input type="number" id="input-cust-initial-points" min="0" value="0" style="width:100%;height:38px;padding:6px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;">
+                </div>
+            </form>
+            <footer class="product-detail-footer">
+                <button type="button" id="btn-cancel-customer-form" class="button button-secondary">Batal</button>
+                <button type="submit" form="form-customer-detail" class="button button-primary"><i class="fa-solid fa-floppy-disk"></i> Simpan Member</button>
+            </footer>
+        </section>
+    </div>
+
+    <!-- MODAL 2: KATALOG HADIAH (DIKELOLA OWNER) -->
+    <div id="modal-manage-rewards" class="product-detail-overlay" hidden>
+        <section class="product-detail-panel" role="dialog" aria-modal="true" style="max-width:560px;border-radius:14px;">
+            <header class="product-detail-header" style="background:#ffffff;border-bottom:1px solid #e2e8f0;">
+                <div>
+                    <span class="product-detail-label">Loyalty Rewards</span>
+                    <h2 style="font-size:16px;"><i class="fa-solid fa-gift" style="color:#f59e0b;margin-right:6px;"></i> Katalog Hadiah Penukaran Poin</h2>
+                </div>
+                <button type="button" id="btn-close-manage-rewards" class="product-detail-close"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="product-detail-body" style="padding:16px 20px;">
+                <!-- Form Tambah Hadiah Baru -->
+                <form id="form-add-reward" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px;">
+                    <div style="font-size:12px;font-weight:800;color:#0f2a43;"><i class="fa-solid fa-plus-circle" style="color:#0284c7;"></i> Tambah Hadiah Baru</div>
+                    <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;">
+                        <input type="text" id="add-reward-name" required placeholder="Nama Hadiah (misal: Minyak Goreng 1L)" style="height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;">
+                        <input type="number" id="add-reward-points" required min="1" placeholder="Poin Butuh" style="height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;">
+                    </div>
+                    <input type="text" id="add-reward-note" placeholder="Catatan / Syarat (opsional)" style="height:34px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;">
+                    <button type="submit" class="button button-primary button-small" style="align-self:flex-end;padding:6px 14px;font-weight:700;">
+                        <i class="fa-solid fa-plus"></i> Simpan ke Katalog
+                    </button>
+                </form>
+
+                <!-- Daftar Hadiah Saat Ini -->
+                <div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px;">DAFTAR HADIAH AKTIF:</div>
+                <div id="list-rewards-container" style="max-height:260px;overflow-y:auto;"></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- MODAL 3: PENUKARAN POIN DENGAN HADIAH (REDEEM) -->
+    <div id="modal-redeem-points" class="product-detail-overlay" hidden>
+        <section class="product-detail-panel" role="dialog" aria-modal="true" style="max-width:500px;border-radius:14px;">
+            <header class="product-detail-header" style="background:#ffffff;border-bottom:1px solid #e2e8f0;">
+                <div>
+                    <span class="product-detail-label">Redeem Reward</span>
+                    <h2 style="font-size:16px;"><i class="fa-solid fa-gift" style="color:#0284c7;margin-right:6px;"></i> Penukaran Poin Member</h2>
+                </div>
+                <button type="button" id="btn-close-redeem-modal" class="product-detail-close"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <form id="form-redeem-points" class="product-detail-body" style="padding:16px 20px;display:flex;flex-direction:column;gap:12px;">
+                <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:12px;display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <strong id="redeem-cust-name" style="font-size:13.5px;color:#0f2a43;"></strong>
+                        <div id="redeem-cust-phone" style="font-size:11.5px;color:#64748b;"></div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:11px;color:#64748b;font-weight:700;">SALDO POIN</span>
+                        <div id="redeem-cust-points" style="font-size:16px;font-weight:800;color:#047857;"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Pilih Hadiah dari Katalog <span class="text-danger">*</span></label>
+                    <select id="redeem-reward-select" required style="width:100%;height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:12.5px;background:#fff;"></select>
+                </div>
+
+                <div id="redeem-points-custom-box" hidden>
+                    <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Jumlah Poin yang Ditukarkan <span class="text-danger">*</span></label>
+                    <input type="number" id="redeem-points-custom" min="1" placeholder="Masukkan jumlah poin" style="width:100%;height:38px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:12.5px;">
+                </div>
+
+                <div>
+                    <label style="display:block;font-size:12px;font-weight:700;color:#1e293b;margin-bottom:4px;">Catatan Penukaran (Opsional)</label>
+                    <input type="text" id="redeem-note" placeholder="Misal: Diterima langsung oleh pelanggan" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:12.5px;">
+                </div>
+            </form>
+            <footer class="product-detail-footer">
+                <button type="button" id="btn-cancel-redeem-modal" class="button button-secondary">Batal</button>
+                <button type="submit" form="form-redeem-points" class="button button-primary"><i class="fa-solid fa-check"></i> Proses Penukaran Poin</button>
+            </footer>
+        </section>
+    </div>
+
+    <!-- MODAL 4: RIWAYAT MUTASI POIN MEMBER -->
+    <div id="modal-points-history" class="product-detail-overlay" hidden>
+        <section class="product-detail-panel" role="dialog" aria-modal="true" style="max-width:640px;border-radius:14px;">
+            <header class="product-detail-header" style="background:#ffffff;border-bottom:1px solid #e2e8f0;">
+                <div>
+                    <span class="product-detail-label">Histori Poin</span>
+                    <h2 id="history-cust-title" style="font-size:15px;margin:2px 0 0;">Riwayat Mutasi Poin</h2>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="badge" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-weight:800;padding:4px 10px;border-radius:12px;">
+                        Saldo: <strong id="history-cust-balance">0 Poin</strong>
+                    </span>
+                    <button type="button" id="btn-close-points-history" class="product-detail-close"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </header>
+            <div class="product-detail-body" style="padding:16px 20px;">
+                <div class="table-wrapper" style="max-height:340px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Waktu</th>
+                                <th>Tipe</th>
+                                <th>Perubahan Poin</th>
+                                <th>Saldo Akhir</th>
+                                <th>Keterangan / Referensi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-points-history-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- MODAL 5: BROADCAST PROMO WHATSAPP -->
+    <div id="modal-broadcast-promo" class="product-detail-overlay" hidden>
+        <section class="product-detail-panel" role="dialog" aria-modal="true" style="max-width:680px;border-radius:14px;">
+            <header class="product-detail-header" style="background:#ffffff;border-bottom:1px solid #e2e8f0;">
+                <div>
+                    <span class="product-detail-label">WhatsApp Marketing</span>
+                    <h2 style="font-size:16px;"><i class="fa-brands fa-whatsapp" style="color:#25d366;margin-right:6px;"></i> Broadcast Promo &amp; Info Poin WhatsApp</h2>
+                </div>
+                <button type="button" id="btn-close-broadcast-modal" class="product-detail-close"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="product-detail-body" style="padding:16px 20px;display:flex;flex-direction:column;gap:12px;">
+                <!-- Filter Sasaran Member -->
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center;">
+                    <div>
+                        <label style="display:block;font-size:11.5px;font-weight:700;color:#1e293b;margin-bottom:4px;">Filter Sasaran Broadcast</label>
+                        <select id="broadcast-filter-type" style="width:100%;height:36px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;background:#fff;">
+                            <option value="all">Semua Member Terdaftar</option>
+                            <option value="points">Member dengan Minimal Poin</option>
+                        </select>
+                    </div>
+                    <div id="box-filter-min-points" hidden>
+                        <label style="display:block;font-size:11.5px;font-weight:700;color:#1e293b;margin-bottom:4px;">Minimal Poin</label>
+                        <input type="number" id="broadcast-min-points" min="1" value="50" style="width:100%;height:36px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;">
+                    </div>
+                </div>
+
+                <!-- Template Pesan -->
+                <div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                        <label style="font-size:12px;font-weight:700;color:#1e293b;">Pesan Promo / Pengumuman</label>
+                        <span style="font-size:11px;color:#0284c7;">Variabel: <code>{nama}</code>, <code>{poin}</code>, <code>{toko}</code></span>
+                    </div>
+                    <textarea id="broadcast-message-template" rows="5" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:12.5px;font-family:inherit;">Halo Kak {nama},
+
+Kami ada promo spesial minggu ini di {toko}! Dapatkan diskon menarik untuk berbagai produk kesehatan dan vitamin.
+
+Saldo loyalty poin Kakak saat ini: {poin} Poin. Kumpulkan terus poin belanja Kakak dan tukarkan dengan hadiah langsung! 🎁
+
+Yuk mampir ke toko kami ya! 🙏</textarea>
+                </div>
+
+                <!-- Pratinjau Daftar Penerima -->
+                <div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                        <span style="font-size:12px;font-weight:700;color:#0f2a43;">Penerima Sasaran: <strong id="broadcast-recipient-count" style="color:#0284c7;">0 Member</strong></span>
+                        <button type="button" id="btn-download-broadcast-excel" class="button button-small button-secondary" style="font-size:11px;">
+                            <i class="fa-solid fa-file-excel" style="color:#059669;"></i> Unduh Excel Kontak Broadcast
+                        </button>
+                    </div>
+                    <div class="table-wrapper" style="max-height:180px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nama Member</th>
+                                    <th>Nomor WhatsApp</th>
+                                    <th>Poin</th>
+                                    <th style="width:110px;">Aksi Cepat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-broadcast-recipients-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <footer class="product-detail-footer">
+                <button type="button" id="btn-close-broadcast-modal" class="button button-secondary">Tutup</button>
+            </footer>
+        </section>
+    </div>
 
 </body>
 </html>

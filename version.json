@@ -1,14 +1,14 @@
 {
-  "version": "2.2.88",
-  "build": "20261024.01",
-  "releaseDate": "24 Oktober 2026",
-  "title": "Product Packaging and Catalog Refinement",
-  "description": "Penyempurnaan data kemasan master produk RNA-00105 serta penambahan fitur edit master produk di manajemen.",
+  "version": "2.2.89",
+  "build": "20261027.01",
+  "releaseDate": "27 Oktober 2026",
+  "title": "Customer Member and Loyalty Points",
+  "description": "Sistem member pelanggan, kalkulasi poin loyalty belanja, penukaran hadiah, dan broadcast WhatsApp.",
   "changelog": [
-    "Refined product RNA-00105 catalog units",
-    "Support multi-unit packaging tier conversion",
-    "Add master product edit feature",
-    "Sync prices across packaging tiers",
-    "Updated PWA cache to v129"
+    "Add member loyalty points system",
+    "Support optional customer POS checkout",
+    "Add reward catalog and redemption",
+    "Support WhatsApp promo contacts broadcast",
+    "Updated PWA cache to v130"
   ]
 }

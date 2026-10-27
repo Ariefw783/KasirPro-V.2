@@ -21,6 +21,7 @@ import { initSalesModule, renderSales } from "./management-sales.js";
 import { initReportsModule, renderReports } from "./management-reports.js";
 import { initUsersModule, renderUsers } from "./management-users.js";
 import { initSettingsModule, renderSettings } from "./management-settings.js";
+import { initCustomerModule, renderCustomers } from "./management-customers.js";
 import { initImportMasterModule } from "./management-import-master.js";
 
 const $ = (id) => document.getElementById(id);
@@ -208,6 +209,7 @@ function refreshCurrentView() {
   else if (currentActiveView === "purchase-invoices") renderInvoices();
   else if (currentActiveView === "sales") renderSales();
   else if (currentActiveView === "reports") renderReports();
+  else if (currentActiveView === "customers") renderCustomers();
   else if (currentActiveView === "users") renderUsers();
   else if (currentActiveView === "settings") renderSettings();
 }
@@ -228,6 +230,7 @@ export function switchView(targetView) {
     "purchase-invoices": ["Faktur", "Kelola faktur pembelian dari supplier"],
     "sales": ["Transaksi Penjualan", "Riwayat transaksi POS dan cetak ulang"],
     "reports": ["Laporan", "Ringkasan penjualan, pembelian, dan stok"],
+    "customers": ["Pelanggan & Poin Loyalty", "Kelola member, loyalty poin, penukaran hadiah, dan broadcast promo WA"],
     "users": ["Pengguna", "Kelola akun pengguna dan hak akses"],
     "settings": ["Pengaturan", "Konfigurasi toko dan ukuran cetak struk"],
     "import-master": ["Import Master Produk", "Update master produk dari file Excel resmi (UPDATE mode)"],

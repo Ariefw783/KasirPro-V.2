@@ -12,6 +12,244 @@ const databaseInitialization = initializeDatabase();
 
 const SESSION_KEY="kasirpro_session", MASTER_KEY="kasirpro_master_store_v1", SALES_KEY="kasirpro_sales_v1", MOVEMENT_KEY="kasirpro_stock_movements_v1";
 let saleInProgress=false;
+let selectedCustomer = null;
+
+function customers() {
+    const m = master();
+    if (!Array.isArray(m.pelanggan)) m.pelanggan = [];
+    return m.pelanggan;
+}
+
+function cleanWaPhone(phone) {
+    let p = String(phone || "").replace(/[^0-9]/g, "");
+    if (p.startsWith("0")) p = "62" + p.slice(1);
+    else if (p.startsWith("8")) p = "628" + p.slice(1);
+    return p;
+}
+
+function selectCustomer(c) {
+    selectedCustomer = c;
+    updateCustomerBar();
+    updateProjectedPoints();
+}
+
+function clearCustomer() {
+    selectedCustomer = null;
+    updateCustomerBar();
+    updateProjectedPoints();
+}
+
+function updateCustomerBar() {
+    const unselected = $("unselected-customer-display");
+    const selected = $("selected-customer-display");
+    if (!unselected || !selected) return;
+
+    if (selectedCustomer) {
+        unselected.style.display = "none";
+        selected.style.display = "flex";
+        $("selected-customer-name").textContent = selectedCustomer.name;
+        $("selected-customer-phone").textContent = `(${selectedCustomer.phone})`;
+        $("selected-customer-points-badge").textContent = `${formatNumber(selectedCustomer.totalPoints || 0)} Poin`;
+    } else {
+        unselected.style.display = "flex";
+        selected.style.display = "none";
+    }
+}
+
+function updateProjectedPoints() {
+    const pBox = $("pos-projected-points-box");
+    const pLabel = $("label-projected-points");
+    if (!pBox || !pLabel) return;
+
+    if (selectedCustomer && cart.length > 0) {
+        const c = calc();
+        const pts = Math.floor(c.total / 1000);
+        pBox.style.display = "inline-flex";
+        pLabel.textContent = `+${formatNumber(pts)} Poin`;
+    } else {
+        pBox.style.display = "none";
+    }
+}
+
+function openCustomerModal(initialTab = "search") {
+    const modal = $("customer-select-overlay");
+    if (!modal) return;
+    modal.hidden = false;
+    switchCustomerTab(initialTab);
+    if (initialTab === "search") {
+        renderCustomerSearchResults();
+        setTimeout(() => $("input-search-cust")?.focus(), 60);
+    } else {
+        setTimeout(() => $("add-cust-name")?.focus(), 60);
+    }
+}
+
+function closeCustomerModal() {
+    const modal = $("customer-select-overlay");
+    if (!modal) return;
+    modal.hidden = true;
+}
+
+function switchCustomerTab(tab) {
+    const isSearch = tab === "search";
+    const tSearch = $("tab-cust-search"), tAdd = $("tab-cust-add");
+    const pSearch = $("pane-cust-search"), pAdd = $("pane-cust-add");
+
+    if (tSearch && tAdd) {
+        tSearch.className = isSearch ? "button button-small button-primary" : "button button-small button-secondary";
+        tAdd.className = isSearch ? "button button-small button-secondary" : "button button-small button-primary";
+    }
+    if (pSearch) pSearch.hidden = !isSearch;
+    if (pAdd) pAdd.hidden = isSearch;
+}
+
+function renderCustomerSearchResults(query = "") {
+    const container = $("list-cust-results");
+    if (!container) return;
+
+    const allCusts = customers();
+    const q = norm(query);
+    const filtered = allCusts.filter(c => {
+        if (!q) return true;
+        return norm(c.name).includes(q) || norm(c.phone).includes(q);
+    });
+
+    if (!filtered.length) {
+        container.innerHTML = `
+            <div style="text-align:center;padding:16px;color:#94a3b8;font-size:12px;">
+                Belum ada member ditemukan.<br>
+                <button type="button" id="btn-empty-add-cust" class="button button-small button-secondary" style="margin-top:6px;font-size:11px;">
+                    <i class="fa-solid fa-user-plus"></i> Daftarkan Sekarang
+                </button>
+            </div>
+        `;
+        $("btn-empty-add-cust")?.addEventListener("click", () => switchCustomerTab("add"));
+        return;
+    }
+
+    container.innerHTML = filtered.map(c => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;">
+            <div>
+                <strong style="color:#0f2a43;font-size:12.5px;">${escapeHtml(c.name)}</strong>
+                <div style="color:#64748b;font-size:11px;"><i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> ${escapeHtml(c.phone)}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span class="badge" style="background:#ecfdf5;color:#059669;font-weight:700;padding:2px 7px;border-radius:10px;font-size:11px;">
+                    ${formatNumber(c.totalPoints || 0)} Poin
+                </span>
+                <button type="button" class="button button-small button-primary btn-select-this-cust" data-phone="${escapeHtml(c.phone)}" style="padding:3px 9px;font-size:11px;font-weight:700;">
+                    Pilih
+                </button>
+            </div>
+        </div>
+    `).join("");
+
+    container.querySelectorAll(".btn-select-this-cust").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const p = btn.dataset.phone;
+            const found = allCusts.find(x => x.phone === p);
+            if (found) {
+                selectCustomer(found);
+                closeCustomerModal();
+            }
+        });
+    });
+}
+
+function handleQuickAddCustomer(e) {
+    e.preventDefault();
+    const nameInput = $("add-cust-name");
+    const phoneInput = $("add-cust-phone");
+    const rawName = text(nameInput?.value);
+    const rawPhone = text(phoneInput?.value).replace(/[^0-9]/g, "");
+
+    if (!rawName) return window.KasirProDialog?.warning("Perhatian", "Nama lengkap pelanggan wajib diisi.");
+    if (!rawPhone || rawPhone.length < 8) return window.KasirProDialog?.warning("Perhatian", "Nomor WhatsApp / HP tidak valid (minimal 8 digit).");
+
+    const allCusts = customers();
+    const existing = allCusts.find(c => c.phone === rawPhone || cleanWaPhone(c.phone) === cleanWaPhone(rawPhone));
+    if (existing) {
+        selectCustomer(existing);
+        closeCustomerModal();
+        window.KasirProDialog?.info("Member Ditemukan", `Member dengan nomor ${rawPhone} sudah terdaftar atas nama ${existing.name}. Member langsung dipilih.`);
+        return;
+    }
+
+    const newCust = {
+        id: `CUST-${rawPhone}`,
+        name: rawName,
+        phone: rawPhone,
+        totalPoints: 0,
+        totalSpent: 0,
+        visitCount: 0,
+        createdAt: new Date().toISOString()
+    };
+
+    allCusts.push(newCust);
+    writeMasterDelta({ pelanggan: [newCust] });
+    selectCustomer(newCust);
+    closeCustomerModal();
+    if (nameInput) nameInput.value = "";
+    if (phoneInput) phoneInput.value = "";
+
+    window.KasirProDialog?.success("Member Berhasil Didaftarkan", `Member ${rawName} (${rawPhone}) berhasil didaftarkan dan aktif pada transaksi ini.`);
+}
+
+function sendReceiptViaWhatsApp() {
+    if (!lastSale) return;
+    const st = settings();
+    const storeName = st["Nama Toko"] || st["Nama Apotek"] || "Apotek Doa Ibu";
+    let phone = lastSale.customer?.phone || "";
+
+    const doSend = (targetPhone) => {
+        const waPhone = cleanWaPhone(targetPhone);
+        if (!waPhone || waPhone.length < 9) {
+            window.KasirProDialog?.warning("Nomor Tidak Valid", "Nomor WhatsApp pelanggan tidak valid.");
+            return;
+        }
+
+        let msg = `*STRUK PEMBELIAN - ${storeName.toUpperCase()}*\n`;
+        msg += `No. Transaksi : ${lastSale.number}\n`;
+        msg += `Waktu : ${new Date(lastSale.at).toLocaleString("id-ID")}\n`;
+        if (lastSale.customer) {
+            msg += `Pelanggan (Member) : ${lastSale.customer.name}\n`;
+        }
+        msg += `--------------------------------\n`;
+        (lastSale.items || []).forEach(it => {
+            msg += `• ${it.name} (${it.qty} ${it.unitName}) : ${rupiah(it.subtotal)}\n`;
+        });
+        msg += `--------------------------------\n`;
+        msg += `*TOTAL BELANJA : ${rupiah(lastSale.total)}*\n`;
+        msg += `Metode Bayar : ${lastSale.paymentMethod} (${rupiah(lastSale.paid)})\n`;
+        if (lastSale.change > 0) msg += `Kembalian : ${rupiah(lastSale.change)}\n`;
+
+        if (lastSale.customer) {
+            msg += `--------------------------------\n`;
+            msg += `🎁 *INFO LOYALTY MEMBER*\n`;
+            msg += `Poin Belanja Ini : +${formatNumber(lastSale.customer.pointsEarned || 0)} Poin\n`;
+            msg += `*Total Saldo Poin : ${formatNumber(lastSale.customer.currentPoints || 0)} Poin*\n`;
+            msg += `Kumpulkan terus poinnya dan tukarkan dengan hadiah menarik!\n`;
+        }
+
+        msg += `--------------------------------\n`;
+        msg += `_Terima kasih atas kunjungan Anda._\n`;
+
+        const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`;
+        window.open(url, "_blank");
+    };
+
+    if (phone) {
+        doSend(phone);
+    } else {
+        window.KasirProDialog?.prompt?.(
+            "Kirim Struk via WhatsApp",
+            "Masukkan nomor WhatsApp pelanggan (contoh: 081234567890):",
+            ""
+        ).then(inputPhone => {
+            if (inputPhone) doSend(inputPhone);
+        });
+    }
+}
 const SEARCH_RESULT_LIMIT=20;
 
 let session=null,
@@ -591,7 +829,51 @@ async function completeSale(){
     const recordedPaymentMethod = (method === "Lainnya" && customNote) ? `Lainnya (${customNote})` : (method || "Cash");
     const isBackdate = Boolean(selectedDate && new Date(selectedDate).toDateString() !== new Date().toDateString());
 
+    let customerPayload = null;
+    if (selectedCustomer) {
+        const pointsEarned = Math.floor(c.total / 1000);
+        const prevPts = num(selectedCustomer.totalPoints || 0);
+        const currentPts = prevPts + pointsEarned;
+
+        customerPayload = {
+            id: selectedCustomer.id || `CUST-${selectedCustomer.phone}`,
+            phone: selectedCustomer.phone,
+            name: selectedCustomer.name,
+            pointsEarned,
+            previousPoints: prevPts,
+            currentPoints: currentPts
+        };
+
+        // Update saldo member
+        selectedCustomer.totalPoints = currentPts;
+        selectedCustomer.totalSpent = num(selectedCustomer.totalSpent || 0) + c.total;
+        selectedCustomer.visitCount = num(selectedCustomer.visitCount || 0) + 1;
+        selectedCustomer.lastVisit = saleAt;
+
+        // Persist delta customer
+        writeMasterDelta({ pelanggan: [selectedCustomer] });
+
+        // Catat mutasi poin
+        const pointLog = {
+            id: `PTS-${number}`,
+            type: "EARN",
+            customerPhone: selectedCustomer.phone,
+            customerName: selectedCustomer.name,
+            points: pointsEarned,
+            reference: number,
+            balanceAfter: currentPts,
+            at: saleAt,
+            createdAt: saleAt,
+            note: `Poin belanja transaksi ${number} (Rp ${formatNumber(c.total)})`
+        };
+        const m = master();
+        if (!Array.isArray(m.mutasi_poin)) m.mutasi_poin = [];
+        m.mutasi_poin.unshift(pointLog);
+        writeMasterDelta({ mutasi_poin: [pointLog] });
+    }
+
     lastSale={
+        customer: customerPayload,
         id:`SALE-${Date.now()}-${String(session.username||"kasir").toLowerCase()}`,
         number,
         at:saleAt,
@@ -644,6 +926,7 @@ async function completeSale(){
     renderReceipt(lastSale);
     cart=[];
     $("cart-discount-value").value=0;
+    clearCustomer();
     renderCart();
 }
 
@@ -686,6 +969,13 @@ function renderReceipt(s){
         <div class="receipt-row receipt-total"><span>TOTAL</span><span>${rupiah(s.total)}</span></div>
         <div class="receipt-row"><span>${escapeHtml(s.paymentMethod)}</span><span>${rupiah(s.paid)}</span></div>
         <div class="receipt-row"><span>Kembali</span><span>${rupiah(s.change)}</span></div>
+        ${s.customer ? `
+            <hr>
+            <div class="receipt-row"><span>Member</span><span>${escapeHtml(s.customer.name)}</span></div>
+            <div class="receipt-row"><span>Poin Masuk</span><span>+${formatNumber(s.customer.pointsEarned || 0)} Poin</span></div>
+            <div class="receipt-row"><span>Saldo Poin</span><span>${formatNumber(s.customer.currentPoints || 0)} Poin</span></div>
+            <div style="font-size:9.5px;text-align:center;color:#64748b;margin-top:2px;">Tukarkan poin Anda dengan hadiah menarik!</div>
+        ` : ''}
 
         ${isVoid?`
             <hr>
@@ -1026,6 +1316,23 @@ function bind(){
     $("cash-paid").oninput=updateChange;
     $("complete-sale").onclick=completeSale;
 
+    // Customer & Member events
+    $("btn-open-customer-modal")?.addEventListener("click", () => openCustomerModal("search"));
+    $("btn-select-customer")?.addEventListener("click", () => openCustomerModal("search"));
+    $("btn-quick-add-customer")?.addEventListener("click", () => openCustomerModal("add"));
+    $("btn-remove-selected-customer")?.addEventListener("click", clearCustomer);
+    $("close-customer-select")?.addEventListener("click", closeCustomerModal);
+    $("customer-select-overlay")?.addEventListener("click", (e) => {
+        if (e.target === $("customer-select-overlay")) closeCustomerModal();
+    });
+
+    $("tab-cust-search")?.addEventListener("click", () => switchCustomerTab("search"));
+    $("tab-cust-add")?.addEventListener("click", () => switchCustomerTab("add"));
+    $("input-search-cust")?.addEventListener("input", (e) => renderCustomerSearchResults(e.target.value));
+    $("form-quick-add-cust")?.addEventListener("submit", handleQuickAddCustomer);
+
+    $("send-receipt-wa")?.addEventListener("click", sendReceiptViaWhatsApp);
+
     $("transaction-history").onclick=openHistory;
     $("close-history").onclick=()=>$("history-overlay").hidden=true;
     $("history-overlay").onclick=e=>{if(e.target===$("history-overlay"))$("history-overlay").hidden=true};
@@ -1050,6 +1357,7 @@ function bind(){
     document.addEventListener("keydown",e=>{
         if(e.key==="F2"){e.preventDefault();$("pos-search").focus();return;}
         if(e.key==="F4"){e.preventDefault();openPayment();return;}
+        if(e.key==="F6"){e.preventDefault();openCustomerModal();return;}
         if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){e.preventDefault();completeSale();return;}
         if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="h"){e.preventDefault();openHistory();return;}
         if(e.key==="Escape"){

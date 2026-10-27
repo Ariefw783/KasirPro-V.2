@@ -540,7 +540,7 @@ async function syncFromFirestore(force = false) {
       }
     });
 
-    const currentMaster = inMemory.get(STORE_KEYS.master) || { produk: [], supplier: [], kategori: [], pengguna: [], pengaturan_toko: [] };
+    const currentMaster = inMemory.get(STORE_KEYS.master) || { produk: [], supplier: [], kategori: [], pengguna: [], pengaturan_toko: [], pelanggan: [], hadiah: [], mutasi_poin: [] };
 
     // Normalisasi produk baru/terubah (abaikan record yang ditandai terhapus)
     const normalizedIncomingProducts = firestoreProducts
@@ -786,7 +786,7 @@ export async function initializeDatabase() {
       syncFromFirestore().catch((err) => console.warn("[DatabaseStore] Sync error:", err));
     }
 
-    return inMemory.get(STORE_KEYS.master) || { produk: [], supplier: [], kategori: [], pengguna: [], pengaturan_toko: [] };
+    return inMemory.get(STORE_KEYS.master) || { produk: [], supplier: [], kategori: [], pengguna: [], pengaturan_toko: [], pelanggan: [], hadiah: [], mutasi_poin: [] };
   })();
 
   return initPromise;
@@ -1089,7 +1089,10 @@ export async function writeMasterDelta(changes = {}) {
     { field: "supplier", coll: "suppliers", store: STORES.SUPPLIERS, idOf: supIdOf, records: changes.supplier || [] },
     { field: "kategori", coll: "categories", store: STORES.CATEGORIES, idOf: katIdOf, records: changes.kategori || [] },
     { field: "pengguna", coll: "users", store: STORES.USERS, idOf: usrIdOf, records: changes.pengguna || [] },
-    { field: "pengaturan_toko", coll: "storeSettings", store: STORES.CONFIGURATIONS, idOf: setDocIdOf, records: changes.pengaturan_toko || [] }
+    { field: "pengaturan_toko", coll: "storeSettings", store: STORES.CONFIGURATIONS, idOf: setDocIdOf, records: changes.pengaturan_toko || [] },
+    { field: "pelanggan", coll: "customers", store: STORES.CUSTOMERS, idOf: (c) => c.phone || c.id, records: changes.pelanggan || [] },
+    { field: "hadiah", coll: "rewards", store: STORES.REWARDS, idOf: (h) => h.id || h.name, records: changes.hadiah || [] },
+    { field: "mutasi_poin", coll: "pointMovements", store: STORES.POINT_MOVEMENTS, idOf: (m) => m.id, records: changes.mutasi_poin || [] }
   ].filter(g => g.records.length);
 
   if (!groups.length) return true;
@@ -1109,7 +1112,7 @@ export async function writeMasterDelta(changes = {}) {
   };
 
   // 1. OPTIMISTIC UPDATE: Perbarui in-memory & IndexedDB SEGERA (0ms latency bagi pengguna)
-  const master = inMemory.get(STORE_KEYS.master) || { produk: [], supplier: [], kategori: [], pengguna: [], pengaturan_toko: [] };
+  const master = inMemory.get(STORE_KEYS.master) || { produk: [], supplier: [], kategori: [], pengguna: [], pengaturan_toko: [], pelanggan: [], hadiah: [], mutasi_poin: [] };
   for (const g of groups) {
     const list = Array.isArray(master[g.field]) ? [...master[g.field]] : [];
     const indexById = new Map(list.map((x, i) => [String(g.idOf(x)), i]));

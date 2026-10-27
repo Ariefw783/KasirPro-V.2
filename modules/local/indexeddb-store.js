@@ -28,7 +28,10 @@ export const STORES = Object.freeze({
   SALES: "sales",
   MOVEMENTS: "movements",
   OPNAMES: "opnames",
-  USERS: "users"
+  USERS: "users",
+  CUSTOMERS: "customers",
+  REWARDS: "rewards",
+  POINT_MOVEMENTS: "point_movements"
 });
 
 class IndexedDBStore {
@@ -95,6 +98,9 @@ class IndexedDBStore {
         ensureStore(STORES.MOVEMENTS, "id", [["productCode", "productCode"], ["type", "type"]]);
         ensureStore(STORES.OPNAMES, "id", [["status", "status"]]);
         ensureStore(STORES.USERS, "id", [["username", "username"]]);
+        ensureStore(STORES.CUSTOMERS, "id", [["phone", "phone"], ["name", "name"]]);
+        ensureStore(STORES.REWARDS, "id", [["name", "name"]]);
+        ensureStore(STORES.POINT_MOVEMENTS, "id", [["customerPhone", "customerPhone"], ["type", "type"]]);
       };
 
       request.onsuccess = (event) => {

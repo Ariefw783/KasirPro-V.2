@@ -180,6 +180,23 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
+      match /Pelanggan/{customerId} {
+        allow read: if isActiveMember(namespace, storeId);
+        allow create, update: if isActiveMember(namespace, storeId);
+        allow delete: if isAdmin(namespace, storeId);
+      }
+
+      match /KatalogHadiah/{rewardId} {
+        allow read: if isActiveMember(namespace, storeId);
+        allow create, update, delete: if isAdmin(namespace, storeId);
+      }
+
+      match /MutasiPoin/{pointId} {
+        allow read: if isActiveMember(namespace, storeId);
+        allow create: if isActiveMember(namespace, storeId);
+        allow update, delete: if isAdmin(namespace, storeId);
+      }
+
       match /{unknownCollection}/{documentId} {
         allow read, write: if false;
       }

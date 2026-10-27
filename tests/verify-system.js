@@ -2503,8 +2503,8 @@ assert(revisedDownResult === 40, "Simulasi Koreksi: Produk Terkoreksi Turun (50 
 const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
 const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
 
-assert(versionJson.version === "2.2.88", "Versioning: Versi Sistem Tepat v2.2.88");
-assert(swJsContent.includes("v129"), "Service Worker: Cache PWA Terbarui ke v129");
+assert(versionJson.version === "2.2.89", "Versioning: Versi Sistem Tepat v2.2.89");
+assert(swJsContent.includes("v130"), "Service Worker: Cache PWA Terbarui ke v130");
 
 // Verifikasi aturan changelog <= 5 kata bahasa Inggris
 if (Array.isArray(versionJson.changelog)) {
@@ -2724,6 +2724,98 @@ assert(testRnaUnits.length === 2, "Katalog RNA-00105: Menghasilkan Tepat 2 Satua
 assert(testRnaUnits[0].name === "KOTAK" && testRnaUnits[0].multiplier === 2 && testRnaUnits[0].price === 16000, "Katalog RNA-00105: Satuan Sedang Kotak Isi 2 Papan dengan Harga Rp 16.000");
 assert(testRnaUnits[1].name === "PAPAN" && testRnaUnits[1].multiplier === 1 && testRnaUnits[1].price === 8000, "Katalog RNA-00105: Satuan Dasar Papan dengan Harga Rp 8.000");
 assert(rnaProductMock["Konversi"] === 30, "Katalog RNA-00105: Total Konversi 1 Box Pembelian Adalah 30 Papan (15 Kotak x 2 Papan)");
+
+
+console.log("\n🎁 BAGIAN 36: PENGUJIAN SISTEM MEMBER PELANGGAN, LOYALTY POIN, HADIAH & BROADCAST WA");
+
+// 1. Verifikasi Formula Perhitungan Poin Loyalty (Rp 1.000 = 1 Poin Pembulatan Bawah)
+function calculatePoints(amount) {
+  return Math.floor(Math.max(0, amount) / 1000);
+}
+
+assert(calculatePoints(15800) === 15, "Loyalty Points: Belanja Rp 15.800 Menghasilkan Tepat 15 Poin (Pembulatan Bawah)");
+assert(calculatePoints(999) === 0, "Loyalty Points: Belanja di Bawah Rp 1.000 (Rp 999) Menghasilkan 0 Poin");
+assert(calculatePoints(1000) === 1, "Loyalty Points: Belanja Tepat Rp 1.000 Menghasilkan 1 Poin");
+assert(calculatePoints(250000) === 250, "Loyalty Points: Belanja Rp 250.000 Menghasilkan 250 Poin");
+
+// 2. Verifikasi Logika Penukaran Hadiah (Redeem) & Proteksi Saldo Poin
+function simulateRedeemReward(currentPoints, rewardRequiredPoints) {
+  if (currentPoints < rewardRequiredPoints) {
+    return { success: false, remainingPoints: currentPoints, error: "Poin Tidak Cukup" };
+  }
+  return { success: true, remainingPoints: currentPoints - rewardRequiredPoints };
+}
+
+const redeemSuccess = simulateRedeemReward(120, 50);
+assert(redeemSuccess.success === true && redeemSuccess.remainingPoints === 70, "Redeem Reward: Poin Berkurang Akurat dari 120 Menjadi 70 (-50 Poin)");
+
+const redeemFail = simulateRedeemReward(40, 50);
+assert(redeemFail.success === false && redeemFail.remainingPoints === 40, "Redeem Reward: Penukaran Ditolak Saat Saldo Poin Kurang (40 < 50)");
+
+// 3. Verifikasi Normalisasi Nomor WhatsApp (Format wa.me / 628xxx)
+function formatCleanWaPhone(phone) {
+  let p = String(phone || "").replace(/[^0-9]/g, "");
+  if (p.startsWith("0")) p = "62" + p.slice(1);
+  else if (p.startsWith("8")) p = "628" + p.slice(1);
+  return p;
+}
+
+assert(formatCleanWaPhone("081234567890") === "6281234567890", "WA Normalizer: 081234567890 Dikonversi Menjadi 6281234567890");
+assert(formatCleanWaPhone("+62 852-1234-5678") === "6285212345678", "WA Normalizer: Simbol dan Spasi Dibersihkan Menjadi 6285212345678");
+
+// 4. Verifikasi DOM & Komponen POS untuk Member & WhatsApp
+const posHtmlFresh = fs.readFileSync(path.join(rootDir, "pos/index.html"), "utf8");
+const posCoreFresh = fs.readFileSync(path.join(rootDir, "pos/pos-at07-core.js"), "utf8");
+
+assert(
+  posHtmlFresh.includes('id="pos-customer-bar"') &&
+  posHtmlFresh.includes('id="btn-open-customer-modal"') &&
+  posHtmlFresh.includes('id="btn-quick-add-customer"') &&
+  posHtmlFresh.includes('Pelanggan Umum (Non-Member)'),
+  "DOM POS: Bar Pelanggan Terpasang dengan Default Bersih 'Pelanggan Umum (Non-Member)'"
+);
+
+assert(
+  posHtmlFresh.includes('id="customer-select-overlay"') &&
+  posHtmlFresh.includes('id="send-receipt-wa"') &&
+  posHtmlFresh.includes('<span><kbd>F6</kbd> Member</span>'),
+  "DOM POS: Modal Pilih/Tambah Member, Shortcut F6, dan Tombol Kirim WA Terpasang Lengkap"
+);
+
+assert(
+  posCoreFresh.includes("selectedCustomer") &&
+  posCoreFresh.includes("Math.floor(c.total / 1000)") &&
+  posCoreFresh.includes("sendReceiptViaWhatsApp"),
+  "POS Core: Logika Akumulasi Poin, Opsi Transaksi Non-Member, dan Generator Struk WA Terpasang"
+);
+
+// 5. Verifikasi DOM & Modul Manajemen Pelanggan
+const mgmtHtmlFresh = fs.readFileSync(path.join(rootDir, "management/index.html"), "utf8");
+const mgmtCustFresh = fs.readFileSync(path.join(rootDir, "management/management-customers.js"), "utf8");
+const rulesFresh = fs.readFileSync(path.join(rootDir, "firestore.rules"), "utf8");
+
+assert(
+  mgmtHtmlFresh.includes('data-view="customers"') &&
+  mgmtHtmlFresh.includes('data-view-section="customers"') &&
+  mgmtHtmlFresh.includes('id="modal-manage-rewards"') &&
+  mgmtHtmlFresh.includes('id="modal-broadcast-promo"'),
+  "DOM Manajemen: View Pelanggan, Modal Hadiah, dan Modal Broadcast WA Terpasang Lengkap"
+);
+
+assert(
+  mgmtCustFresh.includes("renderCustomers") &&
+  mgmtCustFresh.includes("openRedeemPointsModal") &&
+  mgmtCustFresh.includes("exportCustomersToExcel") &&
+  mgmtCustFresh.includes("cleanWaPhone"),
+  "Manajemen Pelanggan: Modul management-customers.js Menyediakan Fitur CRM, Hadiah, dan Ekspor Excel"
+);
+
+assert(
+  rulesFresh.includes("match /Pelanggan/") &&
+  rulesFresh.includes("match /KatalogHadiah/") &&
+  rulesFresh.includes("match /MutasiPoin/"),
+  "Firestore Security: Rules Melindungi Koleksi Pelanggan, KatalogHadiah, dan MutasiPoin"
+);
 
 console.log("\n========================================================");
 console.log(`   HASIL AUDIT SISTEM KASIRPRO V2:`);

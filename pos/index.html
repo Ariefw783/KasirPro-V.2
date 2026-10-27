@@ -97,11 +97,43 @@
                 </div>
 
                 <div class="pos-shortcut-chips" aria-label="Shortcut keyboard POS">
-                    <span><kbd>F2</kbd> Cari</span><span><kbd>F4</kbd> Bayar</span><span><kbd>F7</kbd> Item Manual</span><span><kbd>Ctrl</kbd> + <kbd>Enter</kbd> Selesaikan</span><span><kbd>Ctrl</kbd> + <kbd>H</kbd> Riwayat</span>
+                    <span><kbd>F2</kbd> Cari</span><span><kbd>F4</kbd> Bayar</span><span><kbd>F6</kbd> Member</span><span><kbd>F7</kbd> Item Manual</span><span><kbd>Ctrl</kbd> + <kbd>Enter</kbd> Selesaikan</span><span><kbd>Ctrl</kbd> + <kbd>H</kbd> Riwayat</span>
                 </div>
             </div>
 
             <section class="sale-panel">
+
+                <!-- POS Customer / Member Loyalty Bar (100% Opsional) -->
+                <div id="pos-customer-bar" class="pos-customer-bar" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                    <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:240px;">
+                        <div style="width:32px;height:32px;border-radius:8px;background:#e0f2fe;color:#0284c7;display:flex;align-items:center;justify-content:center;font-size:15px;">
+                            <i class="fa-solid fa-id-card"></i>
+                        </div>
+                        <!-- Unselected Customer (Default Non-Member) -->
+                        <div id="unselected-customer-display" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <span style="font-size:12.5px;color:#64748b;font-weight:600;">Pelanggan Umum (Non-Member)</span>
+                            <button id="btn-open-customer-modal" type="button" class="button button-small" style="background:#f0f9ff;color:#0284c7;border:1px solid #bae6fd;padding:3px 9px;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="Pilih / Cari Member (F6)">
+                                <i class="fa-solid fa-user-check"></i> Pilih Member (F6)
+                            </button>
+                            <button id="btn-quick-add-customer" type="button" class="button button-small" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;padding:3px 9px;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="Daftar Member Baru">
+                                <i class="fa-solid fa-user-plus"></i> + Baru
+                            </button>
+                        </div>
+                        <!-- Selected Customer View -->
+                        <div id="selected-customer-display" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <span id="selected-customer-name" style="font-weight:800;color:#0f2a43;font-size:13.5px;"></span>
+                            <span id="selected-customer-phone" style="font-size:11.5px;color:#64748b;font-weight:600;"></span>
+                            <span id="selected-customer-points-badge" class="badge" style="background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;font-weight:800;padding:3px 9px;border-radius:12px;font-size:11.5px;">0 Poin</span>
+                            <button id="btn-remove-selected-customer" type="button" style="background:none;border:none;color:#ef4444;cursor:pointer;padding:2px 6px;font-size:14px;" title="Batalkan Member (Kembali ke Pelanggan Umum)"><i class="fa-solid fa-circle-xmark"></i></button>
+                        </div>
+                    </div>
+                    <!-- Live Projected Loyalty Points Box -->
+                    <div id="pos-projected-points-box" style="display:none;align-items:center;gap:6px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:800;">
+                        <i class="fa-solid fa-coins" style="color:#f59e0b;font-size:13px;"></i>
+                        <span>Poin Masuk: <strong id="label-projected-points" style="color:#b45309;">+0 Poin</strong></span>
+                    </div>
+                </div>
+
                 <div class="sale-panel-head" id="cart-header">
                     <div>
                         <span class="section-kicker">DAFTAR BELANJA</span>
@@ -327,10 +359,64 @@
     </section>
 </div>
 
+
+<!-- Modal Dialog Pilih & Tambah Member Pelanggan -->
+<div id="customer-select-overlay" class="overlay" hidden>
+    <section class="payment-dialog" style="max-width:520px;border-radius:14px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);">
+        <header style="background:#ffffff;padding:14px 20px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+                <span class="section-kicker" style="color:#0284c7;font-size:11px;font-weight:700;">LOYALTY PROGRAM</span>
+                <h2 style="font-size:16px;margin:2px 0 0;font-weight:800;color:#0f2a43;">Pilih / Daftar Member</h2>
+            </div>
+            <button id="close-customer-select" type="button" style="background:none;border:none;font-size:16px;color:#64748b;cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+
+        <div style="padding:14px 20px;background:#f8fafc;">
+            <!-- Tabs: Cari Member vs Tambah Cepat -->
+            <div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">
+                <button type="button" id="tab-cust-search" class="button button-small button-primary" style="font-size:12px;padding:5px 12px;font-weight:700;">Cari Member</button>
+                <button type="button" id="tab-cust-add" class="button button-small button-secondary" style="font-size:12px;padding:5px 12px;font-weight:700;">+ Member Baru</button>
+            </div>
+
+            <!-- Tab 1: Search Existing Customer -->
+            <div id="pane-cust-search">
+                <div style="position:relative;margin-bottom:10px;">
+                    <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:10px;top:10px;color:#94a3b8;font-size:13px;"></i>
+                    <input type="search" id="input-search-cust" placeholder="Ketik No. WhatsApp atau Nama Member..." style="width:100%;height:36px;padding:6px 10px 6px 32px;border:1px solid #cbd5e1;border-radius:8px;font-size:12.5px;">
+                </div>
+                <div id="list-cust-results" style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;">
+                    <!-- Customer items rendered dynamically -->
+                </div>
+            </div>
+
+            <!-- Tab 2: Quick Register New Member -->
+            <div id="pane-cust-add" hidden>
+                <form id="form-quick-add-cust" style="display:flex;flex-direction:column;gap:10px;">
+                    <div>
+                        <label style="display:block;font-size:11.5px;font-weight:700;color:#1e293b;margin-bottom:4px;">Nama Lengkap Pelanggan <span class="text-danger">*</span></label>
+                        <input type="text" id="add-cust-name" required placeholder="Contoh: Ibu Rina Marlina" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:12.5px;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11.5px;font-weight:700;color:#1e293b;margin-bottom:4px;">Nomor WhatsApp / HP <span class="text-danger">*</span></label>
+                        <input type="tel" id="add-cust-phone" required placeholder="Contoh: 081234567890" inputmode="tel" style="width:100%;height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:12.5px;">
+                        <small style="color:#64748b;font-size:11px;margin-top:2px;display:block;">Digunakan untuk pengumpulan poin dan pengiriman promo WhatsApp.</small>
+                    </div>
+                    <button type="submit" class="button button-primary" style="margin-top:4px;height:38px;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fa-solid fa-user-plus"></i> Simpan &amp; Pilih Member
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+</div>
+
 <div id="receipt-overlay" class="overlay" hidden>
     <section class="receipt-dialog">
         <header class="receipt-actions">
             <button id="close-receipt" type="button" class="secondary-btn">Tutup</button>
+            <button id="send-receipt-wa" type="button" class="button" style="background:#25D366;color:#ffffff;border:none;display:inline-flex;align-items:center;gap:6px;font-weight:700;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:12.5px;" title="Kirim struk dan rincian poin via WhatsApp">
+                <i class="fa-brands fa-whatsapp" style="font-size:16px;"></i> Kirim WA &amp; Poin
+            </button>
             <button id="save-receipt-pdf" type="button" class="secondary-btn">
                 <i class="fa-solid fa-file-pdf"></i> Simpan PDF
             </button>

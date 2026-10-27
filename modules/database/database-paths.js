@@ -14,7 +14,10 @@ export const COLLECTION_NAMES = Object.freeze({
     loginDirectory: "DaftarAkunLogin",
     masterSnapshots: "MasterSnapshot",
     masterSnapshotChunks: "MasterSnapshotChunks",
-    activeStocks: "StokAktif"
+    activeStocks: "StokAktif",
+    customers: "Pelanggan",
+    rewards: "KatalogHadiah",
+    pointMovements: "MutasiPoin"
 });
 
 export function getRootDocumentPath() {
