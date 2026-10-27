@@ -48,6 +48,7 @@ async function bootManagement() {
     { name: "StockOpname", fn: initStockOpnameModule },
     { name: "Sales", fn: initSalesModule },
     { name: "Reports", fn: initReportsModule },
+    { name: "Customers", fn: initCustomerModule },
     { name: "Users", fn: initUsersModule },
     { name: "Settings", fn: initSettingsModule },
     { name: "ImportMaster", fn: initImportMasterModule }

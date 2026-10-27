@@ -2503,8 +2503,8 @@ assert(revisedDownResult === 40, "Simulasi Koreksi: Produk Terkoreksi Turun (50 
 const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
 const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
 
-assert(versionJson.version === "2.2.89", "Versioning: Versi Sistem Tepat v2.2.89");
-assert(swJsContent.includes("v130"), "Service Worker: Cache PWA Terbarui ke v130");
+assert(versionJson.version === "2.2.90", "Versioning: Versi Sistem Tepat v2.2.90");
+assert(swJsContent.includes("v131"), "Service Worker: Cache PWA Terbarui ke v131");
 
 // Verifikasi aturan changelog <= 5 kata bahasa Inggris
 if (Array.isArray(versionJson.changelog)) {
@@ -2808,6 +2808,13 @@ assert(
   mgmtCustFresh.includes("exportCustomersToExcel") &&
   mgmtCustFresh.includes("cleanWaPhone"),
   "Manajemen Pelanggan: Modul management-customers.js Menyediakan Fitur CRM, Hadiah, dan Ekspor Excel"
+);
+
+const mgmtJsFresh = fs.readFileSync(path.join(rootDir, "management/management.js"), "utf8");
+assert(
+  mgmtJsFresh.includes('initCustomerModule') &&
+  mgmtJsFresh.includes('{ name: "Customers", fn: initCustomerModule }'),
+  "Manajemen Boot: initCustomerModule Terdaftar di modulesToInit untuk Inisialisasi Tombol Pelanggan"
 );
 
 assert(

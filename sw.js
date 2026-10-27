@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v130-customer-loyalty-points";
+const CACHE_VERSION = "kasirpro-pwa-v131-customer-buttons-fix";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

@@ -815,4 +815,5 @@ if (typeof window !== "undefined") {
   window.openPointsHistoryModal = openPointsHistoryModal;
   window.openBroadcastModal = openBroadcastModal;
   window.exportCustomersToExcel = exportCustomersToExcel;
+  window.initCustomerModule = initCustomerModule;
 }
