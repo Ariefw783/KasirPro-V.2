@@ -10,7 +10,7 @@
  */
 
 const BASE_DB_NAME = "KasirProLocalDB_v3";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export function getLocalDbName() {
   return BASE_DB_NAME;
@@ -105,6 +105,11 @@ class IndexedDBStore {
 
       request.onsuccess = (event) => {
         this.db = event.target.result;
+        this.db.onversionchange = () => {
+          try { this.db.close(); } catch {}
+          this.db = null;
+          this._openPromise = null;
+        };
         resolve(this.db);
       };
 
@@ -132,6 +137,10 @@ class IndexedDBStore {
   async put(storeName, item) {
     if (!item) return;
     const db = await this.openDB();
+    if (!db || !db.objectStoreNames || !db.objectStoreNames.contains(storeName)) {
+      console.warn(`[IndexedDB] Object store '${storeName}' belum tersedia di database. Operasi put dilewati.`);
+      return null;
+    }
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, "readwrite");
       const store = tx.objectStore(storeName);
@@ -149,6 +158,10 @@ class IndexedDBStore {
   async putMany(storeName, items) {
     if (!Array.isArray(items) || items.length === 0) return true;
     const db = await this.openDB();
+    if (!db || !db.objectStoreNames || !db.objectStoreNames.contains(storeName)) {
+      console.warn(`[IndexedDB] Object store '${storeName}' belum tersedia di database. Operasi putMany dilewati.`);
+      return false;
+    }
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, "readwrite");
       const store = tx.objectStore(storeName);
@@ -169,6 +182,7 @@ class IndexedDBStore {
 
   async get(storeName, key) {
     const db = await this.openDB();
+    if (!db || !db.objectStoreNames || !db.objectStoreNames.contains(storeName)) return null;
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, "readonly");
       const store = tx.objectStore(storeName);
@@ -180,6 +194,7 @@ class IndexedDBStore {
 
   async getAll(storeName) {
     const db = await this.openDB();
+    if (!db || !db.objectStoreNames || !db.objectStoreNames.contains(storeName)) return [];
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, "readonly");
       const store = tx.objectStore(storeName);
@@ -191,6 +206,7 @@ class IndexedDBStore {
 
   async delete(storeName, key) {
     const db = await this.openDB();
+    if (!db || !db.objectStoreNames || !db.objectStoreNames.contains(storeName)) return true;
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, "readwrite");
       const store = tx.objectStore(storeName);
@@ -202,6 +218,7 @@ class IndexedDBStore {
 
   async clearStore(storeName) {
     const db = await this.openDB();
+    if (!db || !db.objectStoreNames || !db.objectStoreNames.contains(storeName)) return true;
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, "readwrite");
       const store = tx.objectStore(storeName);

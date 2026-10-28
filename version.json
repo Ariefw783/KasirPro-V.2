@@ -1,14 +1,14 @@
 {
-  "version": "2.2.90",
-  "build": "20261027.02",
-  "releaseDate": "27 Oktober 2026",
-  "title": "Customer Management Buttons Click Fix",
-  "description": "Perbaikan inisialisasi modul pelanggan dan event listener tombol toolbar & modal.",
+  "version": "2.2.91",
+  "build": "20261028.01",
+  "releaseDate": "28 Oktober 2026",
+  "title": "IndexedDB Store Upgrade v2 Fix",
+  "description": "Pembaruan skema IndexedDB ke v2 dan penanganan proteksi transaksi objek store.",
   "changelog": [
-    "Fix customer buttons click handler",
-    "Register customer module on boot",
-    "Move modals before script tags",
-    "Expose customer init to window",
-    "Updated PWA cache to v131"
+    "Upgrade IndexedDB version to v2",
+    "Fix missing store transaction error",
+    "Add customers store background sync",
+    "Protect offline cache mutation safely",
+    "Updated PWA cache to v132"
   ]
 }

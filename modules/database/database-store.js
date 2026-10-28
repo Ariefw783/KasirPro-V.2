@@ -304,7 +304,7 @@ async function loadFromIndexedDB() {
       }
     }
 
-    let [products, suppliers, categories, config, invoices, sales, movements, opnames] = await Promise.all([
+    let [products, suppliers, categories, config, invoices, sales, movements, opnames, customers, rewards, pointMovements] = await Promise.all([
       indexedDBStore.getAll(STORES.PRODUCTS),
       indexedDBStore.getAll(STORES.SUPPLIERS),
       indexedDBStore.getAll(STORES.CATEGORIES),
@@ -312,7 +312,10 @@ async function loadFromIndexedDB() {
       indexedDBStore.getAll(STORES.INVOICES),
       indexedDBStore.getAll(STORES.SALES),
       indexedDBStore.getAll(STORES.MOVEMENTS),
-      indexedDBStore.getAll(STORES.OPNAMES)
+      indexedDBStore.getAll(STORES.OPNAMES),
+      indexedDBStore.getAll(STORES.CUSTOMERS),
+      indexedDBStore.getAll(STORES.REWARDS),
+      indexedDBStore.getAll(STORES.POINT_MOVEMENTS)
     ]);
 
     // Pastikan database legacy kasirpro_local_v1 dimusnahkan secara permanen agar tidak menyuntikkan data sampah
@@ -375,7 +378,10 @@ async function loadFromIndexedDB() {
       supplier: suppliers || [],
       kategori: categories || [],
       pengguna: [],
-      pengaturan_toko: activeConfig ? [{ ...defaultSettings, ...activeConfig, id: "current", key: "storeSettings" }] : [defaultSettings]
+      pengaturan_toko: activeConfig ? [{ ...defaultSettings, ...activeConfig, id: "current", key: "storeSettings" }] : [defaultSettings],
+      pelanggan: customers || [],
+      hadiah: rewards || [],
+      mutasi_poin: pointMovements || []
     };
 
     inMemory.set(STORE_KEYS.master, masterObj);
@@ -495,7 +501,10 @@ async function syncFromFirestore(force = false) {
       firestoreMovements,
       firestoreOpnames,
       firestoreStocks,
-      firestoreSettings
+      firestoreSettings,
+      firestoreCustomers,
+      firestoreRewards,
+      firestorePointMovements
     ] = await Promise.all([
       fetchCollection("products"),
       fetchCollection("categories"),
@@ -505,7 +514,10 @@ async function syncFromFirestore(force = false) {
       fetchCollection("stockMovements", { limitCount: 300 }),
       fetchCollection("stockOpnames", { limitCount: 50 }),
       fetchCollection("activeStocks"),
-      fetchCollection("storeSettings")
+      fetchCollection("storeSettings"),
+      fetchCollection("customers"),
+      fetchCollection("rewards"),
+      fetchCollection("pointMovements", { limitCount: 200 })
     ]);
 
     // Helper untuk merge array berdasarkan ID dengan preservasi status pelunasan lokal
@@ -678,12 +690,31 @@ async function syncFromFirestore(force = false) {
       ? mergeEntities(currentMaster.kategori, firestoreCategories, katIdFn)
       : firestoreCategories;
 
+    const mergedCustomers = mergeEntities(
+      currentMaster.pelanggan || [],
+      firestoreCustomers.filter(c => !c._isDeleted),
+      c => c.phone || c.id
+    );
+    const mergedRewards = mergeEntities(
+      currentMaster.hadiah || [],
+      firestoreRewards.filter(r => !r._isDeleted),
+      r => r.id || r.name
+    );
+    const mergedPointMovements = mergeEntities(
+      currentMaster.mutasi_poin || [],
+      firestorePointMovements.filter(m => !m._isDeleted),
+      m => m.id
+    );
+
     const masterObj = {
       produk: mergedProducts,
       supplier: mergedSuppliers,
       kategori: mergedCategories,
       pengguna: currentMaster.pengguna || [],
-      pengaturan_toko: firestoreSettings.length ? firestoreSettings : currentMaster.pengaturan_toko
+      pengaturan_toko: firestoreSettings.length ? firestoreSettings : currentMaster.pengaturan_toko,
+      pelanggan: mergedCustomers,
+      hadiah: mergedRewards,
+      mutasi_poin: mergedPointMovements
     };
 
     inMemory.set(STORE_KEYS.master, masterObj);
@@ -744,6 +775,9 @@ async function syncFromFirestore(force = false) {
     if (mergedProducts.length) await indexedDBStore.putMany(STORES.PRODUCTS, mergedProducts);
     if (firestoreSuppliers.length) await indexedDBStore.putMany(STORES.SUPPLIERS, firestoreSuppliers);
     if (firestoreCategories.length) await indexedDBStore.putMany(STORES.CATEGORIES, firestoreCategories);
+    if (mergedCustomers.length) await indexedDBStore.putMany(STORES.CUSTOMERS, mergedCustomers);
+    if (mergedRewards.length) await indexedDBStore.putMany(STORES.REWARDS, mergedRewards);
+    if (mergedPointMovements.length) await indexedDBStore.putMany(STORES.POINT_MOVEMENTS, mergedPointMovements);
     if (!isIncremental) {
       const invsToStore = inMemory.get(STORE_KEYS.invoices) || firestoreInvoices;
       if (invsToStore.length) await indexedDBStore.putMany(STORES.INVOICES, invsToStore);

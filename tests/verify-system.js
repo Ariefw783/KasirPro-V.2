@@ -2503,8 +2503,8 @@ assert(revisedDownResult === 40, "Simulasi Koreksi: Produk Terkoreksi Turun (50 
 const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
 const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
 
-assert(versionJson.version === "2.2.90", "Versioning: Versi Sistem Tepat v2.2.90");
-assert(swJsContent.includes("v131"), "Service Worker: Cache PWA Terbarui ke v131");
+assert(versionJson.version === "2.2.91", "Versioning: Versi Sistem Tepat v2.2.91");
+assert(swJsContent.includes("v132"), "Service Worker: Cache PWA Terbarui ke v132");
 
 // Verifikasi aturan changelog <= 5 kata bahasa Inggris
 if (Array.isArray(versionJson.changelog)) {
@@ -2822,6 +2822,14 @@ assert(
   rulesFresh.includes("match /KatalogHadiah/") &&
   rulesFresh.includes("match /MutasiPoin/"),
   "Firestore Security: Rules Melindungi Koleksi Pelanggan, KatalogHadiah, dan MutasiPoin"
+);
+
+const idbFresh = fs.readFileSync(path.join(rootDir, "modules/local/indexeddb-store.js"), "utf8");
+assert(
+  idbFresh.includes("DB_VERSION = 2") &&
+  idbFresh.includes("STORES.CUSTOMERS") &&
+  idbFresh.includes("objectStoreNames.contains(storeName)"),
+  "IndexedDB: Skema Database Dinaikkan ke v2 & Dilengkapi Proteksi Missing Store"
 );
 
 console.log("\n========================================================");
