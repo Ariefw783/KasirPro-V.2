@@ -3,7 +3,8 @@ import {
     initializeDatabase,
     readStore,
     writeStore,
-    writeStockTransaction
+    writeStockTransaction,
+    writeMasterDelta
 } from "../modules/database/database-store.js";
 
 import { signOutKasirPro } from "../modules/database/auth.js";
@@ -186,7 +187,7 @@ function handleQuickAddCustomer(e) {
     };
 
     allCusts.push(newCust);
-    writeMasterDelta({ pelanggan: [newCust] });
+    writeMasterDelta({ pelanggan: [newCust] }).catch(err => console.warn("[POS] Gagal simpan delta member:", err));
     selectCustomer(newCust);
     closeCustomerModal();
     if (nameInput) nameInput.value = "";
@@ -851,7 +852,7 @@ async function completeSale(){
         selectedCustomer.lastVisit = saleAt;
 
         // Persist delta customer
-        writeMasterDelta({ pelanggan: [selectedCustomer] });
+        writeMasterDelta({ pelanggan: [selectedCustomer] }).catch(err => console.warn("[POS] Gagal simpan delta pelanggan:", err));
 
         // Catat mutasi poin
         const pointLog = {
@@ -869,7 +870,7 @@ async function completeSale(){
         const m = master();
         if (!Array.isArray(m.mutasi_poin)) m.mutasi_poin = [];
         m.mutasi_poin.unshift(pointLog);
-        writeMasterDelta({ mutasi_poin: [pointLog] });
+        writeMasterDelta({ mutasi_poin: [pointLog] }).catch(err => console.warn("[POS] Gagal simpan mutasi poin:", err));
     }
 
     lastSale={

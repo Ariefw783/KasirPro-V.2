@@ -1,14 +1,14 @@
 {
-  "version": "2.2.91",
-  "build": "20261028.01",
+  "version": "2.2.92",
+  "build": "20261028.02",
   "releaseDate": "28 Oktober 2026",
-  "title": "IndexedDB Store Upgrade v2 Fix",
-  "description": "Pembaruan skema IndexedDB ke v2 dan penanganan proteksi transaksi objek store.",
+  "title": "POS Quick Customer Import Fix",
+  "description": "Perbaikan impor fungsi writeMasterDelta pada modul POS saat pendaftaran member baru.",
   "changelog": [
-    "Upgrade IndexedDB version to v2",
-    "Fix missing store transaction error",
-    "Add customers store background sync",
-    "Protect offline cache mutation safely",
-    "Updated PWA cache to v132"
+    "Fix POS customer writeMasterDelta import",
+    "Protect customer delta write safely",
+    "Enhance POS member registration flow",
+    "Updated PWA cache to v133",
+    "Verify POS database store integration"
   ]
 }

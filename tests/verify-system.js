@@ -2503,8 +2503,8 @@ assert(revisedDownResult === 40, "Simulasi Koreksi: Produk Terkoreksi Turun (50 
 const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
 const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
 
-assert(versionJson.version === "2.2.91", "Versioning: Versi Sistem Tepat v2.2.91");
-assert(swJsContent.includes("v132"), "Service Worker: Cache PWA Terbarui ke v132");
+assert(versionJson.version === "2.2.92", "Versioning: Versi Sistem Tepat v2.2.92");
+assert(swJsContent.includes("v133"), "Service Worker: Cache PWA Terbarui ke v133");
 
 // Verifikasi aturan changelog <= 5 kata bahasa Inggris
 if (Array.isArray(versionJson.changelog)) {
@@ -2785,8 +2785,15 @@ assert(
 assert(
   posCoreFresh.includes("selectedCustomer") &&
   posCoreFresh.includes("Math.floor(c.total / 1000)") &&
-  posCoreFresh.includes("sendReceiptViaWhatsApp"),
+  posCoreFresh.includes("sendReceiptViaWhatsApp") &&
+  posCoreFresh.includes("writeMasterDelta"),
   "POS Core: Logika Akumulasi Poin, Opsi Transaksi Non-Member, dan Generator Struk WA Terpasang"
+);
+
+assert(
+  posCoreFresh.includes("writeMasterDelta") &&
+  posCoreFresh.includes('from "../modules/database/database-store.js"'),
+  "POS Import: writeMasterDelta Terimpor dengan Aman dari database-store"
 );
 
 // 5. Verifikasi DOM & Modul Manajemen Pelanggan
