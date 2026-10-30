@@ -21,6 +21,11 @@ function customers() {
     return m.pelanggan;
 }
 
+function formatNumber(v) {
+    const n = Number(String(v ?? 0).replace(/[^0-9.-]/g, "")) || 0;
+    return new Intl.NumberFormat("id-ID").format(n);
+}
+
 function cleanWaPhone(phone) {
     let p = String(phone || "").replace(/[^0-9]/g, "");
     if (p.startsWith("0")) p = "62" + p.slice(1);

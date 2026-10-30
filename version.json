@@ -1,14 +1,14 @@
 {
-  "version": "2.2.92",
-  "build": "20261028.02",
-  "releaseDate": "28 Oktober 2026",
-  "title": "POS Quick Customer Import Fix",
-  "description": "Perbaikan impor fungsi writeMasterDelta pada modul POS saat pendaftaran member baru.",
+  "version": "2.2.93",
+  "build": "20261030.01",
+  "releaseDate": "30 Oktober 2026",
+  "title": "POS Customer Search Format Fix",
+  "description": "Perbaikan fungsi formatNumber pada modul POS untuk pencarian dan pratinjau poin member pelanggan.",
   "changelog": [
-    "Fix POS customer writeMasterDelta import",
-    "Protect customer delta write safely",
-    "Enhance POS member registration flow",
-    "Updated PWA cache to v133",
-    "Verify POS database store integration"
+    "Fix POS customer search formatting",
+    "Define formatNumber in POS core",
+    "Prevent customer search crash errors",
+    "Updated PWA cache to v134",
+    "Verify POS member search functions"
   ]
 }

@@ -2503,8 +2503,8 @@ assert(revisedDownResult === 40, "Simulasi Koreksi: Produk Terkoreksi Turun (50 
 const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
 const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
 
-assert(versionJson.version === "2.2.92", "Versioning: Versi Sistem Tepat v2.2.92");
-assert(swJsContent.includes("v133"), "Service Worker: Cache PWA Terbarui ke v133");
+assert(versionJson.version === "2.2.93", "Versioning: Versi Sistem Tepat v2.2.93");
+assert(swJsContent.includes("v134"), "Service Worker: Cache PWA Terbarui ke v134");
 
 // Verifikasi aturan changelog <= 5 kata bahasa Inggris
 if (Array.isArray(versionJson.changelog)) {
@@ -2794,6 +2794,13 @@ assert(
   posCoreFresh.includes("writeMasterDelta") &&
   posCoreFresh.includes('from "../modules/database/database-store.js"'),
   "POS Import: writeMasterDelta Terimpor dengan Aman dari database-store"
+);
+
+assert(
+  posCoreFresh.includes("function formatNumber(v)") &&
+  posCoreFresh.includes("renderCustomerSearchResults") &&
+  posCoreFresh.includes("selectedCustomer"),
+  "POS Member: formatNumber Terdefinisi Aman untuk Pencarian & Pratinjau Poin Pelanggan"
 );
 
 // 5. Verifikasi DOM & Modul Manajemen Pelanggan
