@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kasirpro-pwa-v134-pos-customer-format-fix";
+const CACHE_VERSION = "kasirpro-pwa-v135-points-ratio-5000";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 
 const STATIC_ASSETS = [

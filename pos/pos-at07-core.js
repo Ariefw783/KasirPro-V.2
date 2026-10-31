@@ -69,7 +69,7 @@ function updateProjectedPoints() {
 
     if (selectedCustomer && cart.length > 0) {
         const c = calc();
-        const pts = Math.floor(c.total / 1000);
+        const pts = Math.floor(c.total / 5000);
         pBox.style.display = "inline-flex";
         pLabel.textContent = `+${formatNumber(pts)} Poin`;
     } else {
@@ -837,7 +837,7 @@ async function completeSale(){
 
     let customerPayload = null;
     if (selectedCustomer) {
-        const pointsEarned = Math.floor(c.total / 1000);
+        const pointsEarned = Math.floor(c.total / 5000);
         const prevPts = num(selectedCustomer.totalPoints || 0);
         const currentPts = prevPts + pointsEarned;
 

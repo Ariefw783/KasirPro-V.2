@@ -1,14 +1,14 @@
 {
-  "version": "2.2.93",
-  "build": "20261030.01",
-  "releaseDate": "30 Oktober 2026",
-  "title": "POS Customer Search Format Fix",
-  "description": "Perbaikan fungsi formatNumber pada modul POS untuk pencarian dan pratinjau poin member pelanggan.",
+  "version": "2.2.94",
+  "build": "20261031.01",
+  "releaseDate": "31 Oktober 2026",
+  "title": "Update Loyalty Points Ratio to 5000",
+  "description": "Pembaruan rasio konversi loyalty poin member dari Rp 1.000 menjadi Rp 5.000 = 1 Poin.",
   "changelog": [
-    "Fix POS customer search formatting",
-    "Define formatNumber in POS core",
-    "Prevent customer search crash errors",
-    "Updated PWA cache to v134",
-    "Verify POS member search functions"
+    "Update loyalty ratio to 5000",
+    "Adjust POS projected points calculation",
+    "Update POS transaction earn points",
+    "Updated PWA cache to v135",
+    "Verify 5000 loyalty points ratio"
   ]
 }

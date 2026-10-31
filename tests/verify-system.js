@@ -2503,8 +2503,8 @@ assert(revisedDownResult === 40, "Simulasi Koreksi: Produk Terkoreksi Turun (50 
 const versionJson = JSON.parse(fs.readFileSync(path.join(rootDir, "version.json"), "utf8"));
 const swJsContent = fs.readFileSync(path.join(rootDir, "sw.js"), "utf8");
 
-assert(versionJson.version === "2.2.93", "Versioning: Versi Sistem Tepat v2.2.93");
-assert(swJsContent.includes("v134"), "Service Worker: Cache PWA Terbarui ke v134");
+assert(versionJson.version === "2.2.94", "Versioning: Versi Sistem Tepat v2.2.94");
+assert(swJsContent.includes("v135"), "Service Worker: Cache PWA Terbarui ke v135");
 
 // Verifikasi aturan changelog <= 5 kata bahasa Inggris
 if (Array.isArray(versionJson.changelog)) {
@@ -2728,15 +2728,15 @@ assert(rnaProductMock["Konversi"] === 30, "Katalog RNA-00105: Total Konversi 1 B
 
 console.log("\n🎁 BAGIAN 36: PENGUJIAN SISTEM MEMBER PELANGGAN, LOYALTY POIN, HADIAH & BROADCAST WA");
 
-// 1. Verifikasi Formula Perhitungan Poin Loyalty (Rp 1.000 = 1 Poin Pembulatan Bawah)
+// 1. Verifikasi Formula Perhitungan Poin Loyalty (Rp 5.000 = 1 Poin Pembulatan Bawah)
 function calculatePoints(amount) {
-  return Math.floor(Math.max(0, amount) / 1000);
+  return Math.floor(Math.max(0, amount) / 5000);
 }
 
-assert(calculatePoints(15800) === 15, "Loyalty Points: Belanja Rp 15.800 Menghasilkan Tepat 15 Poin (Pembulatan Bawah)");
-assert(calculatePoints(999) === 0, "Loyalty Points: Belanja di Bawah Rp 1.000 (Rp 999) Menghasilkan 0 Poin");
-assert(calculatePoints(1000) === 1, "Loyalty Points: Belanja Tepat Rp 1.000 Menghasilkan 1 Poin");
-assert(calculatePoints(250000) === 250, "Loyalty Points: Belanja Rp 250.000 Menghasilkan 250 Poin");
+assert(calculatePoints(15800) === 3, "Loyalty Points: Belanja Rp 15.800 Menghasilkan Tepat 3 Poin (Pembulatan Bawah)");
+assert(calculatePoints(4999) === 0, "Loyalty Points: Belanja di Bawah Rp 5.000 (Rp 4.999) Menghasilkan 0 Poin");
+assert(calculatePoints(5000) === 1, "Loyalty Points: Belanja Tepat Rp 5.000 Menghasilkan 1 Poin");
+assert(calculatePoints(250000) === 50, "Loyalty Points: Belanja Rp 250.000 Menghasilkan 50 Poin");
 
 // 2. Verifikasi Logika Penukaran Hadiah (Redeem) & Proteksi Saldo Poin
 function simulateRedeemReward(currentPoints, rewardRequiredPoints) {
@@ -2784,7 +2784,7 @@ assert(
 
 assert(
   posCoreFresh.includes("selectedCustomer") &&
-  posCoreFresh.includes("Math.floor(c.total / 1000)") &&
+  posCoreFresh.includes("Math.floor(c.total / 5000)") &&
   posCoreFresh.includes("sendReceiptViaWhatsApp") &&
   posCoreFresh.includes("writeMasterDelta"),
   "POS Core: Logika Akumulasi Poin, Opsi Transaksi Non-Member, dan Generator Struk WA Terpasang"
